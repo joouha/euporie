@@ -6,6 +6,7 @@ This module provides enhanced versions of euporie.apptk containers that:
 - Support bounded write positions to clip rendering
 - Share padding window instances for efficiency
 - Apply cursor line styles more efficiently
+- Add movement mouse handler for Floats
 """
 
 from __future__ import annotations
@@ -41,10 +42,7 @@ from euporie.apptk.layout.controls import DummyControl as PtkDummyControl
 from euporie.apptk.layout.graphics import select_graphic_control
 from euporie.apptk.layout.margins import ClickableMargin, Margin
 from euporie.apptk.layout.screen import _CHAR_CACHE, WritePosition
-from euporie.apptk.mouse_events import (
-    MouseEvent,
-    MouseEventType,
-)
+from euporie.apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -1600,6 +1598,8 @@ class FloatContainer(ptk_containers.FloatContainer):
                 width=width,
                 height=height,
             )
+            # Store write position on the float itself
+            fl.write_position = wp
 
             if not fl.hide_when_covering_content or self._area_is_empty(screen, wp):
                 transparent = fl.transparent()
@@ -1627,6 +1627,8 @@ class FloatContainer(ptk_containers.FloatContainer):
                     erase_bg=not transparent,
                     z_index=z_index,
                 )
+        else:
+            fl.write_position = None
 
 
 class MarginContainer(Window):
@@ -1764,3 +1766,126 @@ class MarginContainer(Window):
     def get_children(self) -> list[Container]:
         """Return the list of child :class:`.Container` objects."""
         return []
+
+
+class Float(ptk_containers.Float):
+    """A Float container that supports dragging to reposition.
+
+    Extends the base Float class with a mouse handler method that can be used
+    with `MouseHandlerWrapper` to make the float draggable.
+
+    Example usage:
+        ```python
+        float_ = Float(
+            content=MouseHandlerWrapper(
+                Border(Window(FormattedTextControl("Drag me!"))),
+                handler=lambda e: float_.drag_handler(e),
+            ),
+            left=10,
+            top=5,
+        )
+        ```
+
+    Or using a method reference after creation:
+        ```python
+        float_ = Float(content=Window(...))
+        float_.content = MouseHandlerWrapper(
+            float_.content,
+            handler=float_.drag_handler,
+        )
+        ```
+    """
+
+    def __init__(
+        self,
+        content: AnyContainer,
+        top: int | None = None,
+        right: int | None = None,
+        bottom: int | None = None,
+        left: int | None = None,
+        width: int | Callable[[], int] | None = None,
+        height: int | Callable[[], int] | None = None,
+        xcursor: bool = False,
+        ycursor: bool = False,
+        attach_to_window: AnyContainer | None = None,
+        hide_when_covering_content: bool = False,
+        allow_cover_cursor: bool = False,
+        z_index: int = 1,
+        transparent: bool = False,
+    ) -> None:
+        """Initialize the Float with drag state."""
+        super().__init__(
+            content=content,
+            top=top,
+            right=right,
+            bottom=bottom,
+            left=left,
+            width=width,
+            height=height,
+            xcursor=xcursor,
+            ycursor=ycursor,
+            attach_to_window=attach_to_window,
+            hide_when_covering_content=hide_when_covering_content,
+            allow_cover_cursor=allow_cover_cursor,
+            z_index=z_index,
+            transparent=transparent,
+        )
+        self._drag_start: Point | None = None
+        self.write_position: WritePosition | None = None
+
+    def drag_handler(self, mouse_event: MouseEvent) -> NotImplementedOrNone:
+        """Handle mouse events to drag this Float.
+
+        This method can be passed to `MouseHandlerWrapper` to make any
+        container inside this Float act as a drag handle.
+
+        Args:
+            mouse_event: The mouse event to handle.
+
+        Returns:
+            None if the event was handled, NotImplemented otherwise.
+        """
+        if mouse_event.button == MouseButton.LEFT:
+            if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
+                app = get_app()
+                # Start the drag event - store offset from float origin to click position
+                wp = self.write_position
+                mp = mouse_event.position
+                self._drag_start = Point(x=mp.x - wp.xpos, y=mp.y - wp.ypos)
+                # Capture all mouse events by setting limits to the click position
+                app.mouse_limits = WritePosition(
+                    xpos=mp.x, ypos=mp.y, width=1, height=1
+                )
+                return None
+
+            elif mouse_event.event_type == MouseEventType.MOUSE_MOVE:
+                if self._drag_start is not None:
+                    app = get_app()
+                    wp = self.write_position
+                    mp = mouse_event.position
+                    gx, gy = app.mouse_position
+                    # Get available space
+                    max_y, max_x = app.output.get_size()
+                    # Calculate new position, keeping float within screen bounds
+                    new_x = max(0, min(gx - self._drag_start.x, max_x - wp.width))
+                    new_y = max(0, min(gy - self._drag_start.y, max_y - wp.height))
+                    # Move float
+                    self.left = new_x
+                    self.top = new_y
+                    self.bottom = self.right = None
+                    # self.width = wp.width
+                    # self.height = wp.height
+                    # Update mouse capture position
+                    app.mouse_limits = WritePosition(
+                        xpos=new_x + self._drag_start.x,
+                        ypos=new_y + self._drag_start.y,
+                        width=1,
+                        height=1,
+                    )
+                    return None
+
+        # End the drag event
+        self._drag_start = None
+        # Stop capturing all mouse events
+        get_app().mouse_limits = None
+        return None  # tImplemented
