@@ -14,7 +14,7 @@ from euporie.apptk.layout.dimension import Dimension, to_dimension
 from euporie.apptk.utils import Event, to_str
 
 from euporie.apptk.cache import FastDictCache, SimpleCache
-from euporie.apptk.color import Color
+from euporie.apptk.color import style_fg_bg
 from euporie.apptk.commands import add_cmd
 from euporie.apptk.convert.datum import Datum
 from euporie.apptk.data_structures import Point, Size
@@ -29,7 +29,6 @@ from euporie.apptk.layout.containers import (
 from euporie.apptk.layout.controls import GetLinePrefixCallable, UIContent, UIControl
 from euporie.apptk.layout.margins import ScrollbarMargin
 from euporie.apptk.mouse_events import MouseEvent, MouseEventType
-from euporie.apptk.output.vt100 import TERMINAL_COLORS_TO_RGB
 from euporie.core.filters import display_has_focus, scrollable
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
@@ -131,22 +130,6 @@ class DisplayControl(UIControl):
         self.reset()
 
     @property
-    def colors(self) -> str:
-        """Get foreground and background hex colors based on style."""
-        attrs = get_app().renderer._attrs_for_style[to_str(self.style)]
-        fg = (
-            Color(attrs.color)
-            if attrs.color
-            else Color.from_rgb(*TERMINAL_COLORS_TO_RGB["fg"])
-        )
-        bg = (
-            Color(attrs.bgcolor)
-            if attrs.bgcolor
-            else Color.from_rgb(*TERMINAL_COLORS_TO_RGB["bg"])
-        )
-        return fg, bg
-
-    @property
     def cursor_position(self) -> Point:
         """Get the cursor position."""
         return self._cursor_position
@@ -212,7 +195,7 @@ class DisplayControl(UIControl):
         wrap_lines: bool = False,
     ) -> int:
         """Get the maximum lines width for a given rendering."""
-        fg, bg = self.colors
+        fg, bg = style_fg_bg(self.style)
         lines = self._line_cache[datum, width, height, fg, bg, wrap_lines]
         return max(
             self._line_width_cache.get(
@@ -265,7 +248,7 @@ class DisplayControl(UIControl):
         max_cols, aspect = self.datum.cell_size()
         if aspect:
             height = ceil(min(width, max_cols) * aspect)
-        fg, bg = self.colors
+        fg, bg = style_fg_bg(self.style)
         self.lines = self._line_cache[
             self.datum,
             width,
@@ -334,7 +317,7 @@ class DisplayControl(UIControl):
             self.width = width
             self.height = height
             render = True
-        fg, bg = self.colors
+        fg, bg = style_fg_bg(self.style)
         if render:
             self.render(fg, bg)
         content = self._content_cache[
@@ -577,8 +560,6 @@ class Display(Container):
     def _get_style(self) -> str:
         """Get the combined style including parent style and background color."""
         style = to_str(self._style)
-        if bg := self.control.datum.bg:
-            style = f"bg:{bg} {style}"
         # Include parent style so it's available to the control
         return f"{self._parent_style} {style}"
 

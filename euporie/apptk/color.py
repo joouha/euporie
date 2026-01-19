@@ -7,10 +7,14 @@ from colorsys import hls_to_rgb, rgb_to_hls
 from functools import partial
 from typing import TYPE_CHECKING
 
+from euporie.apptk.application.current import get_app
+from euporie.apptk.utils import to_str
+
 from euporie.apptk.cache import SimpleCache
+from euporie.apptk.output.vt100 import TERMINAL_COLORS_TO_RGB
 
 if TYPE_CHECKING:
-    from collections.abc import Hashable
+    from collections.abc import Callable, Hashable
     from typing import Any
 
 
@@ -266,6 +270,40 @@ class ColorPalette(dict[str, Color]):
                 f"'{type(self).__name__}' object has no attribute '{name}'"
             ) from None
 
-    def __hash__(self) -> Hashable:  # type: ignore[override]
-        """Return a hashable object."""
+    def __hash__(self) -> int:
+        """Return a content-based hash."""
         return hash(tuple(self.items()))
+
+
+_STYLE_COLOR_CACHE: SimpleCache[
+    tuple[str, tuple[int, int, int], tuple[int, int, int], Hashable, Hashable],
+    tuple[Color, Color],
+] = SimpleCache(maxsize=1024)
+
+
+def style_fg_bg(style: str | Callable[[], str]) -> tuple[Color, Color]:
+    """Get foreground and background colors for a given style string."""
+    app = get_app()
+
+    key = (
+        style_str := to_str(style),
+        fg_default := TERMINAL_COLORS_TO_RGB["fg"],
+        bg_default := TERMINAL_COLORS_TO_RGB["bg"],
+        app.style.invalidation_hash(),
+        app.style_transformation.invalidation_hash(),
+    )
+
+    def _get_style_colors() -> tuple[str, str]:
+        attrs_for_style = app.renderer._attrs_for_style
+        attrs = attrs_for_style[style_str] if attrs_for_style else None
+        fg = (
+            Color(attrs.color) if attrs and attrs.color else Color.from_rgb(*fg_default)
+        )
+        bg = (
+            Color(attrs.bgcolor)
+            if attrs and attrs.bgcolor
+            else Color.from_rgb(*bg_default)
+        )
+        return fg, bg
+
+    return _STYLE_COLOR_CACHE.get(key, _get_style_colors)
