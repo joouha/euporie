@@ -192,6 +192,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
             extend_height=extend_renderer_height,
             extend_width=extend_renderer_width,
             leave_graphics=self.leave_graphics,
+            preferred_graphics=lambda: self.config.graphics,
         )
         # Contains the opened tab containers
         self.tabs: list[Tab] = []
