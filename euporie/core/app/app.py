@@ -20,6 +20,7 @@ from prompt_toolkit.data_structures import Point
 from prompt_toolkit.enums import EditingMode
 from prompt_toolkit.filters import Condition, buffer_has_focus, to_filter
 from prompt_toolkit.input.defaults import create_input
+from prompt_toolkit.key_binding.bindings.auto_suggest import load_auto_suggest_bindings
 from prompt_toolkit.key_binding.bindings.basic import (
     load_basic_bindings as load_ptk_basic_bindings,
 )
@@ -499,6 +500,9 @@ class BaseApp(ConfigurableApp, Application, ABC):
                             # Load Vi bindings.
                             load_vi_bindings(),
                             load_vi_search_bindings(),
+                            # Auto-suggestion (need to be after vi-bindings as we override the right
+                            # arrow binding if we have a suggestion)
+                            load_auto_suggest_bindings(),
                         ]
                     ),
                     buffer_has_focus,
