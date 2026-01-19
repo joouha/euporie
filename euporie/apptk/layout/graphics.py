@@ -12,6 +12,7 @@ from euporie.apptk.application.current import get_app
 from euporie.apptk.formatted_text.base import to_formatted_text
 
 from euporie.apptk.cache import FastDictCache, SimpleCache
+from euporie.apptk.color import style_fg_bg
 from euporie.apptk.convert.datum import Datum
 from euporie.apptk.convert.registry import find_route
 from euporie.apptk.data_structures import DiInt, Point
@@ -29,7 +30,7 @@ log = logging.getLogger(__name__)
 
 
 class GraphicControl(UIControl, metaclass=ABCMeta):
-    """A base-class for display controls which render terminal graphics."""
+    """A base-class for controls which render terminal graphics."""
 
     def __init__(
         self,
@@ -44,6 +45,7 @@ class GraphicControl(UIControl, metaclass=ABCMeta):
         self.datum = datum
         self.scale = scale
         self.bbox = bbox or DiInt(0, 0, 0, 0)
+        self.style = style
         self.rendered_lines: list[StyleAndTextTuples] = []
         self._content_cache: SimpleCache = SimpleCache(maxsize=50)
         self._format_cache: SimpleCache = SimpleCache(maxsize=50)
@@ -154,7 +156,10 @@ class SixelGraphicControl(GraphicControl):
     def convert_data(self, wp: WritePosition) -> str:
         """Convert datum to required format."""
         bbox = wp.bbox
-        cmd = str(self.datum.convert(to="sixel", cols=wp.width, rows=wp.height)).strip()
+        fg, bg = style_fg_bg(self.style)
+        cmd = str(
+            self.datum.convert(to="sixel", cols=wp.width, rows=wp.height, fg=fg, bg=bg)
+        ).strip()
         if any(bbox):
             from sixelcrop import sixelcrop
 
@@ -265,7 +270,8 @@ class ItermGraphicControl(GraphicControl):
         if any(bbox):
             import io
 
-            image = datum.convert(to="pil", cols=wp.width, rows=wp.height)
+            fg, bg = style_fg_bg(self.style)
+            image = datum.convert(to="pil", cols=wp.width, rows=wp.height, fg=fg, bg=bg)
             if image is not None:
                 cell_size_x, cell_size_y = self.app.output.cell_pixel_size
                 # Downscale image to fit target region for precise cropping
@@ -283,7 +289,9 @@ class ItermGraphicControl(GraphicControl):
         if datum.format.startswith("base64-"):
             b64data = datum.data
         else:
-            b64data = datum.convert(to="base64-png", cols=wp.width, rows=wp.height)
+            b64data = datum.convert(
+                to="base64-png", cols=wp.width, rows=wp.height, fg=fg, bg=bg
+            )
         return b64data.replace("\n", "").strip()
 
     def get_rendered_lines(
@@ -399,8 +407,9 @@ class BaseKittyGraphicControl(GraphicControl):
             target_width = int((px + cell_size_x - 1) // cell_size_x * cell_size_x)
             target_height = int((py + cell_size_y - 1) // cell_size_y * cell_size_y)
 
+            fg, bg = style_fg_bg(self.style)
             image = ImageOps.pad(
-                datum.convert("pil").convert("RGBA"),
+                datum.convert("pil", fg=fg, bg=bg).convert("RGBA"),
                 (target_width, target_height),
                 centering=(0, 0),
             )
@@ -411,6 +420,8 @@ class BaseKittyGraphicControl(GraphicControl):
                 py=target_height,
                 path=datum.path,
                 align=datum.align,
+                fg=fg,
+                bg=bg,
             )
         return datum
 
@@ -421,11 +432,10 @@ class BaseKittyGraphicControl(GraphicControl):
         full_height = wp.height + bbox.top + bbox.bottom
 
         datum = self._datum_pad_cache[(self.datum, *self.app.output.cell_pixel_size)]
+        fg, bg = style_fg_bg(self.style)
         return str(
             datum.convert(
-                to="base64-png",
-                cols=full_width,
-                rows=full_height,
+                to="base64-png", cols=full_width, rows=full_height, fg=fg, bg=bg
             )
         ).replace("\n", "")
 
