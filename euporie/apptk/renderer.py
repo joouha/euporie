@@ -357,15 +357,17 @@ class Renderer(PtkRenderer):
             output.enable_mouse_support()
             self._mouse_support_enabled = True
 
-            output.enable_sgr_pixel()
-            self._sgr_pixel_enabled = True
+            if self.sgr_pixel:
+                output.enable_sgr_pixel()
+                self._sgr_pixel_enabled = True
 
         elif not needs_mouse_support and self._mouse_support_enabled:
             output.disable_mouse_support()
             self._mouse_support_enabled = False
 
-            output.disable_sgr_pixel()
-            self._sgr_pixel_enabled = False
+            if self.sgr_pixel:
+                output.disable_sgr_pixel()
+                self._sgr_pixel_enabled = False
 
         # Enable extended keys
         if not self._extended_keys_enabled:
