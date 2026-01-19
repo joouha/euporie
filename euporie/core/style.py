@@ -6,17 +6,18 @@ import logging
 from functools import cache
 from typing import TYPE_CHECKING
 
-from euporie.apptk.styles.defaults import default_ui_style
-from euporie.apptk.styles.style import Style, PaletteStyle
 from pygments.styles import get_style_by_name as pyg_get_style_by_name
 
-from euporie.apptk.color import ColorPalette, Color
+from euporie.apptk.color import Color, ColorPalette
 from euporie.apptk.output.vt100 import ANSI_COLORS_TO_RGB, TERMINAL_COLORS_TO_RGB
+from euporie.apptk.styles.defaults import default_ui_style
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     from pygments.style import Style as PygmentsStyle
+
+    from euporie.apptk.styles.style import Style
 
 
 log = logging.getLogger(__name__)

@@ -1,0 +1,1 @@
+"""Define default style definitions."""

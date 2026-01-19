@@ -18,9 +18,9 @@ from euporie.apptk.layout.containers import (
     Window,
 )
 from euporie.apptk.layout.controls import FormattedTextControl
+from euporie.apptk.layout.decor import FocusedStyle
 from euporie.apptk.layout.margins import ScrollbarMargin
 from euporie.apptk.layout.scroll import ScrollingContainer
-from euporie.apptk.layout.decor import FocusedStyle
 from euporie.core.nbformat import new_code_cell
 from euporie.core.tabs.console import BaseConsole
 from euporie.core.widgets.cell_outputs import CellOutputArea

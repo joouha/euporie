@@ -13,12 +13,12 @@ from euporie.apptk.commands import add_cmd
 from euporie.apptk.convert.registry import find_route
 from euporie.apptk.filters import Condition
 from euporie.apptk.layout.containers import DummyContainer, DynamicContainer, HSplit
+from euporie.apptk.layout.decor import Line
 from euporie.core.filters import pager_has_focus
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
 )
-from euporie.apptk.layout.decor import Line
 from euporie.core.widgets.cell_outputs import CellOutput, CellOutputDataElement
 from euporie.core.widgets.display import Display
 from euporie.core.widgets.layout import Box

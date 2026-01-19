@@ -75,6 +75,17 @@ class Vt100_Output(PtkVt100_Output):
         enable_cpr: bool = True,
         enable_passthrough: FilterOrBool = False,
     ) -> None:
+        """Initialize the Vt100 output.
+
+        Args:
+            stdout: The stdout stream to write to.
+            get_size: Callable that returns the terminal size.
+            term: The terminal type string.
+            default_color_depth: The default color depth to use.
+            enable_bell: Whether to enable the terminal bell.
+            enable_cpr: Whether to enable cursor position reporting.
+            enable_passthrough: Whether to enable terminal multiplexer passthrough.
+        """
         super().__init__(
             stdout, get_size, term, default_color_depth, enable_bell, enable_cpr
         )

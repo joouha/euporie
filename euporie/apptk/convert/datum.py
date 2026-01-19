@@ -32,7 +32,6 @@ if TYPE_CHECKING:
     from PIL.Image import Image as PilImage
     from rich.console import ConsoleRenderable
 
-    from euporie.apptk.color import Color
     from euporie.apptk.data_structures import DiInt
 
 
