@@ -289,7 +289,7 @@ def style_fg_bg(style: str | Callable[[], str]) -> tuple[Color, Color]:
         style_str := to_str(style),
         fg_default := TERMINAL_COLORS_TO_RGB["fg"],
         bg_default := TERMINAL_COLORS_TO_RGB["bg"],
-        app.style.invalidation_hash(),
+        app.renderer.style.invalidation_hash(),
         app.style_transformation.invalidation_hash(),
     )
 
