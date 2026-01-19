@@ -1602,12 +1602,29 @@ class FloatContainer(ptk_containers.FloatContainer):
             )
 
             if not fl.hide_when_covering_content or self._area_is_empty(screen, wp):
+                transparent = fl.transparent()
+                # Clear mouse handlers
+                if transparent:
+
+                    def dummy_callback(mouse_event: MouseEvent) -> NotImplementedOrNone:
+                        """No-op mouse handler."""
+                        return NotImplemented
+
+                    mouse_handlers.set_mouse_handler_for_range(
+                        wp.xpos,
+                        wp.xpos + wp.width,
+                        wp.ypos,
+                        wp.ypos + wp.height,
+                        dummy_callback,
+                    )
+
+                # Draw content
                 fl.content.write_to_screen(
                     screen,
                     mouse_handlers,
                     wp,
                     style,
-                    erase_bg=not fl.transparent(),
+                    erase_bg=not transparent,
                     z_index=z_index,
                 )
 
