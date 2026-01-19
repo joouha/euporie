@@ -381,7 +381,12 @@ class DropShadow(Container):
                     char = row[x]
                     style = char.style
 
-                    key = (app.style, amount, style)
+                    key = (
+                        app.style,
+                        app.style_transformation.invalidation_hash(),
+                        amount,
+                        style,
+                    )
                     new_style = self._SHADOW_STYLE_CACHE.get(
                         key, lambda style=style: _calculate_color(style)
                     )
