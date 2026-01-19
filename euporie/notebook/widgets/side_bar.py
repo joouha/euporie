@@ -22,10 +22,10 @@ from euporie.apptk.layout.containers import (
     VSplit,
     Window,
 )
-from euporie.apptk.layout.controls import UIContent, UIControl
+from euporie.apptk.layout.decor import FocusedStyle, Line
+from euporie.apptk.layout.mouse import MouseHandlerWrapper
 from euporie.apptk.layout.screen import WritePosition
 from euporie.apptk.mouse_events import MouseButton, MouseEventType
-from euporie.apptk.layout.decor import FocusedStyle, Line
 from euporie.core.widgets.forms import ToggleButton, ToggleButtons
 
 if TYPE_CHECKING:
@@ -41,93 +41,6 @@ if TYPE_CHECKING:
     from euporie.apptk.mouse_events import MouseEvent
 
 log = logging.getLogger(__name__)
-
-
-class SidebarResizeHandleControl(UIControl):
-    """A draggable vertical bar to resize the sidebar."""
-
-    def __init__(self, sidebar: SideBar) -> None:
-        """Initialize the resize handle control.
-
-        Args:
-            sidebar: The sidebar instance to resize.
-        """
-        self.sidebar = sidebar
-        self.drag_start_x: int | None = None
-        self.start_width = 0
-        self.sidebar_resize_window: Window | None = None
-
-    def create_content(self, width: int, height: int | None) -> UIContent:
-        """Create the content for the resize handle.
-
-        Args:
-            width: The width of the control.
-            height: The height of the control.
-
-        Returns:
-            The UI content to display.
-        """
-        return UIContent(
-            get_line=lambda i: [
-                ("class:side_bar,border,handle", "⢸")
-                if (height // 2 - 2) < i < (height // 2 + 2)
-                else ("class:side_bar,border", "▐")
-            ],
-            line_count=height if height is not None else 1,
-            show_cursor=False,
-        )
-
-    def mouse_handler(self, mouse_event: MouseEvent) -> NotImplementedOrNone:
-        """Handle mouse events for resizing the sidebar.
-
-        Args:
-            mouse_event: The mouse event to handle.
-
-        Returns:
-            None if the event was handled, NotImplemented otherwise.
-        """
-        if (
-            self.sidebar_resize_window is not None
-            and (info := self.sidebar_resize_window.render_info) is not None
-        ):
-            app = get_app()
-            if mouse_event.button == MouseButton.LEFT:
-                gx, _ = app.mouse_position
-
-                if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
-                    # Start the drag event
-                    self.drag_start_x = gx
-                    self.start_width = self.sidebar.width
-                    # Send all mouse events to this position
-                    y_min, x_min = min(info._rowcol_to_yx.values())
-                    y_max, x_max = max(info._rowcol_to_yx.values())
-                    app.mouse_limits = WritePosition(
-                        xpos=x_min,
-                        ypos=y_min,
-                        width=x_max - x_min,
-                        height=y_max - y_min,
-                    )
-                    return None
-
-                elif mouse_event.event_type == MouseEventType.MOUSE_MOVE:
-                    if self.drag_start_x is not None:
-                        # Calculate width change based on global mouse position
-                        dx = gx - self.drag_start_x
-                        new_width = max(10, min(200, self.start_width + dx))
-                        self.sidebar.width = new_width
-                        # Update mouse capture position to match constrained width
-                        if app.mouse_limits is not None:
-                            # Calculate the constrained dx based on actual width change
-                            dx = new_width - self.start_width
-                            app.mouse_limits.xpos = self.drag_start_x + dx
-                        return None
-
-            # End the drag event
-            self.drag_start_x = None
-            # Stop capturing all mouse events
-            app.mouse_limits = None
-
-        return NotImplemented
 
 
 class SideBarButtons(ToggleButtons):
@@ -259,15 +172,9 @@ class SideBar:
 
         pane_hidden = Condition(lambda: bool(self.side_bar_buttons.index is None))
 
-        # Create the resize handle for the sidebar border
-        resize_handle_control = SidebarResizeHandleControl(self)
-        resize_handle = Window(
-            content=resize_handle_control,
-            width=Dimension(max=1),
-            style="class:side_bar,border",
-        )
-        # Give the control a reference to its window for render_info
-        resize_handle_control.sidebar_resize_window = resize_handle
+        # Drag state for resize handle
+        self._drag_start_x: int | None = None
+        self._start_width: int = 0
 
         self.container = ConditionalContainer(
             VSplit(
@@ -298,7 +205,30 @@ class SideBar:
                                         preferred=self._width
                                     ).preferred,
                                 ),
-                                resize_handle,
+                                # Create the resize handle for the sidebar border
+                                MouseHandlerWrapper(
+                                    HSplit(
+                                        [
+                                            Window(
+                                                char="▐",
+                                                width=1,
+                                                style="class:side_bar,border",
+                                            ),
+                                            Window(
+                                                char="⢸",
+                                                width=1,
+                                                height=4,
+                                                style="class:side_bar,border,handle",
+                                            ),
+                                            Window(
+                                                char="▐",
+                                                width=1,
+                                                style="class:side_bar,border",
+                                            ),
+                                        ],
+                                    ),
+                                    handler=self._resize_drag_handler,
+                                ),
                             ],
                         ),
                         filter=~pane_hidden,
@@ -308,6 +238,51 @@ class SideBar:
             ),
             filter=get_app().config.filters.show_side_bar,
         )
+
+    def _resize_drag_handler(self, mouse_event: MouseEvent) -> NotImplementedOrNone:
+        """Handle mouse events for resizing the sidebar.
+
+        Args:
+            mouse_event: The mouse event to handle.
+
+        Returns:
+            None if the event was handled, NotImplemented otherwise.
+        """
+        app = get_app()
+
+        if mouse_event.button == MouseButton.LEFT:
+            gx, gy = app.mouse_position
+
+            if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
+                # Start the drag event
+                self._drag_start_x = gx
+                self._start_width = self._width
+                # Capture all mouse events by setting limits to the click position
+                app.mouse_limits = WritePosition(xpos=gx, ypos=gy, width=1, height=1)
+                return None
+
+            elif mouse_event.event_type == MouseEventType.MOUSE_MOVE:
+                if self._drag_start_x is not None:
+                    # Calculate width change based on global mouse position
+                    dx = gx - self._drag_start_x
+                    new_width = max(10, min(200, self._start_width + dx))
+                    self._width = new_width
+                    self.on_resize.fire()
+                    # Update mouse capture position to match constrained width
+                    actual_dx = new_width - self._start_width
+                    app.mouse_limits = WritePosition(
+                        xpos=self._drag_start_x + actual_dx,
+                        ypos=gy,
+                        width=1,
+                        height=1,
+                    )
+                    return None
+
+        # End the drag event
+        self._drag_start_x = None
+        # Stop capturing all mouse events
+        app.mouse_limits = None
+        return None
 
     @property
     def width(self) -> int:
