@@ -12,7 +12,6 @@ lsps = c.get("language-server", {})
 for lsp in lsps.values():
     # Margs command and args
     lsp["command"] = [lsp["command"], *lsp.get("args", [])]
-    del lsp["command"]
     if "args" in lsp:
         del lsp["args"]
     # Rename config to settings
