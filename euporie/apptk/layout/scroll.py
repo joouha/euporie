@@ -301,15 +301,16 @@ class ScrollingContainer(Container):
             if callable(handler):
                 response = handler(mouse_event)
 
+            # Refresh the child if there was a response
+            if response is None:
+                child.invalidate()
+                return response
+
             if response is NotImplemented:
                 if mouse_event.event_type == MouseEventType.SCROLL_DOWN:
                     response = self.scroll(-1)
                 elif mouse_event.event_type == MouseEventType.SCROLL_UP:
                     response = self.scroll(1)
-
-            # Refresh the child if there was a response
-            if response is None:
-                return response
 
             # Select the clicked child if clicked
             if mouse_event.event_type == MouseEventType.MOUSE_DOWN:

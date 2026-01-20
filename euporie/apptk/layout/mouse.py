@@ -82,13 +82,8 @@ class MouseHandlerWrapper(Container):
         def _wrap_mouse_handler(handler: Callable) -> MouseHandler:
             def wrapped_mouse_handler(mouse_event: MouseEvent) -> NotImplementedOrNone:
                 result = handler(mouse_event)
-                try:
-                    handler_result = self.handler(mouse_event)
-                except Exception:
-                    log.exception("Error in MouseHandlerWarapper mouse handler")
-                else:
-                    if result is NotImplemented:
-                        result = handler_result
+                if result is NotImplemented:
+                    result = self.handler(mouse_event)
                 return result
 
             return wrapped_mouse_handler
