@@ -15,7 +15,7 @@ from euporie.core.comm.ipywidgets import (
 )
 from euporie.core.kernel.jupyter import JupyterKernel
 from euporie.core.tabs.kernel import KernelTab
-from euporie.core.widgets.display import Display
+from euporie.apptk.layout.display import Display
 
 if TYPE_CHECKING:
     from collections.abc import Generator

@@ -13,12 +13,12 @@ from euporie.apptk.filters import (
     vi_mode,
     vi_navigation_mode,
 )
+from euporie.apptk.filters.app import display_has_focus
 from euporie.apptk.filters.buffer import (
     cursor_on_first_line,
     cursor_on_last_line,
 )
 from euporie.core.filters import (
-    display_has_focus,
     kernel_tab_has_focus,
     multiple_cells_selected,
 )

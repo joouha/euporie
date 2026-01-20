@@ -10,7 +10,7 @@ import pytest
 from euporie.apptk.layout.containers import Window
 from euporie.core.comm.base import Comm, CommView, UnimplementedComm
 from euporie.core.tabs.kernel import KernelTab
-from euporie.core.widgets.display import Display
+from euporie.apptk.layout.display import Display
 
 
 class MockOutputParent:
