@@ -33,16 +33,18 @@ class Color(str):
     def __new__(cls, value: str, name: str = "") -> Color:
         """Create a new color from a hex code."""
         # Perform validation
-        value = value.upper()
-        if value[0] != "#":
-            value = f"#{value}"
-        if any(c not in "0123456789ABCDEF" for c in value[1:]):
-            raise ValueError("Not a color hex code")
-        if len(value[1:]) == 3:
-            value = f"#{value[1]}{value[1]}{value[2]}{value[2]}{value[3]}{value[3]}"
+        parsed = value.upper()
+        if parsed[0] != "#":
+            parsed = f"#{parsed}"
+        if any(c not in "0123456789ABCDEF" for c in parsed[1:]):
+            raise ValueError(f"'{value}' not a color hex code")
+        if len(parsed[1:]) == 3:
+            parsed = (
+                f"#{parsed[1]}{parsed[1]}{parsed[2]}{parsed[2]}{parsed[3]}{parsed[3]}"
+            )
         # Create and return the instance
-        instance = super().__new__(cls, name or value)
-        instance.hex = value
+        instance = super().__new__(cls, name or parsed)
+        instance.hex = parsed
         return instance
 
     def __init__(self, value: str, name: str = "") -> None:
