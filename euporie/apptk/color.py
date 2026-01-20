@@ -299,11 +299,13 @@ def style_fg_bg(style: str | Callable[[], str]) -> tuple[Color, Color]:
         attrs_for_style = app.renderer._attrs_for_style
         attrs = attrs_for_style[style_str] if attrs_for_style else None
         fg = (
-            Color(attrs.color) if attrs and attrs.color else Color.from_rgb(*fg_default)
+            Color(attrs.color)
+            if attrs and attrs.color and attrs.color != "default"
+            else Color.from_rgb(*fg_default)
         )
         bg = (
             Color(attrs.bgcolor)
-            if attrs and attrs.bgcolor
+            if attrs and attrs.bgcolor and attrs.bgcolor != "default"
             else Color.from_rgb(*bg_default)
         )
         return fg, bg
