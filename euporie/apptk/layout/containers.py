@@ -1422,16 +1422,13 @@ class Window(ptk_containers.Window):
     def _scroll_down(self) -> NotImplementedOrNone:  # type: ignore [override]
         """Scroll window down."""
         info = self.render_info
-
         if info is None:
             return NotImplemented
-
         if self.vertical_scroll < info.content_height - info.window_height:
             if info.cursor_position.y <= info.configured_scroll_offsets.top:
                 self.content.move_cursor_down()
             self.vertical_scroll += 1
             return None
-
         return NotImplemented
 
     def _scroll_right(self, max: int | None = None) -> NotImplementedOrNone:
