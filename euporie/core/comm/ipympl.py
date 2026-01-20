@@ -21,7 +21,7 @@ from euporie.apptk.mouse_events import (
 )
 from euporie.core.comm.base import CommView
 from euporie.core.comm.ipywidgets import IpyWidgetComm
-from euporie.core.widgets.display import Display
+from euporie.apptk.layout.display import Display
 from euporie.core.widgets.forms import Button, Label, ToggleButton
 from euporie.core.widgets.layout import Box
 

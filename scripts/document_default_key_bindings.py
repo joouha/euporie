@@ -36,7 +36,7 @@ groups = [
     "euporie.core.key_binding.bindings.micro:EditMode",
     "euporie.core.key_binding.bindings.page_navigation:PageNavigation",
     "euporie.core.key_binding.bindings.terminal:TerminalQueries",
-    "euporie.core.widgets.display:DisplayControl",
+    "euporie.apptk.layout.display:DisplayControl",
     "euporie.core.widgets.inputs:KernelInput",
     "euporie.core.widgets.pager:Pager",
     "euporie.web.widgets.webview:WebViewControl",

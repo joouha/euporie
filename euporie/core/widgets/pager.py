@@ -20,7 +20,7 @@ from euporie.core.key_binding.registry import (
     register_bindings,
 )
 from euporie.core.widgets.cell_outputs import CellOutput, CellOutputDataElement
-from euporie.core.widgets.display import Display
+from euporie.apptk.layout.display import Display
 from euporie.core.widgets.layout import Box
 
 if TYPE_CHECKING:

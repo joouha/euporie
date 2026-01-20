@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from functools import cache
-from typing import TYPE_CHECKING
 
 from euporie.apptk.application.current import get_app
 
@@ -11,10 +10,6 @@ from euporie.apptk.filters import (
     Condition,
     has_completions,
 )
-
-if TYPE_CHECKING:
-    from euporie.apptk.filters import Filter
-    from euporie.apptk.layout.containers import Window
 
 
 @Condition
@@ -104,14 +99,6 @@ def pager_has_focus() -> bool:
 
 
 @Condition
-def display_has_focus() -> bool:
-    """Determine if there is a currently focused cell."""
-    from euporie.core.widgets.display import DisplayControl
-
-    return isinstance(get_app().layout.current_control, DisplayControl)
-
-
-@Condition
 def kernel_is_python() -> bool:
     """Determine if the current notebook has a python kernel."""
     from euporie.core.tabs.kernel import KernelTab
@@ -131,13 +118,3 @@ def multiple_cells_selected() -> bool:
     if isinstance(nb, BaseNotebook):
         return len(nb.selected_indices) > 1
     return False
-
-
-def scrollable(window: Window) -> Filter:
-    """Return a filter which indicates if a window is scrollable."""
-    return Condition(
-        lambda: (
-            window.render_info is not None
-            and window.render_info.content_height > window.render_info.window_height
-        )
-    )

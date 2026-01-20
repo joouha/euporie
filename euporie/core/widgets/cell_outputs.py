@@ -18,7 +18,7 @@ from euporie.apptk.layout.containers import (
     HSplit,
     to_container,
 )
-from euporie.core.widgets.display import Display
+from euporie.apptk.layout.display import Display
 from euporie.core.widgets.layout import Box
 from euporie.core.widgets.tree import JsonView
 

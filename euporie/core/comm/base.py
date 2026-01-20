@@ -96,7 +96,7 @@ class Comm(metaclass=ABCMeta):
     def create_view(self, parent: OutputParent) -> CommView:
         """Create a new :class:`CommView` for this Comm."""
         from euporie.apptk.convert.datum import Datum
-        from euporie.core.widgets.display import Display
+        from euporie.apptk.layout.display import Display
 
         return CommView(Display(Datum("[Object cannot be rendered]", format="ansi")))
 

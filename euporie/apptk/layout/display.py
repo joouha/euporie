@@ -10,14 +10,16 @@ from typing import TYPE_CHECKING, cast
 
 from euporie.apptk.application.current import get_app
 from euporie.apptk.filters.utils import to_filter
+from euporie.apptk.key_binding.key_bindings import KeyBindings
 from euporie.apptk.layout.dimension import Dimension, to_dimension
 from euporie.apptk.utils import Event, to_str
 
 from euporie.apptk.cache import FastDictCache, SimpleCache
 from euporie.apptk.color import style_fg_bg
-from euporie.apptk.commands import add_cmd
+from euporie.apptk.commands import add_cmd, get_cmd
 from euporie.apptk.convert.datum import Datum
 from euporie.apptk.data_structures import Point, Size
+from euporie.apptk.filters.app import display_has_focus, scrollable
 from euporie.apptk.formatted_text.utils import fragment_list_width, split_lines, wrap
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
@@ -29,15 +31,10 @@ from euporie.apptk.layout.containers import (
 from euporie.apptk.layout.controls import GetLinePrefixCallable, UIContent, UIControl
 from euporie.apptk.layout.margins import ScrollbarMargin
 from euporie.apptk.mouse_events import MouseEvent, MouseEventType
-from euporie.core.filters import display_has_focus, scrollable
-from euporie.core.key_binding.registry import (
-    load_registered_bindings,
-    register_bindings,
-)
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
-    from typing import Any
+    from typing import Any, ClassVar
 
     from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
     from euporie.apptk.layout.dimension import AnyDimension
@@ -55,8 +52,19 @@ log = logging.getLogger(__name__)
 class DisplayControl(UIControl):
     """Web view displays.
 
-    A control which displays rendered HTML content.
+    A control which displays rendered graphical content.
     """
+
+    kb_defs: ClassVar[dict[str, str]] = {
+        "scroll-display-left": "left",
+        "scroll-display-right": "right",
+        "scroll-display-up": ["up", "k"],
+        "scroll-display-down": ["down", "j"],
+        "page-up-display": "pageup",
+        "page-down-display": "pagedown",
+        "go-to-start-of-display": "home",
+        "go-to-end-of-display": "end",
+    }
 
     def __init__(
         self,
@@ -89,9 +97,6 @@ class DisplayControl(UIControl):
         self.width = 0
         self.height = 0
 
-        self.key_bindings = load_registered_bindings(
-            "euporie.core.widgets.display:DisplayControl",
-        )
         self._mouse_handler = mouse_handler
 
         self.rendered = Event(self)
@@ -113,6 +118,11 @@ class DisplayControl(UIControl):
         self._max_line_width_cache: FastDictCache[
             tuple[Datum, int | None, int | None, bool], int
         ] = FastDictCache(get_value=self.get_max_line_width, size=1000)
+
+        # Key-bindings
+        self.key_bindings = kb = KeyBindings()
+        for cmd_name, keys in self.kb_defs.items():
+            get_cmd(cmd_name).bind(kb, keys)
 
     @property
     def datum(self) -> Any:
@@ -429,8 +439,6 @@ class DisplayControl(UIControl):
     @add_cmd(filter=display_has_focus)
     def _go_to_start_of_display() -> None:
         """Scroll the display to the top."""
-        from euporie.core.widgets.display import DisplayControl
-
         current_control = get_app().layout.current_control
         if isinstance(current_control, DisplayControl):
             current_control.cursor_position = Point(0, 0)
@@ -439,8 +447,6 @@ class DisplayControl(UIControl):
     @add_cmd(filter=display_has_focus)
     def _go_to_end_of_display() -> None:
         """Scroll the display down one page."""
-        from euporie.core.widgets.display import DisplayControl
-
         layout = get_app().layout
         current_control = layout.current_control
         window = layout.current_window
@@ -451,23 +457,6 @@ class DisplayControl(UIControl):
             current_control.cursor_position = Point(
                 0, window.render_info.ui_content.line_count - 1
             )
-
-    # ################################# Key Bindings ##################################
-
-    register_bindings(
-        {
-            "euporie.core.widgets.display:DisplayControl": {
-                "scroll-display-left": "left",
-                "scroll-display-right": "right",
-                "scroll-display-up": ["up", "k"],
-                "scroll-display-down": ["down", "j"],
-                "page-up-display": "pageup",
-                "page-down-display": "pagedown",
-                "go-to-start-of-display": "home",
-                "go-to-end-of-display": "end",
-            }
-        }
-    )
 
 
 class Display(Container):

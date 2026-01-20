@@ -13,7 +13,7 @@ from euporie.apptk.convert.mime import MIME_FORMATS, get_format
 from euporie.apptk.layout.containers import MarginContainer, VSplit
 from euporie.apptk.layout.margins import ScrollbarMargin
 from euporie.core.tabs.base import Tab
-from euporie.core.widgets.display import Display
+from euporie.apptk.layout.display import Display
 
 if TYPE_CHECKING:
     from pathlib import Path

@@ -217,7 +217,7 @@ class UnimplementedModel(IpyWidgetComm):
     def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view."""
         from euporie.apptk.convert.datum import Datum
-        from euporie.core.widgets.display import Display
+        from euporie.apptk.layout.display import Display
 
         return CommView(Display(Datum("[Widget not implemented]", format="ansi")))
 
@@ -1269,7 +1269,7 @@ class HTMLModel(IpyWidgetComm):
     def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view of the HTML widget."""
         from euporie.apptk.convert.datum import Datum
-        from euporie.core.widgets.display import Display
+        from euporie.apptk.layout.display import Display
 
         html = Display(
             Datum(data=self.data["state"].get("value", ""), format="html"),
@@ -1299,7 +1299,7 @@ class ImageModel(IpyWidgetComm):
     def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view of the image widget."""
         from euporie.apptk.convert.datum import Datum
-        from euporie.core.widgets.display import Display
+        from euporie.apptk.layout.display import Display
 
         display = Display(
             Datum(
