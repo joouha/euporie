@@ -35,6 +35,7 @@ from euporie.apptk.filters import (
     is_true,
     to_filter,
 )
+from euporie.apptk.filters.app import scrollable
 from euporie.apptk.filters.buffer import buffer_is_code
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
@@ -68,7 +69,6 @@ from euporie.apptk.layout.processors import (
     TabsProcessor,
 )
 from euporie.apptk.lexers import DynamicLexer, PygmentsLexer, SimpleLexer
-from euporie.core.filters import scrollable
 from euporie.core.key_binding.registry import (
     load_registered_bindings,
     register_bindings,
