@@ -11,9 +11,9 @@ from euporie.apptk.layout.dimension import Dimension
 from euporie.apptk.convert.datum import Datum
 from euporie.apptk.convert.mime import MIME_FORMATS, get_format
 from euporie.apptk.layout.containers import MarginContainer, VSplit
+from euporie.apptk.layout.display import Display
 from euporie.apptk.layout.margins import ScrollbarMargin
 from euporie.core.tabs.base import Tab
-from euporie.apptk.layout.display import Display
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -67,10 +67,10 @@ class DisplayTab(Tab):
                 format=get_format(self.path),
                 path=self.path,
             ),
+            expand_height=True,
             focusable=True,
             focus_on_click=True,
             always_hide_cursor=True,
-            dont_extend_height=False,
             scrollbar=False,
         )
         return VSplit(

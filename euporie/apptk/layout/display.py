@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from functools import partial
+from enum import Enum
+from functools import lru_cache, partial
 from math import ceil
 from typing import TYPE_CHECKING, cast
 
@@ -49,22 +50,54 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
+class FitMode(Enum):
+    """Fitting mode for display content scaling.
+
+    Controls how content is scaled relative to available space.
+    """
+
+    NONE = "none"  # Use natural size, may overflow
+    SHRINK = "shrink"  # Scale down if too large, but never up
+    GROW = "grow"  # Scale up if too small, but never down
+    SCALE = "scale"  # Scale in either direction to fit
+
+
+@lru_cache(maxsize=10240)
+def calculate_render_size(
+    natural: int | None,
+    available: int,
+    fit_mode: FitMode,
+) -> int | None:
+    """Calculate the size to request during conversion.
+
+    Args:
+        natural: The natural/intrinsic size of the content, or None if unknown.
+        available: The available space.
+        fit_mode: The fitting mode to apply.
+
+    Returns:
+        The size to use for conversion, or None if unconstrained.
+    """
+    if natural is None:
+        # Unknown natural size, use available if fitting
+        return available if fit_mode != FitMode.NONE else None
+
+    match fit_mode:
+        case FitMode.NONE:
+            return None  # Don't constrain conversion
+        case FitMode.SHRINK:
+            return min(natural, available)
+        case FitMode.GROW:
+            return max(natural, available)
+        case FitMode.SCALE:
+            return available
+
+
 class DisplayControl(UIControl):
     """Web view displays.
 
     A control which displays rendered graphical content.
     """
-
-    kb_defs: ClassVar[dict[str, str]] = {
-        "scroll-display-left": "left",
-        "scroll-display-right": "right",
-        "scroll-display-up": ["up", "k"],
-        "scroll-display-down": ["down", "j"],
-        "page-up-display": "pageup",
-        "page-down-display": "pagedown",
-        "go-to-start-of-display": "home",
-        "go-to-end-of-display": "end",
-    }
 
     def __init__(
         self,
@@ -73,18 +106,39 @@ class DisplayControl(UIControl):
         focusable: FilterOrBool = False,
         focus_on_click: FilterOrBool = False,
         wrap_lines: FilterOrBool = False,
-        dont_extend_width: FilterOrBool = False,
+        fit_width: FitMode = FitMode.SHRINK,
+        fit_height: FitMode = FitMode.NONE,
+        expand_width: FilterOrBool = True,
+        expand_height: FilterOrBool = False,
         threaded: bool = False,
         mouse_handler: Callable[[MouseEvent], NotImplementedOrNone] | None = None,
         convert_kwargs: dict[str, Any] | None = None,
     ) -> None:
-        """Create a new web-view control instance."""
+        """Create a new web-view control instance.
+
+        Args:
+            datum: The data to display.
+            style: Style string or callable returning style.
+            focusable: Whether the control can receive focus.
+            focus_on_click: Whether clicking focuses the control.
+            wrap_lines: Whether to wrap long lines.
+            fit_width: How to fit content horizontally.
+            fit_height: How to fit content vertically.
+            expand_width: Whether to pad content to fill available width.
+            expand_height: Whether to pad content to fill available height.
+            threaded: Whether to render in a background thread.
+            mouse_handler: Optional mouse event handler.
+            convert_kwargs: Additional arguments for datum conversion.
+        """
         self._datum = datum
         self.style = style
         self.focusable = to_filter(focusable)
         self.focus_on_click = to_filter(focus_on_click)
         self.wrap_lines = to_filter(wrap_lines)
-        self.dont_extend_width = to_filter(dont_extend_width)
+        self.fit_width = fit_width
+        self.fit_height = fit_height
+        self.expand_width = to_filter(expand_width)
+        self.expand_height = to_filter(expand_height)
         self.threaded = threaded
         self.convert_kwargs = convert_kwargs or {}
 
@@ -94,8 +148,8 @@ class DisplayControl(UIControl):
         self.rendering = False
         self.lines: list[StyleAndTextTuples] = []
 
-        self.width = 0
-        self.height = 0
+        self.width: int | None = None
+        self.height: int | None = None
 
         self._mouse_handler = mouse_handler
 
@@ -119,18 +173,13 @@ class DisplayControl(UIControl):
             tuple[Datum, int | None, int | None, bool], int
         ] = FastDictCache(get_value=self.get_max_line_width, size=1000)
 
-        # Key-bindings
-        self.key_bindings = kb = KeyBindings()
-        for cmd_name, keys in self.kb_defs.items():
-            get_cmd(cmd_name).bind(kb, keys)
-
     @property
-    def datum(self) -> Any:
+    def datum(self) -> Datum:
         """Return the control's display data."""
         return self._datum
 
     @datum.setter
-    def datum(self, value: Any) -> None:
+    def datum(self, value: Datum) -> None:
         """Set the control's data."""
         self._datum = value
         # Trigger "loading" view
@@ -152,6 +201,44 @@ class DisplayControl(UIControl):
         if changed:
             self.on_cursor_position_changed.fire()
 
+    def _calculate_render_dimensions(
+        self, available_width: int, available_height: int | None
+    ) -> tuple[int | None, int | None]:
+        """Calculate the dimensions to use for rendering.
+
+        Args:
+            available_width: The available width in cells.
+            available_height: The available height in cells, or None if unconstrained.
+
+        Returns:
+            Tuple of (render_width, render_height) to pass to conversion.
+        """
+        max_cols, aspect = self.datum.cell_size()
+        natural_width = max_cols if max_cols else None
+        natural_height = ceil(max_cols * aspect) if max_cols and aspect else None
+
+        # Calculate render width
+        render_width = calculate_render_size(
+            natural_width, available_width, self.fit_width
+        )
+
+        # Calculate render height
+        if available_height is not None:
+            render_height = calculate_render_size(
+                natural_height, available_height, self.fit_height
+            )
+        else:
+            render_height = None
+
+        # If we have aspect ratio and only one dimension, calculate the other
+        _max_cols, aspect = self.datum.cell_size()
+        if aspect and render_width is not None and render_height is None:
+            render_height = ceil(render_width * aspect)
+        elif aspect and render_height is not None and render_width is None:
+            render_width = ceil(render_height / aspect) if aspect else None
+
+        return render_width, render_height
+
     def get_lines(
         self,
         datum: Datum,
@@ -168,7 +255,7 @@ class DisplayControl(UIControl):
             rows=height,
             fg=fg,
             bg=bg,
-            extend=not self.dont_extend_width(),
+            extend=self.expand_width(),
             # Use as extra cache key to force re-rendering when wrap_lines changes
             wrap_lines=wrap_lines,
             **self.convert_kwargs,
@@ -185,8 +272,8 @@ class DisplayControl(UIControl):
                     wrap(line, width, truncate_long_words=False)
                 )
             ]
-        # Ensure we have enough lines to fill the requested height
-        if height is not None:
+        # Ensure we have enough lines to fill the requested height if expanding
+        if height is not None and self.expand_height():
             lines.extend([[]] * max(0, height - len(lines)))
         return lines
 
@@ -220,10 +307,7 @@ class DisplayControl(UIControl):
         datum = self.datum
         wrap_lines = self.wrap_lines()
 
-        cols = self.preferred_width(self.width)
-        rows = self.preferred_height(
-            self.width, self.height, wrap_lines=wrap_lines, get_line_prefix=None
-        )
+        cols, rows = self._calculate_render_dimensions(self.width or 80, self.height)
 
         def _render() -> None:
             self.lines = self._line_cache[datum, cols, rows, fg, bg, wrap_lines]
@@ -244,7 +328,11 @@ class DisplayControl(UIControl):
 
     def preferred_width(self, max_available_width: int) -> int | None:
         """Calculate and return the preferred width of the control."""
-        return self.max_line_width if self.dont_extend_width() else max_available_width
+        natural_width, _ = self.datum.cell_size()
+        return (
+            calculate_render_size(natural_width, max_available_width, self.fit_width)
+            or max_available_width
+        )
 
     def preferred_height(
         self,
@@ -254,20 +342,28 @@ class DisplayControl(UIControl):
         get_line_prefix: GetLinePrefixCallable | None,
     ) -> int | None:
         """Calculate and return the preferred height of the control."""
-        height = None
-        max_cols, aspect = self.datum.cell_size()
-        if aspect:
-            height = ceil(min(width, max_cols) * aspect)
+        # Calculate render dimensions
+        render_width, render_height = self._calculate_render_dimensions(
+            width, max_available_height
+        )
+
+        # Get actual lines to determine real height
         fg, bg = style_fg_bg(self.style)
         self.lines = self._line_cache[
             self.datum,
-            width,
-            height,
+            render_width,
+            render_height,
             fg,
             bg,
             self.wrap_lines(),
         ]
-        return len(self.lines)
+
+        content_height = len(self.lines)
+
+        # Apply expand_height
+        if self.expand_height():
+            return max(content_height, max_available_height)
+        return content_height
 
     def is_focusable(self) -> bool:
         """Tell whether this user control is focusable."""
@@ -374,89 +470,11 @@ class DisplayControl(UIControl):
         x, y = self.cursor_position
         self.cursor_position = Point(x=x + 1, y=y)
 
-    def get_key_bindings(self) -> KeyBindingsBase | None:
-        """Return key bindings that are specific for this user control.
-
-        Returns:
-            A :class:`.KeyBindings` object if some key bindings are specified, or
-                `None` otherwise.
-        """
-        return self.key_bindings
-
     def get_invalidate_events(self) -> Iterable[Event[object]]:
         """Return the Window invalidate events."""
         yield from self.invalidate_events
         # Re-render control on terminal color change
         yield get_app().on_color_change
-
-    # ################################### Commands ####################################
-
-    @staticmethod
-    @add_cmd(filter=display_has_focus)
-    def _scroll_display_left() -> None:
-        """Scroll the display up one line."""
-        window = get_app().layout.current_window
-        window._scroll_left()
-
-    @staticmethod
-    @add_cmd(filter=display_has_focus)
-    def _scroll_display_right() -> None:
-        """Scroll the display down one line."""
-        window = get_app().layout.current_window
-        window._scroll_right()
-
-    @staticmethod
-    @add_cmd(filter=display_has_focus)
-    def _scroll_display_up() -> None:
-        """Scroll the display up one line."""
-        get_app().layout.current_window._scroll_up()
-
-    @staticmethod
-    @add_cmd(filter=display_has_focus)
-    def _scroll_display_down() -> None:
-        """Scroll the display down one line."""
-        get_app().layout.current_window._scroll_down()
-
-    @staticmethod
-    @add_cmd(filter=display_has_focus)
-    def _page_up_display() -> None:
-        """Scroll the display up one page."""
-        window = get_app().layout.current_window
-        if window.render_info is not None:
-            for _ in range(window.render_info.window_height):
-                window._scroll_up()
-
-    @staticmethod
-    @add_cmd(filter=display_has_focus)
-    def _page_down_display() -> None:
-        """Scroll the display down one page."""
-        window = get_app().layout.current_window
-        if window.render_info is not None:
-            for _ in range(window.render_info.window_height):
-                window._scroll_down()
-
-    @staticmethod
-    @add_cmd(filter=display_has_focus)
-    def _go_to_start_of_display() -> None:
-        """Scroll the display to the top."""
-        current_control = get_app().layout.current_control
-        if isinstance(current_control, DisplayControl):
-            current_control.cursor_position = Point(0, 0)
-
-    @staticmethod
-    @add_cmd(filter=display_has_focus)
-    def _go_to_end_of_display() -> None:
-        """Scroll the display down one page."""
-        layout = get_app().layout
-        current_control = layout.current_control
-        window = layout.current_window
-        if (
-            isinstance(current_control, DisplayControl)
-            and window.render_info is not None
-        ):
-            current_control.cursor_position = Point(
-                0, window.render_info.ui_content.line_count - 1
-            )
 
 
 class Display(Container):
@@ -466,20 +484,33 @@ class Display(Container):
 
     """
 
+    commands = (
+        "scroll-display-left",
+        "scroll-display-right",
+        "scroll-display-up",
+        "scroll-display-down",
+        "page-up-display",
+        "page-down-display",
+        "go-to-start-of-display",
+        "go-to-end-of-display",
+    )
+
     def __init__(
         self,
         datum: Datum,
         height: AnyDimension = None,
         width: AnyDimension = None,
+        fit_width: FitMode = FitMode.SHRINK,
+        fit_height: FitMode = FitMode.NONE,
+        expand_width: FilterOrBool = True,
+        expand_height: FilterOrBool = False,
+        style: str | Callable[[], str] = "",
         focusable: FilterOrBool = False,
         focus_on_click: FilterOrBool = False,
         wrap_lines: FilterOrBool = False,
         always_hide_cursor: FilterOrBool = True,
         scrollbar: FilterOrBool = True,
         scrollbar_autohide: FilterOrBool = True,
-        dont_extend_height: FilterOrBool = True,
-        dont_extend_width: FilterOrBool = False,
-        style: str | Callable[[], str] = "",
         mouse_handler: Callable[[MouseEvent], NotImplementedOrNone] | None = None,
         convert_kwargs: dict[str, Any] | None = None,
     ) -> None:
@@ -489,15 +520,17 @@ class Display(Container):
             datum: Displayable data
             height: The height of the output in terminal cells
             width: The width of the output in terminal cells
+            fit_width: How to fit content horizontally (NONE/SHRINK/GROW/SCALE)
+            fit_height: How to fit content vertically (NONE/SHRINK/GROW/SCALE)
+            expand_width: Whether to pad content to fill available width
+            expand_height: Whether to pad content to fill available height
+            style: The style to apply to the output
             focusable: If the output should be focusable
             focus_on_click: If the output should become focused when clicked
             wrap_lines: If the output's lines should be wrapped
             always_hide_cursor: When true, the cursor is never shown
             scrollbar: Whether to show a scrollbar
             scrollbar_autohide: Whether to automatically hide the scrollbar
-            dont_extend_height: Whether the window should fill the available height
-            dont_extend_width: Whether the content should fill the available width
-            style: The style to apply to the output
             mouse_handler: Optional mouse handler for the display control
             convert_kwargs: Key-word arguments to pass to :py:method:`Datum.convert`
 
@@ -505,6 +538,10 @@ class Display(Container):
         self._style = style
         self._width = width
         self._height = height
+        self.fit_width = fit_width
+        self.fit_height = fit_height
+        self.expand_width = to_filter(expand_width)
+        self.expand_height = to_filter(expand_height)
 
         self.control = DisplayControl(
             datum,
@@ -512,10 +549,17 @@ class Display(Container):
             focusable=focusable,
             focus_on_click=focus_on_click,
             wrap_lines=wrap_lines,
-            dont_extend_width=dont_extend_width,
+            fit_width=fit_width,
+            fit_height=fit_height,
+            expand_width=expand_width,
+            expand_height=expand_height,
             mouse_handler=mouse_handler,
             convert_kwargs=convert_kwargs,
         )
+
+        # Calculate dont_extend based on expand settings
+        dont_extend_width = ~to_filter(expand_width)
+        dont_extend_height = ~to_filter(expand_height)
 
         self.window = Window(
             content=self.control,
@@ -546,6 +590,11 @@ class Display(Container):
         # Store the parent style received during write_to_screen
         self._parent_style = ""
 
+        # Key-bindings
+        self.key_bindings = kb = KeyBindings()
+        for name in self.commands:
+            get_cmd(name).bind(kb)
+
     def _get_style(self) -> str:
         """Get the combined style including parent style and background color."""
         style = to_str(self._style)
@@ -570,13 +619,33 @@ class Display(Container):
         """Return the preferred width for this container."""
         if self._width is not None:
             return to_dimension(self._width)
-        return self._container.preferred_width(max_available_width)
+
+        # Delegate to control for preferred calculation
+        preferred = self.control.preferred_width(max_available_width)
+
+        # If expand_width, we want to fill available space
+        if self.expand_width():
+            return Dimension(min=1, preferred=preferred or max_available_width)
+        else:
+            # Don't extend beyond content
+            return Dimension(
+                min=1, preferred=preferred or 1, max=preferred or max_available_width
+            )
 
     def preferred_height(self, width: int, max_available_height: int) -> Dimension:
         """Return the preferred height for this container."""
         if self._height is not None:
             return to_dimension(self._height)
-        return self._container.preferred_height(width, max_available_height)
+
+        # Delegate to container which will ask the control
+        dim = self._container.preferred_height(width, max_available_height)
+
+        # Adjust based on expand_height
+        if self.expand_height():
+            return Dimension(
+                min=dim.min, preferred=max(dim.preferred, max_available_height)
+            )
+        return dim
 
     def write_to_screen(
         self,
@@ -610,6 +679,84 @@ class Display(Container):
             z_index,
         )
 
+    def get_key_bindings(self) -> KeyBindingsBase | None:
+        """Return key bindings that are specific for this user control.
+
+        Returns:
+            A :class:`.KeyBindings` object if some key bindings are specified, or
+                `None` otherwise.
+        """
+        return self.key_bindings
+
     def get_children(self) -> list[Container]:
         """Return the list of child containers."""
         return [self._container]
+
+    # ################################### Commands ####################################
+
+    @staticmethod
+    @add_cmd(keys=["left"], filter=display_has_focus)
+    def _scroll_display_left() -> None:
+        """Scroll the display up one line."""
+        window = get_app().layout.current_window
+        window._scroll_left()
+
+    @staticmethod
+    @add_cmd(keys=["right"], filter=display_has_focus)
+    def _scroll_display_right() -> None:
+        """Scroll the display down one line."""
+        window = get_app().layout.current_window
+        window._scroll_right()
+
+    @staticmethod
+    @add_cmd(keys=["up", "k"], filter=display_has_focus)
+    def _scroll_display_up() -> None:
+        """Scroll the display up one line."""
+        get_app().layout.current_window._scroll_up()
+
+    @staticmethod
+    @add_cmd(keys=["down", "j"], filter=display_has_focus)
+    def _scroll_display_down() -> None:
+        """Scroll the display down one line."""
+        get_app().layout.current_window._scroll_down()
+
+    @staticmethod
+    @add_cmd(keys=["pageup"], filter=display_has_focus)
+    def _page_up_display() -> None:
+        """Scroll the display up one page."""
+        window = get_app().layout.current_window
+        if window.render_info is not None:
+            for _ in range(window.render_info.window_height):
+                window._scroll_up()
+
+    @staticmethod
+    @add_cmd(keys=["pagedown"], filter=display_has_focus)
+    def _page_down_display() -> None:
+        """Scroll the display down one page."""
+        window = get_app().layout.current_window
+        if window.render_info is not None:
+            for _ in range(window.render_info.window_height):
+                window._scroll_down()
+
+    @staticmethod
+    @add_cmd(keys=["home"], filter=display_has_focus)
+    def _go_to_start_of_display() -> None:
+        """Scroll the display to the top."""
+        current_control = get_app().layout.current_control
+        if isinstance(current_control, DisplayControl):
+            current_control.cursor_position = Point(0, 0)
+
+    @staticmethod
+    @add_cmd(keys=["end"], filter=display_has_focus)
+    def _go_to_end_of_display() -> None:
+        """Scroll the display down one page."""
+        layout = get_app().layout
+        current_control = layout.current_control
+        window = layout.current_window
+        if (
+            isinstance(current_control, DisplayControl)
+            and window.render_info is not None
+        ):
+            current_control.cursor_position = Point(
+                0, window.render_info.ui_content.line_count - 1
+            )

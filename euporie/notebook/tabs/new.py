@@ -104,7 +104,6 @@ class NewTab(Tab):
         tip = random.choice(TIPS)  # noqa: S311
         tip_display = Display(
             Datum(tip, format="markdown"),
-            dont_extend_width=False,
             wrap_lines=True,
             width=Dimension(preferred=0),
         )
