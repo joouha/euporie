@@ -22,28 +22,28 @@ __all__ = ["get_by_name"]
 register = add_cmd
 get_by_name = get_cmd
 
-# Comvert existing readline commands to apptk commands
-add_cmd(
+# Convert legacy named commands into Commands
+for name, binding in _readline_commands.items():
+    add_cmd(name=name)(binding.handler)
+
+# Update some commands
+
+get_cmd("menu-complete").update(
+    keys=["c-i"],
     filter=buffer_has_focus & insert_mode & ~has_selection & ~cursor_in_leading_ws,
     hidden=True,
-    name="next-completion",
-    aliases=["menu-complete"],
+    aliases=["next-completion"],
     description="Show the completion menu and select the next completion.",
-)(_readline_commands.pop("menu-complete").handler)
+)
 
-
-add_cmd(
+get_cmd("menu-complete-backward").update(
+    keys=["s-tab"],
     filter=buffer_has_focus
     & completion_is_selected
     & insert_mode
     & ~has_selection
     & ~cursor_in_leading_ws,
     hidden=True,
-    name="previous-completion",
-    aliases=["menu-complete-backward"],
+    aliases=["previous-completion"],
     description="Show the completion menu and select the previous completion.",
-)(_readline_commands.pop("menu-complete-backward").handler)
-
-# Convert legacy named commands into Commands
-for name, binding in _readline_commands.items():
-    add_cmd(name=name)(binding.handler)
+)

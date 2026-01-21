@@ -5,11 +5,6 @@ from __future__ import annotations
 import logging
 
 from euporie.apptk.key_binding.bindings.cpr import load_cpr_bindings
-from euporie.apptk.key_binding.bindings.emacs import (
-    load_emacs_bindings,
-    load_emacs_search_bindings,
-    load_emacs_shift_selection_bindings,
-)
 from euporie.apptk.key_binding.key_bindings import (
     ConditionalKeyBindings,
     KeyBindingsBase,
@@ -19,6 +14,11 @@ from euporie.apptk.key_binding.key_bindings import (
 from euporie.apptk.filters import buffer_has_focus
 from euporie.apptk.key_binding.bindings.auto_suggest import load_auto_suggest_bindings
 from euporie.apptk.key_binding.bindings.basic import load_basic_bindings
+from euporie.apptk.key_binding.bindings.emacs import (
+    load_emacs_bindings,
+    load_emacs_search_bindings,
+    load_emacs_shift_selection_bindings,
+)
 from euporie.apptk.key_binding.bindings.micro import load_micro_bindings
 from euporie.apptk.key_binding.bindings.mouse import load_mouse_bindings
 from euporie.apptk.key_binding.bindings.terminal import load_terminal_bindings
@@ -38,13 +38,13 @@ def load_key_bindings() -> KeyBindingsBase:
     """Create a KeyBindings object that contains the default key bindings."""
     all_bindings = merge_key_bindings(
         [
-            # Load basic bindings.
+            # Load basic bindings through command system.
             load_basic_bindings(),
-            # Load emacs bindings.
+            # Load emacs bindings through command system.
             load_emacs_bindings(),
             load_emacs_search_bindings(),
             load_emacs_shift_selection_bindings(),
-            # Load Vi bindings.
+            # Load Vi bindings through command system.
             load_vi_bindings(),
             load_vi_search_bindings(),
             # Load micro bindings

@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from euporie.apptk.key_binding.key_bindings import _parse_key
-
 from euporie.apptk.keys import Keys
 
 if TYPE_CHECKING:
@@ -27,18 +26,18 @@ def if_no_repeat(event: KeyPressEvent) -> bool:
     return not event.is_repeat
 
 
-def parse_keys(keys: AnyKeys) -> list[tuple[str | Keys, ...]]:
+def parse_keys(keys: AnyKeys) -> set[tuple[str | Keys, ...]]:
     """Parse a list of keys."""
-    output: list[tuple[str | Keys, ...]] = []
+    output: set[tuple[str | Keys, ...]] = set()
     if not isinstance(keys, list):
         keys = [keys]
     for key in keys:
         if isinstance(key, Keys):
-            output.append((key,))
+            output.add((key,))
         elif isinstance(key, tuple):
-            output.append(tuple(_parse_key(k) for k in key))
+            output.add(tuple(_parse_key(k) for k in key))
         else:
-            output.append((_parse_key(key),))
+            output.add((_parse_key(key),))
     return output
 
 

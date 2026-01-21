@@ -12,7 +12,7 @@ from euporie.apptk.formatted_text.base import to_formatted_text
 from euporie.apptk.key_binding.key_bindings import Binding
 
 from euporie.apptk.application.application import Application
-from euporie.apptk.commands import Command, add_cmd, commands, get_cmd
+from euporie.apptk.commands import Command, add_cmd, COMMANDS, get_cmd
 from euporie.apptk.key_binding.key_processor import KeyPressEvent, KeyProcessor
 from euporie.apptk.keys import Keys
 
@@ -252,17 +252,17 @@ def test_add_cmd() -> None:
     def my_cmd() -> None:
         pass
 
-    assert isinstance(commands["my_cmd"], Command)
-    assert commands["my_cmd"].name == "my_cmd"
+    assert isinstance(COMMANDS["my_cmd"], Command)
+    assert COMMANDS["my_cmd"].name == "my_cmd"
 
     # Test adding a command with optional parameters
     @add_cmd(name="my_cmd_2", description="This is my second command")
     def my_cmd_2() -> None:
         pass
 
-    assert isinstance(commands["my_cmd_2"], Command)
-    assert commands["my_cmd_2"].name == "my_cmd_2"
-    assert commands["my_cmd_2"].description == "This is my second command"
+    assert isinstance(COMMANDS["my_cmd_2"], Command)
+    assert COMMANDS["my_cmd_2"].name == "my_cmd_2"
+    assert COMMANDS["my_cmd_2"].description == "This is my second command"
 
 
 def test_get_cmd() -> None:
