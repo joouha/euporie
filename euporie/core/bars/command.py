@@ -12,7 +12,7 @@ from euporie.apptk.buffer import Buffer
 from euporie.apptk.completion.base import Completer, Completion
 from euporie.apptk.validation import Validator
 
-from euporie.apptk.commands import add_cmd, commands, get_cmd
+from euporie.apptk.commands import COMMANDS, add_cmd, get_cmd
 from euporie.apptk.filters import buffer_has_focus, has_focus, vi_navigation_mode
 from euporie.apptk.key_binding.vi_state import InputMode
 from euporie.apptk.layout.containers import ConditionalContainer, Container, Window
@@ -66,7 +66,7 @@ class CommandCompleter(Completer):
         """Complete registered commands."""
         prefix = document.text
         found_so_far: set[Command] = set()
-        for alias, command in commands.items():
+        for alias, command in COMMANDS.items():
             if prefix in alias and command not in found_so_far and not command.hidden():
                 yield Completion(
                     command.name,

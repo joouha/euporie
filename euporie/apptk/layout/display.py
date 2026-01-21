@@ -485,14 +485,14 @@ class Display(Container):
     """
 
     commands = (
-        "scroll-display-left",
-        "scroll-display-right",
-        "scroll-display-up",
-        "scroll-display-down",
-        "page-up-display",
-        "page-down-display",
-        "go-to-start-of-display",
-        "go-to-end-of-display",
+        "display-scroll-left",
+        "display-scroll-right",
+        "display-scroll-up",
+        "display-scroll-down",
+        "display-page-up",
+        "display-page-down",
+        "display-go-to-start",
+        "display-go-to-end",
     )
 
     def __init__(
@@ -591,9 +591,7 @@ class Display(Container):
         self._parent_style = ""
 
         # Key-bindings
-        self.key_bindings = kb = KeyBindings()
-        for name in self.commands:
-            get_cmd(name).bind(kb)
+        self.key_bindings = KeyBindings.from_commands(self.commands)
 
     def _get_style(self) -> str:
         """Get the combined style including parent style and background color."""
@@ -696,33 +694,33 @@ class Display(Container):
 
     @staticmethod
     @add_cmd(keys=["left"], filter=display_has_focus)
-    def _scroll_display_left() -> None:
+    def _display_scroll_left() -> None:
         """Scroll the display up one line."""
         window = get_app().layout.current_window
         window._scroll_left()
 
     @staticmethod
     @add_cmd(keys=["right"], filter=display_has_focus)
-    def _scroll_display_right() -> None:
+    def _display_scroll_right() -> None:
         """Scroll the display down one line."""
         window = get_app().layout.current_window
         window._scroll_right()
 
     @staticmethod
     @add_cmd(keys=["up", "k"], filter=display_has_focus)
-    def _scroll_display_up() -> None:
+    def _display_scroll_up() -> None:
         """Scroll the display up one line."""
         get_app().layout.current_window._scroll_up()
 
     @staticmethod
     @add_cmd(keys=["down", "j"], filter=display_has_focus)
-    def _scroll_display_down() -> None:
+    def _display_scroll_down() -> None:
         """Scroll the display down one line."""
         get_app().layout.current_window._scroll_down()
 
     @staticmethod
     @add_cmd(keys=["pageup"], filter=display_has_focus)
-    def _page_up_display() -> None:
+    def _display_page_up() -> None:
         """Scroll the display up one page."""
         window = get_app().layout.current_window
         if window.render_info is not None:
@@ -731,7 +729,7 @@ class Display(Container):
 
     @staticmethod
     @add_cmd(keys=["pagedown"], filter=display_has_focus)
-    def _page_down_display() -> None:
+    def _display_page_down() -> None:
         """Scroll the display down one page."""
         window = get_app().layout.current_window
         if window.render_info is not None:
@@ -740,7 +738,7 @@ class Display(Container):
 
     @staticmethod
     @add_cmd(keys=["home"], filter=display_has_focus)
-    def _go_to_start_of_display() -> None:
+    def _display_go_to_start() -> None:
         """Scroll the display to the top."""
         current_control = get_app().layout.current_control
         if isinstance(current_control, DisplayControl):
@@ -748,7 +746,7 @@ class Display(Container):
 
     @staticmethod
     @add_cmd(keys=["end"], filter=display_has_focus)
-    def _go_to_end_of_display() -> None:
+    def _display_go_to_end() -> None:
         """Scroll the display down one page."""
         layout = get_app().layout
         current_control = layout.current_control

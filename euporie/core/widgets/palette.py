@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, NamedTuple
 from euporie.apptk.application.current import get_app
 from euporie.apptk.key_binding.bindings.focus import focus_next, focus_previous
 
-from euporie.apptk.commands import Command, add_cmd, commands
+from euporie.apptk.commands import COMMANDS, Command, add_cmd
 from euporie.apptk.data_structures import Point
 from euporie.apptk.filters import Condition
 from euporie.apptk.key_binding.vi_state import InputMode
@@ -32,9 +32,9 @@ from euporie.core.widgets.forms import Text
 
 if TYPE_CHECKING:
     from euporie.apptk.buffer import Buffer
-    from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
 
     from euporie.apptk.formatted_text import StyleAndTextTuples
+    from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
     from euporie.apptk.key_binding.key_processor import KeyPressEvent
     from euporie.apptk.layout.controls import GetLinePrefixCallable
     from euporie.core.app.app import BaseApp
@@ -249,7 +249,7 @@ class CommandPalette(Dialog):
         regex = re.compile(
             "(?=({}))".format(".*?".join(map(re.escape, buffer.text))), re.IGNORECASE
         )
-        for cmd in set(commands.values()):
+        for cmd in set(COMMANDS.values()):
             if not cmd.hidden():
                 matches = list(regex.finditer(cmd.title))
                 if matches:

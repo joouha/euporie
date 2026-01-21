@@ -67,106 +67,62 @@ log = logging.getLogger(__name__)
 def load_micro_bindings() -> KeyBindings:
     """Load editor key-bindings in the style of the ``micro`` text editor."""
     kb = KeyBindings()
-    for cmd_name, keys in {
-        "move-cursor-right": "right",
-        "move-cursor-left": "left",
-        "newline": "enter",
-        "accept-line": "enter",
-        "backspace": ["backspace", "c-h"],
-        "backward-kill-word": [
-            "c-backspace",
-            "A-backspace",
-            ("c-A-h"),
-            ("escape", "c-h"),
-        ],
-        "start-selection": [
-            "s-up",
-            "s-down",
-            "s-right",
-            "s-left",
-            ("A-s-left"),
-            ("A-s-right"),
-            "c-s-left",
-            "c-s-right",
-            "s-home",
-            "s-end",
-            "c-s-home",
-            "c-s-end",
-        ],
-        "extend-selection": [
-            "s-up",
-            "s-down",
-            "s-right",
-            "s-left",
-            ("A-s-left"),
-            ("A-s-right"),
-            "c-s-left",
-            "c-s-right",
-            "s-home",
-            "s-end",
-            "c-s-home",
-            "c-s-end",
-        ],
-        "cancel-selection": [
-            "up",
-            "down",
-            "right",
-            "left",
-            ("A-left"),
-            ("A-right"),
-            "c-left",
-            "c-right",
-            "home",
-            "end",
-            "c-home",
-            "c-end",
-        ],
-        "replace-selection": "<any>",
-        "delete-selection": ["delete", "backspace", "c-h"],
-        "backward-word": ["c-left", ("A-b")],
-        "forward-word": ["c-right", ("A-f")],
-        "move-lines-up": ("A-up"),
-        "move-lines-down": ("A-down"),
-        "go-to-start-of-line": ["home", ("A-left"), ("A-a")],
-        "go-to-end-of-line": ["end", ("A-right"), ("A-e")],
-        "beginning-of-buffer": ["c-up", "c-home"],
-        "end-of-buffer": ["c-down", "c-end"],
-        "go-to-start-of-paragraph": ("A-{"),
-        "go-to-end-of-paragraph": ("A-}"),
-        "indent-lines": "tab",
-        "unindent-line": "backspace",
-        "unindent-lines": "s-tab",
-        "undo": "c-z",
-        "redo": "c-y",
-        "copy-selection": "c-c",
-        "cut-selection": ["c-x", "s-delete"],
-        "cut-line": "c-k",
-        "duplicate-line": "c-d",
-        "duplicate-selection": "c-d",
-        "paste-clipboard": "c-v",
-        "select-all": "c-a",
-        "delete": "delete",
-        "toggle-case": "f4",
-        "toggle-overwrite-mode": "insert",
-        "start-macro": "c-u",
-        "end-macro": "c-u",
-        "run-macro": "c-j",
-        "accept-suggestion": ["right", "c-f"],
-        "fill-suggestion": ("A-f"),
-        "toggle-comment": "c-_",
-        "go-to-matching-bracket": [("A-("), ("A-)")],
-        'wrap-selection-""': '"',
-        "wrap-selection-''": "'",
-        "wrap-selection-()": ["(", ")"],
-        "wrap-selection-{}": ["{", "}"],
-        "wrap-selection-[]": ["[", "]"],
-        "wrap-selection-``": "`",
-        "wrap-selection-**": "*",
-        "wrap-selection-__": "_",
-        "scroll-page-up": "pageup",
-        "scroll-page-down": "pagedown",
-    }.items():
-        get_cmd(cmd_name).bind(kb, keys)
+    for name in (
+        "micro-move-cursor-right",
+        "micro-move-cursor-left",
+        "micro-newline",
+        "micro-accept-line",
+        "micro-backspace",
+        "micro-backward-kill-word",
+        "micro-start-selection",
+        "micro-extend-selection",
+        "micro-cancel-selection",
+        "micro-replace-selection",
+        "micro-delete-selection",
+        "micro-backward-word",
+        "micro-forward-word",
+        "micro-move-lines-up",
+        "micro-move-lines-down",
+        "micro-go-to-start-of-line",
+        "micro-go-to-end-of-line",
+        "micro-beginning-of-buffer",
+        "micro-end-of-buffer",
+        "micro-go-to-start-of-paragraph",
+        "micro-go-to-end-of-paragraph",
+        "micro-indent-lines",
+        "micro-unindent-line",
+        "micro-unindent-lines",
+        "micro-undo",
+        "micro-redo",
+        "micro-copy-selection",
+        "micro-cut-selection",
+        "micro-cut-line",
+        "micro-duplicate-line",
+        "micro-duplicate-selection",
+        "micro-paste-clipboard",
+        "micro-select-all",
+        "micro-delete",
+        "micro-toggle-case",
+        "micro-toggle-overwrite-mode",
+        "micro-start-macro",
+        "micro-end-macro",
+        "micro-run-macro",
+        "micro-accept-suggestion",
+        "micro-fill-suggestion",
+        "micro-toggle-comment",
+        "micro-go-to-matching-bracket",
+        'micro-wrap-selection-""',
+        "micro-wrap-selection-''",
+        "micro-wrap-selection-()",
+        "micro-wrap-selection-{}",
+        "micro-wrap-selection-[]",
+        "micro-wrap-selection-``",
+        "micro-wrap-selection-**",
+        "micro-wrap-selection-__",
+        "micro-scroll-page-up",
+        "micro-scroll-page-down",
+    ):
+        get_cmd(name).bind(kb)
     return ConditionalKeyBindings(kb, micro_mode)
 
 
@@ -174,9 +130,10 @@ def load_micro_bindings() -> KeyBindings:
 
 
 @add_cmd(
+    keys=["insert"],
     filter=buffer_has_focus,
 )
-def toggle_overwrite_mode() -> None:
+def micro_toggle_overwrite_mode() -> None:
     """Toggle overwrite when using micro editing mode."""
     if micro_replace_mode():
         get_app().micro_state.input_mode = MicroInputMode.INSERT
@@ -185,29 +142,32 @@ def toggle_overwrite_mode() -> None:
 
 
 @add_cmd(
+    keys=["c-u"],
     filter=buffer_has_focus & ~micro_recording_macro,
     hidden=True,
 )
-def start_macro() -> None:
+def micro_start_macro() -> None:
     """Start recording a macro."""
     get_app().micro_state.start_macro()
 
 
 @add_cmd(
+    keys=["c-u"],
     filter=buffer_has_focus & micro_recording_macro,
     hidden=True,
 )
-def end_macro() -> None:
+def micro_end_macro() -> None:
     """Stop recording a macro."""
     get_app().micro_state.end_macro()
 
 
 @add_cmd(
+    keys=["c-j"],
     filter=buffer_has_focus,
     record_in_macro=False,
     hidden=True,
 )
-def run_macro() -> None:
+def micro_run_macro() -> None:
     """Re-execute the last keyboard macro defined."""
     # Insert the macro.
     app = get_app()
@@ -217,18 +177,26 @@ def run_macro() -> None:
 
 
 add_cmd(
-    name="backspace",
+    name="micro-backspace",
+    keys=["backspace", "c-h"],
     title="Delete previous character",
     filter=buffer_has_focus & ~has_selection,
     save_before=if_no_repeat,
 )(backward_delete_char)
 add_cmd(
-    title="Delete character", name="delete", filter=buffer_has_focus & ~has_selection
+    name="micro-delete",
+    keys=["delete"],
+    title="Delete character",
+    filter=buffer_has_focus & ~has_selection,
 )(delete_char)
 
 
-@add_cmd(title="Delete previous word", filter=buffer_has_focus)
-def backward_kill_word(event: KeyPressEvent) -> None:
+@add_cmd(
+    keys=["c-backspace", "A-backspace", "c-A-h", ("escape", "c-h")],
+    title="Delete previous word",
+    filter=buffer_has_focus,
+)
+def micro_backward_kill_word(event: KeyPressEvent) -> None:
     """Delete the word behind the cursor, using whitespace as a word boundary."""
     buff = event.current_buffer
     pos = buff.document.find_start_of_previous_word()
@@ -247,66 +215,83 @@ def backward_kill_word(event: KeyPressEvent) -> None:
 # Navigation
 
 add_cmd(
+    keys=["c-left", "A-b"],
     title="Move back one word",
     filter=buffer_has_focus,
+    name="micro-backward-word",
 )(backward_word)
 add_cmd(
+    keys=["c-right", "A-f"],
     title="Move forward one word",
     filter=buffer_has_focus,
+    name="micro-forward-word",
 )(forward_word)
 add_cmd(
+    keys=["c-up", "c-home"],
     title="Move to the beginning of the input",
     filter=buffer_has_focus,
+    name="micro-beginning-of-buffer",
 )(beginning_of_buffer)
 add_cmd(
+    keys=["c-down", "c-end"],
     title="Move to the end of the input",
     filter=buffer_has_focus,
+    name="micro-end-of-buffer",
 )(end_of_buffer)
 
 add_cmd(
     filter=buffer_has_focus,
+    name="micro-scroll-backward",
 )(scroll_backward)
 add_cmd(
     filter=buffer_has_focus,
+    name="micro-scroll-forward",
 )(scroll_forward)
 add_cmd(
     title="Scroll down half a page",
     filter=buffer_has_focus,
+    name="micro-scroll-half-page-down",
 )(scroll_half_page_down)
 add_cmd(
     title="Scroll up half a page",
     filter=buffer_has_focus,
+    name="micro-scroll-half-page-up",
 )(scroll_half_page_up)
 add_cmd(
     title="Scroll down one line",
     filter=buffer_has_focus,
+    name="micro-scroll-one-line-down",
 )(scroll_one_line_down)
 add_cmd(
     title="Scroll up one line",
     filter=buffer_has_focus,
+    name="micro-scroll-one-line-up",
 )(scroll_one_line_up)
 
 
 @add_cmd(
+    keys=["left"],
     filter=buffer_has_focus,
 )
-def move_cursor_left() -> None:
+def micro_move_cursor_left() -> None:
     """Move back a character, or up a line."""
     get_app().current_buffer.cursor_position -= 1
 
 
 @add_cmd(
+    keys=["right"],
     filter=buffer_has_focus,
 )
-def move_cursor_right() -> None:
+def micro_move_cursor_right() -> None:
     """Move forward a character, or down a line."""
     get_app().current_buffer.cursor_position += 1
 
 
 @add_cmd(
+    keys=["home", "A-left", "A-a"],
     filter=buffer_has_focus & ~shift_selection_mode,
 )
-def go_to_start_of_line() -> None:
+def micro_go_to_start_of_line() -> None:
     """Move the cursor to the start of the line."""
     buff = get_app().current_buffer
     buff.cursor_position += buff.document.get_start_of_line_position(
@@ -316,28 +301,30 @@ def go_to_start_of_line() -> None:
 
 
 @add_cmd(
-    name="go-to-end-of-line",
+    keys=["end", "A-right", "A-e"],
     filter=buffer_has_focus & ~shift_selection_mode,
 )
-def go_to_end_of_line() -> None:
+def micro_go_to_end_of_line() -> None:
     """Move the cursor to the end of the line."""
     buff = get_app().current_buffer
     buff.cursor_position += buff.document.get_end_of_line_position()
 
 
 @add_cmd(
+    keys=["A-{"],
     filter=buffer_has_focus,
 )
-def go_to_start_of_paragraph() -> None:
+def micro_go_to_start_of_paragraph() -> None:
     """Move the cursor to the start of the current paragraph."""
     buf = get_app().current_buffer
     buf.cursor_position += buf.document.start_of_paragraph()
 
 
 @add_cmd(
+    keys=["A-}"],
     filter=buffer_has_focus,
 )
-def go_to_end_of_paragraph() -> None:
+def micro_go_to_end_of_paragraph() -> None:
     """Move the cursor to the end of the current paragraph."""
     buffer = get_app().current_buffer
     buffer.cursor_position += buffer.document.end_of_paragraph()
@@ -347,9 +334,10 @@ def go_to_end_of_paragraph() -> None:
 
 
 @add_cmd(
+    keys=["c-_"],
     filter=buffer_has_focus & buffer_is_code,
 )
-def toggle_comment() -> None:
+def micro_toggle_comment() -> None:
     """Comment or uncomments the current or selected lines."""
     comment = "# "
     buffer = get_app().current_buffer
@@ -432,37 +420,37 @@ def wrap_selection_cmd(left: str, right: str) -> None:
     buffer.selection_state = selection_state
 
 
-WRAP_PAIRS: dict[str, list[str]] = {
+WRAP_PAIRS: dict[str, list[tuple[str, list[str]]]] = {
     "code": [
-        '""',
-        "''",
-        "()",
-        "{}",
-        "[]",
+        ('""', ['"']),
+        ("''", ["'"]),
+        ("()", ["(", ")"]),
+        ("{}", ["{", "}"]),
+        ("[]", ["[", "]"]),
     ],
     "markdown": [
-        "``",
-        "**",
-        "__",
-        "<>",
+        ("``", ["`"]),
+        ("**", ["*"]),
+        ("__", ["_"]),
     ],
 }
 
-for pair in WRAP_PAIRS["code"]:
+for pair, keys in WRAP_PAIRS["code"]:
     left, right = list(pair)
     add_cmd(
-        name=f"wrap-selection-{pair}",
+        name=f"micro-wrap-selection-{pair}",
+        keys=keys,
         title=f"Wrap selection in {pair}",
         description=f"Wraps the current selection with: {pair}",
         filter=buffer_has_focus & has_selection & buffer_is_code,
     )(partial(wrap_selection_cmd, left, right))
 
 
-for pair in WRAP_PAIRS["markdown"]:
+for pair, keys in WRAP_PAIRS["markdown"]:
     left, right = list(pair)
     add_cmd(
-        name=f"wrap-selection-{pair}",
-        # keys=sorted(set(pair)),
+        name=f"micro-wrap-selection-{pair}",
+        keys=keys,
         title=f"Wrap selection in {pair}",
         description=f"Wraps the current selection with: {pair}",
         filter=buffer_has_focus & has_selection & buffer_is_markdown,
@@ -470,9 +458,10 @@ for pair in WRAP_PAIRS["markdown"]:
 
 
 @add_cmd(
+    keys=["c-d"],
     filter=buffer_has_focus & ~has_selection,
 )
-def duplicate_line() -> None:
+def micro_duplicate_line() -> None:
     """Duplicate the current line."""
     buffer = get_app().current_buffer
     line = buffer.document.current_line
@@ -484,9 +473,10 @@ def duplicate_line() -> None:
 
 
 @add_cmd(
+    keys=["c-d"],
     filter=buffer_has_focus & has_selection,
 )
-def duplicate_selection() -> None:
+def micro_duplicate_selection() -> None:
     """Duplicate the current selection."""
     buffer = get_app().current_buffer
     selection_state = buffer.selection_state
@@ -497,10 +487,11 @@ def duplicate_selection() -> None:
 
 
 @add_cmd(
+    keys=["c-v"],
     title="Paste",
     filter=buffer_has_focus,
 )
-def paste_clipboard() -> None:
+def micro_paste_clipboard() -> None:
     """Pate the clipboard contents, replacing any current selection."""
     app = get_app()
     buff = app.current_buffer
@@ -510,10 +501,11 @@ def paste_clipboard() -> None:
 
 
 @add_cmd(
+    keys=["c-c"],
     title="Copy",
     filter=has_selection,
 )
-def copy_selection() -> None:
+def micro_copy_selection() -> None:
     """Add the current selection to the clipboard."""
     app = get_app()
     buffer = app.current_buffer
@@ -524,19 +516,21 @@ def copy_selection() -> None:
 
 
 @add_cmd(
+    keys=["c-x", "s-delete"],
     title="Cut",
     filter=has_selection,
 )
-def cut_selection() -> None:
+def micro_cut_selection() -> None:
     """Remove the current selection and adds it to the clipboard."""
     data = get_app().current_buffer.cut_selection()
     get_app().clipboard.set_data(data)
 
 
 @add_cmd(
+    keys=["c-k"],
     filter=buffer_has_focus,
 )
-def cut_line() -> None:
+def micro_cut_line() -> None:
     """Remove the current line adds it to the clipboard."""
     app = get_app()
     buffer = app.current_buffer
@@ -588,23 +582,27 @@ def move_line(n: int) -> None:
 
 
 @add_cmd(
+    keys=["A-up"],
     filter=buffer_has_focus,
 )
-def move_lines_up() -> None:
+def micro_move_lines_up() -> None:
     """Move the current or selected lines up by one line."""
     move_line(-1)
 
 
 @add_cmd(
+    keys=["A-down"],
     filter=buffer_has_focus,
 )
-def move_lines_down() -> None:
+def micro_move_lines_down() -> None:
     """Move the current or selected lines down by one line."""
     move_line(1)
 
 
 add_cmd(
+    keys=["enter"],
     filter=insert_mode & is_returnable & ~is_multiline,
+    name="micro-accept-line",
     description="Accept an input.",
 )(accept_line)
 
@@ -667,9 +665,10 @@ def dent_buffer(event: KeyPressEvent, indenting: bool = True) -> None:
 
 
 @add_cmd(
+    keys=["enter"],
     filter=buffer_has_focus & is_multiline,
 )
-def newline(event: KeyPressEvent) -> None:
+def micro_newline(event: KeyPressEvent) -> None:
     """Inert a new line, replacing any selection and indenting if appropriate."""
     # TODO https://git.io/J9GfI
     buffer = get_app().current_buffer
@@ -690,31 +689,36 @@ def newline(event: KeyPressEvent) -> None:
 
 
 @add_cmd(
+    keys=["tab"],
     filter=(buffer_has_focus & (cursor_in_leading_ws | has_selection)),
 )
-def indent_lines(event: KeyPressEvent) -> None:
+def micro_indent_lines(event: KeyPressEvent) -> None:
     """Inndent the current or selected lines."""
     dent_buffer(event)
 
 
 @add_cmd(
-    name="unindent-line",
+    name="micro-unindent-line",
+    keys=["backspace"],
     filter=cursor_in_leading_ws & ~has_selection & ~cursor_at_start_of_line,
 )
 @add_cmd(
+    name="micro-unindent-lines",
+    keys=["s-tab"],
     filter=buffer_has_focus
     & (cursor_in_leading_ws | has_selection)
     & (~cursor_at_start_of_line | cursor_at_start_of_line),
 )
-def unindent_lines(event: KeyPressEvent) -> None:
+def micro_unindent_lines(event: KeyPressEvent) -> None:
     """Unindent the current or selected lines."""
     dent_buffer(event, indenting=False)
 
 
 @add_cmd(
+    keys=["f4"],
     filter=buffer_has_focus,
 )
-def toggle_case() -> None:
+def micro_toggle_case() -> None:
     """Toggle the case of the current word or selection."""
     buffer = get_app().current_buffer
     selection_state = buffer.selection_state
@@ -738,17 +742,19 @@ def toggle_case() -> None:
 
 
 @add_cmd(
+    keys=["c-z"],
     filter=buffer_has_focus,
 )
-def undo() -> None:
+def micro_undo() -> None:
     """Undo the last edit."""
     get_app().current_buffer.undo()
 
 
 @add_cmd(
+    keys=["c-y"],
     filter=buffer_has_focus,
 )
-def redo() -> None:
+def micro_redo() -> None:
     """Redo the last edit."""
     get_app().current_buffer.redo()
 
@@ -757,9 +763,10 @@ def redo() -> None:
 
 
 @add_cmd(
+    keys=["c-a"],
     filter=buffer_has_focus,
 )
-def select_all() -> None:
+def micro_select_all() -> None:
     """Select all text."""
     buffer = get_app().current_buffer
     buffer.selection_state = SelectionState(0)
@@ -815,8 +822,25 @@ def unshift_move(event: KeyPressEvent) -> None:
         command.key_handler(event)
 
 
-@add_cmd(filter=~has_selection, hidden=True)
-def start_selection(event: KeyPressEvent) -> None:
+@add_cmd(
+    keys=[
+        "s-up",
+        "s-down",
+        "s-right",
+        "s-left",
+        "A-s-left",
+        "A-s-right",
+        "c-s-left",
+        "c-s-right",
+        "s-home",
+        "s-end",
+        "c-s-home",
+        "c-s-end",
+    ],
+    filter=~has_selection,
+    hidden=True,
+)
+def micro_start_selection(event: KeyPressEvent) -> None:
     """Start a new selection."""
     # Take the current cursor position as the start of this selection.
     buff = event.current_buffer
@@ -834,8 +858,25 @@ def start_selection(event: KeyPressEvent) -> None:
             buff.exit_selection()
 
 
-@add_cmd(filter=shift_selection_mode, hidden=True)
-def extend_selection(event: KeyPressEvent) -> None:
+@add_cmd(
+    keys=[
+        "s-up",
+        "s-down",
+        "s-right",
+        "s-left",
+        "A-s-left",
+        "A-s-right",
+        "c-s-left",
+        "c-s-right",
+        "s-home",
+        "s-end",
+        "c-s-home",
+        "c-s-end",
+    ],
+    filter=shift_selection_mode,
+    hidden=True,
+)
+def micro_extend_selection(event: KeyPressEvent) -> None:
     """Extend the selection."""
     # Just move the cursor, like shift was not pressed
     unshift_move(event)
@@ -848,21 +889,46 @@ def extend_selection(event: KeyPressEvent) -> None:
         buff.exit_selection()
 
 
-@add_cmd(filter=has_selection, hidden=True)
-def replace_selection(event: KeyPressEvent) -> None:
+@add_cmd(
+    keys=["<any>"],
+    filter=has_selection,
+    hidden=True,
+)
+def micro_replace_selection(event: KeyPressEvent) -> None:
     """Replace selection by what is typed."""
     event.current_buffer.cut_selection()
     get_by_name("self-insert").call(event)
 
 
-@add_cmd(filter=has_selection, hidden=True)
-def delete_selection() -> None:
+@add_cmd(
+    keys=["delete", "backspace", "c-h"],
+    filter=has_selection,
+    hidden=True,
+)
+def micro_delete_selection() -> None:
     """Delete the contents of the current selection."""
     get_app().current_buffer.cut_selection()
 
 
-@add_cmd(filter=shift_selection_mode, hidden=True)
-def cancel_selection(event: KeyPressEvent) -> None:
+@add_cmd(
+    keys=[
+        "up",
+        "down",
+        "right",
+        "left",
+        "A-left",
+        "A-right",
+        "c-left",
+        "c-right",
+        "home",
+        "end",
+        "c-home",
+        "c-end",
+    ],
+    filter=shift_selection_mode,
+    hidden=True,
+)
+def micro_cancel_selection(event: KeyPressEvent) -> None:
     """Cancel the selection."""
     event.current_buffer.exit_selection()
     # we then process the cursor movement
@@ -871,18 +937,20 @@ def cancel_selection(event: KeyPressEvent) -> None:
 
 
 @add_cmd(
+    keys=["A-(", "A-)"],
     filter=buffer_has_focus,
 )
-def go_to_matching_bracket(event: KeyPressEvent) -> None:
+def micro_go_to_matching_bracket(event: KeyPressEvent) -> None:
     """Go to matching bracket if the cursor is on a paired bracket."""
     buff = event.current_buffer
     buff.cursor_position += buff.document.find_matching_bracket_position()
 
 
 @add_cmd(
+    keys=["right", "c-f"],
     filter=has_suggestion,
 )
-def accept_suggestion(event: KeyPressEvent) -> None:
+def micro_accept_suggestion(event: KeyPressEvent) -> None:
     """Accept suggestion."""
     b = get_app().current_buffer
     suggestion = b.suggestion
@@ -891,9 +959,10 @@ def accept_suggestion(event: KeyPressEvent) -> None:
 
 
 @add_cmd(
+    keys=["A-f"],
     filter=has_suggestion,
 )
-def fill_suggestion(event: KeyPressEvent) -> None:
+def micro_fill_suggestion(event: KeyPressEvent) -> None:
     """Fill partial suggestion."""
     b = get_app().current_buffer
     suggestion = b.suggestion
@@ -905,8 +974,12 @@ def fill_suggestion(event: KeyPressEvent) -> None:
 # Define page navigation key-bindings for buffers.
 
 
-@add_cmd(filter=buffer_has_focus, hidden=True)
-def scroll_page_down(event: KeyPressEvent) -> None:
+@add_cmd(
+    keys=["pagedown"],
+    filter=buffer_has_focus,
+    hidden=True,
+)
+def micro_scroll_page_down(event: KeyPressEvent) -> None:
     """Scroll page down (prefer the cursor at the top of the page, after scrolling)."""
     w = event.app.layout.current_window
     b = event.app.current_buffer
@@ -932,8 +1005,12 @@ def scroll_page_down(event: KeyPressEvent) -> None:
         )
 
 
-@add_cmd(filter=buffer_has_focus, hidden=True)
-def scroll_page_up(event: KeyPressEvent) -> None:
+@add_cmd(
+    keys=["pageup"],
+    filter=buffer_has_focus,
+    hidden=True,
+)
+def micro_scroll_page_up(event: KeyPressEvent) -> None:
     """Scroll page up (prefer the cursor at the bottom of the page, after scrolling)."""
     w = event.app.layout.current_window
     b = event.app.current_buffer
