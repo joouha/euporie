@@ -23,12 +23,12 @@ from euporie.apptk.output.vt100 import ANSI_COLORS_TO_RGB, TERMINAL_COLORS_TO_RG
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from euporie.apptk.key_binding.key_bindings import (
-        NotImplementedOrNone,
-    )
     from euporie.apptk.layout.mouse_handlers import MouseHandlers
 
     from euporie.apptk.color import ColorPalette
+    from euporie.apptk.key_binding.key_bindings import (
+        NotImplementedOrNone,
+    )
     from euporie.apptk.layout.containers import AnyContainer
     from euporie.apptk.mouse_events import MouseEvent
 
@@ -136,8 +136,8 @@ class Pattern(Container):
 
     def __init__(
         self,
-        char: str | Callable[[], str],
-        pattern: Callable[[int, int], bool],
+        char: str | Callable[[], str] = "·",
+        pattern: Callable[[int, int], bool] = lambda x, y: (x + y) % 2 == 0,
         style: str = "class:pattern",
     ) -> None:
         """Initialize the :class:`Pattern`."""
