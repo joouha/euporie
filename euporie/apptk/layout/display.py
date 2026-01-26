@@ -4,24 +4,24 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from enum import Enum
+from enum import StrEnum
 from functools import lru_cache, partial
 from math import ceil
 from typing import TYPE_CHECKING, cast
 
 from euporie.apptk.application.current import get_app
 from euporie.apptk.filters.utils import to_filter
-from euporie.apptk.key_binding.key_bindings import KeyBindings
 from euporie.apptk.layout.dimension import Dimension, to_dimension
 from euporie.apptk.utils import Event, to_str
 
 from euporie.apptk.cache import FastDictCache, SimpleCache
 from euporie.apptk.color import style_fg_bg
-from euporie.apptk.commands import add_cmd, get_cmd
+from euporie.apptk.commands import add_cmd
 from euporie.apptk.convert.datum import Datum
 from euporie.apptk.data_structures import Point, Size
 from euporie.apptk.filters.app import display_has_focus, scrollable
 from euporie.apptk.formatted_text.utils import fragment_list_width, split_lines, wrap
+from euporie.apptk.key_binding.key_bindings import KeyBindings
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
     Container,
@@ -35,22 +35,22 @@ from euporie.apptk.mouse_events import MouseEvent, MouseEventType
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
-    from typing import Any, ClassVar
+    from typing import Any
 
-    from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
     from euporie.apptk.layout.dimension import AnyDimension
     from euporie.apptk.layout.mouse_handlers import MouseHandlers
 
     from euporie.apptk.filters import FilterOrBool
     from euporie.apptk.formatted_text import StyleAndTextTuples
     from euporie.apptk.key_binding import KeyBindingsBase
+    from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
     from euporie.apptk.layout.screen import Screen, WritePosition
 
 
 log = logging.getLogger(__name__)
 
 
-class FitMode(Enum):
+class FitMode(StrEnum):
     """Fitting mode for display content scaling.
 
     Controls how content is scaled relative to available space.
@@ -84,7 +84,7 @@ def calculate_render_size(
 
     match fit_mode:
         case FitMode.NONE:
-            return None  # Don't constrain conversion
+            return natural
         case FitMode.SHRINK:
             return min(natural, available)
         case FitMode.GROW:
@@ -558,8 +558,6 @@ class Display(Container):
         )
 
         # Calculate dont_extend based on expand settings
-        dont_extend_width = ~to_filter(expand_width)
-        dont_extend_height = ~to_filter(expand_height)
 
         self.window = Window(
             content=self.control,
@@ -567,8 +565,8 @@ class Display(Container):
             width=width,
             wrap_lines=False,
             always_hide_cursor=always_hide_cursor,
-            dont_extend_height=dont_extend_height,
-            dont_extend_width=dont_extend_width,
+            dont_extend_width=~to_filter(expand_width),
+            dont_extend_height=~to_filter(expand_height),
             style=self._get_style,
             char=" ",
         )
@@ -632,18 +630,7 @@ class Display(Container):
 
     def preferred_height(self, width: int, max_available_height: int) -> Dimension:
         """Return the preferred height for this container."""
-        if self._height is not None:
-            return to_dimension(self._height)
-
-        # Delegate to container which will ask the control
-        dim = self._container.preferred_height(width, max_available_height)
-
-        # Adjust based on expand_height
-        if self.expand_height():
-            return Dimension(
-                min=dim.min, preferred=max(dim.preferred, max_available_height)
-            )
-        return dim
+        return self.window.preferred_height(width, max_available_height)
 
     def write_to_screen(
         self,
