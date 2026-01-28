@@ -325,13 +325,13 @@ class Command:
     @property
     def menu_title(self) -> str:
         """Title of the command for display in menus."""
-        return self._title
+        return self._menu_title
 
     @menu_title.setter
     def menu_title(self, value: str | None) -> None:
         if value is None:
             value = self.title
-        self._title = value
+        self._menu_title = value
 
     @property
     def description(self) -> str:
