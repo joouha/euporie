@@ -78,7 +78,7 @@ class CommandMenuControl(UIControl):
                 prefix = "   "
 
             # Calculate suffix
-            suffix = match.command.key_str() + " "
+            suffix = next(match.command.key_strs(), "") + " "
 
             # Add prefix with status for toggle commands
             result.append((style, prefix))
