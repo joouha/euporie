@@ -48,7 +48,7 @@ from euporie.apptk.border import (
 from euporie.apptk.convert.datum import Datum
 from euporie.apptk.convert.mime import get_format
 from euporie.apptk.data_structures import DiBool, DiInt, DiStr, Size
-from euporie.apptk.enums import HorizontalAlign, VerticalAlign
+from euporie.apptk.enums import FitMode, HorizontalAlign, VerticalAlign
 from euporie.apptk.eventloop.utils import get_or_create_loop, run_coro_sync
 from euporie.apptk.formatted_text.table import Cell, Table, compute_padding
 from euporie.apptk.formatted_text.utils import (
@@ -4034,7 +4034,8 @@ class HTML(PtkHTML):
         rows = max(len(list(split_lines(ft))), ceil(cols * aspect))
         cols = max(cols, max_line_width(ft))
 
-        key = datum.add_size(Size(rows, cols))
+        # Use SHRINK for width (scale down if too large) and NONE for height
+        key = datum.add_size(Size(rows, cols), FitMode.SHRINK, FitMode.NONE)
         ft = [(f"[Graphic_{key}]", ""), *ft]
         ft = valign(ft, height=rows, how=VerticalAlign.TOP)
         return ft
@@ -4084,8 +4085,9 @@ class HTML(PtkHTML):
             rows = min(theme.content_height, len(list(split_lines(ft))))
             aspect = rows / cols
 
-        # Store reference to image element
-        key = Datum.add_size(datum, Size(rows, cols))
+        # Store reference to image element with appropriate fit modes
+        # Images should shrink to fit width but not grow, and maintain aspect ratio
+        key = datum.add_size(Size(rows, cols), FitMode.SHRINK, FitMode.NONE)
 
         return cast(
             "StyleAndTextTuples",

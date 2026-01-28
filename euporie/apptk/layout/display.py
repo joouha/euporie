@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from enum import StrEnum
 from functools import lru_cache, partial
 from math import ceil
 from typing import TYPE_CHECKING, cast
@@ -19,6 +18,7 @@ from euporie.apptk.color import style_fg_bg
 from euporie.apptk.commands import add_cmd
 from euporie.apptk.convert.datum import Datum
 from euporie.apptk.data_structures import Point, Size
+from euporie.apptk.enums import FitMode
 from euporie.apptk.filters.app import display_has_focus, scrollable
 from euporie.apptk.formatted_text.utils import fragment_list_width, split_lines, wrap
 from euporie.apptk.key_binding.key_bindings import KeyBindings
@@ -48,18 +48,6 @@ if TYPE_CHECKING:
 
 
 log = logging.getLogger(__name__)
-
-
-class FitMode(StrEnum):
-    """Fitting mode for display content scaling.
-
-    Controls how content is scaled relative to available space.
-    """
-
-    NONE = "none"  # Use natural size, may overflow
-    SHRINK = "shrink"  # Scale down if too large, but never up
-    GROW = "grow"  # Scale up if too small, but never down
-    SCALE = "scale"  # Scale in either direction to fit
 
 
 @lru_cache(maxsize=10240)
@@ -261,7 +249,11 @@ class DisplayControl(UIControl):
             **self.convert_kwargs,
         )
         if width and height:
-            key = Datum.add_size(datum, Size(height, width))
+            key = datum.add_size(
+                Size(height, width),
+                fit_width=self.fit_width,
+                fit_height=self.fit_height,
+            )
             ft = [(f"[Graphic_{key}]", ""), *ft]
         lines = list(split_lines(ft))
         if wrap_lines and width:

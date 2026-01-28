@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import Enum, StrEnum
 
 
 class EditingMode(Enum):
@@ -30,3 +30,15 @@ class VerticalAlign(Enum):
     CENTER = "middle"
     BOTTOM = "bottom"
     JUSTIFY = "justify"
+
+
+class FitMode(StrEnum):
+    """Fitting mode for display content scaling.
+
+    Controls how content is scaled relative to available space.
+    """
+
+    NONE = "none"  # Use natural size, may overflow
+    SHRINK = "shrink"  # Scale down if too large, but never up
+    GROW = "grow"  # Scale up if too small, but never down
+    SCALE = "scale"  # Scale in either direction to fit
