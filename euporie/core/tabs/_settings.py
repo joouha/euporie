@@ -124,5 +124,6 @@ add_setting(
     description="""
         Whether the notebook page should expand to fill the available width
     """,
-    cmd_filter=~buffer_has_focus,
+    filter=~buffer_has_focus,
+    keys=["w"],
 )

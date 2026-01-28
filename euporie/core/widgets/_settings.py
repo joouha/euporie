@@ -20,11 +20,12 @@ add_setting(
     description="""
         Whether text-based cell outputs should be wrapped.
     """,
-    cmd_filter=(
+    filter=(
         ~buffer_has_focus
         & tab_type_has_focus("euporie.notebook.tabs.notebook:Notebook")
     )
     | ~tab_type_has_focus("euporie.notebook.tabs.notebook:Notebook"),
+    keys=["W"],
 )
 
 add_setting(
@@ -94,6 +95,7 @@ add_setting(
         Whether line numbers are shown by default.
     """,
     hooks=[lambda x: get_app().refresh()],
+    keys=["l"],
 )
 
 add_setting(

@@ -10,6 +10,7 @@ from weakref import WeakKeyDictionary
 from euporie.apptk.formatted_text.base import to_formatted_text
 from euporie.apptk.layout.dimension import Dimension
 
+from euporie.apptk.commands import get_cmd
 from euporie.apptk.filters import Condition
 from euporie.apptk.formatted_text.utils import truncate
 from euporie.apptk.layout.containers import (
@@ -29,7 +30,6 @@ from euporie.core.bars.menu import ToolbarCompletionsMenu
 from euporie.core.bars.search import SearchBar
 from euporie.core.bars.status import StatusBar
 from euporie.core.filters import has_tabs
-from euporie.core.key_binding.registry import register_bindings
 from euporie.core.widgets.dialog import (
     AboutDialog,
     ConfirmDialog,
@@ -84,13 +84,19 @@ class NotebookApp(BaseApp):
 
     name = "notebook"
 
+    commands = (
+        *BaseApp.commands,
+        "new-notebook",
+        "toggle-show-top-bar",
+        "toggle-side-bar-pane",
+    )
+
     def __init__(self, **kwargs: Any) -> None:
         """Create a new euporie text user interface application instance."""
         kwargs.setdefault("title", "euporie-notebook")
         kwargs.setdefault("full_screen", True)
         kwargs.setdefault("leave_graphics", False)
         super().__init__(**kwargs)
-        self.bindings_to_load.append("euporie.notebook.app:NotebookApp")
 
         self._tab_bar_tabs: dict[int, WeakKeyDictionary[Tab, TabBarTab]] = {}
         self.on_tabs_change += self.set_tab_container
@@ -535,15 +541,3 @@ class NotebookApp(BaseApp):
                 description="Get help",
             ),
         ]
-
-    # ################################# Key Bindings ##################################
-
-    register_bindings(
-        {
-            "euporie.notebook.app:NotebookApp": {
-                "new-notebook": "c-n",
-                "toggle-show-top-bar": ("A-m"),
-                "toggle-side-bar-pane": "c-b",
-            }
-        }
-    )

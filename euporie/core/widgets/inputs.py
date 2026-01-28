@@ -10,7 +10,7 @@ from euporie.apptk.application.current import get_app
 from euporie.apptk.buffer import Buffer
 from euporie.apptk.completion.base import Completer, DynamicCompleter
 from euporie.apptk.document import Document
-from euporie.apptk.key_binding.key_bindings import merge_key_bindings
+from euporie.apptk.key_binding.key_bindings import KeyBindings, merge_key_bindings
 from euporie.apptk.layout.dimension import AnyDimension
 from euporie.apptk.layout.dimension import Dimension as D
 from euporie.apptk.validation import DynamicValidator, Validator
@@ -69,10 +69,6 @@ from euporie.apptk.layout.processors import (
     TabsProcessor,
 )
 from euporie.apptk.lexers import DynamicLexer, PygmentsLexer, SimpleLexer
-from euporie.core.key_binding.registry import (
-    load_registered_bindings,
-    register_bindings,
-)
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -119,6 +115,12 @@ class KernelInput(TextArea):
 
     A customized text area for the cell input.
     """
+
+    commands = (
+        "show-contextual-help",
+        "history-prev",
+        "history-next",
+    )
 
     def __init__(
         self,
@@ -237,10 +239,7 @@ class KernelInput(TextArea):
         self.buffer.on_cursor_position_changed += _on_cursor_position_changed
 
         # Set extra key-bindings
-        widgets_key_bindings = load_registered_bindings(
-            "euporie.core.widgets.inputs:KernelInput",
-            config=app.config,
-        )
+        widgets_key_bindings = KeyBindings.from_commands(self.commands)
         if key_bindings:
             widgets_key_bindings = merge_key_bindings(
                 [key_bindings, widgets_key_bindings]
@@ -442,6 +441,7 @@ class KernelInput(TextArea):
     @staticmethod
     @add_cmd(
         filter=buffer_is_code & buffer_has_focus & ~has_selection,
+        keys=["s-tab"],
     )
     async def _show_contextual_help() -> None:
         """Display contextual help."""
@@ -452,7 +452,7 @@ class KernelInput(TextArea):
             await input_box.inspect()
 
     @staticmethod
-    @add_cmd(filter=buffer_is_code & buffer_has_focus)
+    @add_cmd(filter=buffer_is_code & buffer_has_focus, keys=["c-A-up"])
     def _history_prev() -> None:
         """Get the previous history entry."""
         from euporie.apptk.application.current import get_app
@@ -460,7 +460,7 @@ class KernelInput(TextArea):
         get_app().current_buffer.history_backward()
 
     @staticmethod
-    @add_cmd(filter=buffer_is_code & buffer_has_focus)
+    @add_cmd(filter=buffer_is_code & buffer_has_focus, keys=["c-A-down"])
     def _history_next() -> None:
         """Get the next history entry."""
         from euporie.apptk.application.current import get_app
@@ -481,18 +481,6 @@ class KernelInput(TextArea):
             and (current_input := tab.current_input)
         ):
             current_input.reformat()
-
-    # ################################# Key Bindings ##################################
-
-    register_bindings(
-        {
-            "euporie.core.widgets.inputs:KernelInput": {
-                "show-contextual-help": "s-tab",
-                "history-prev": "c-A-up",
-                "history-next": "c-A-down",
-            }
-        }
-    )
 
 
 class StdInput:

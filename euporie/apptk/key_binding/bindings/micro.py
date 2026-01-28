@@ -10,14 +10,6 @@ from typing import TYPE_CHECKING
 from euporie.apptk.application.current import get_app
 from euporie.apptk.buffer import indent, unindent
 from euporie.apptk.document import Document
-from euporie.apptk.key_binding.bindings.scroll import (
-    scroll_backward,
-    scroll_forward,
-    scroll_half_page_down,
-    scroll_half_page_up,
-    scroll_one_line_down,
-    scroll_one_line_up,
-)
 from euporie.apptk.selection import SelectionState, SelectionType
 
 from euporie.apptk.commands import add_cmd, get_cmd
@@ -45,13 +37,6 @@ from euporie.apptk.filters.modes import (
 )
 from euporie.apptk.key_binding import ConditionalKeyBindings, KeyBindings
 from euporie.apptk.key_binding.bindings.named_commands import (
-    accept_line,
-    backward_delete_char,
-    backward_word,
-    beginning_of_buffer,
-    delete_char,
-    end_of_buffer,
-    forward_word,
     get_by_name,
 )
 from euporie.apptk.key_binding.micro_state import MicroInputMode
@@ -71,26 +56,25 @@ def load_micro_bindings() -> KeyBindings:
         "micro-move-cursor-right",
         "micro-move-cursor-left",
         "micro-newline",
-        "micro-accept-line",
-        "micro-backspace",
+        "accept-line",
+        "backward-delete-char",
         "micro-backward-kill-word",
         "micro-start-selection",
         "micro-extend-selection",
         "micro-cancel-selection",
         "micro-replace-selection",
         "micro-delete-selection",
-        "micro-backward-word",
-        "micro-forward-word",
+        "backward-word",
+        "forward-word",
         "micro-move-lines-up",
         "micro-move-lines-down",
         "micro-go-to-start-of-line",
         "micro-go-to-end-of-line",
-        "micro-beginning-of-buffer",
-        "micro-end-of-buffer",
+        "beginning-of-buffer",
+        "end-of-buffer",
         "micro-go-to-start-of-paragraph",
         "micro-go-to-end-of-paragraph",
         "micro-indent-lines",
-        "micro-unindent-line",
         "micro-unindent-lines",
         "micro-undo",
         "micro-redo",
@@ -101,7 +85,7 @@ def load_micro_bindings() -> KeyBindings:
         "micro-duplicate-selection",
         "micro-paste-clipboard",
         "micro-select-all",
-        "micro-delete",
+        "delete-char",
         "micro-toggle-case",
         "micro-toggle-overwrite-mode",
         "micro-start-macro",
@@ -176,19 +160,16 @@ def micro_run_macro() -> None:
         app.key_processor.feed_multiple(macro, first=True)
 
 
-add_cmd(
-    name="micro-backspace",
+get_cmd("delete-char").update(title="Delete character").add_keys(
+    keys=["delete"],
+    filter=buffer_has_focus & ~has_selection,
+)
+
+get_cmd("backward-delete-char").update(title="Delete previous character").add_keys(
     keys=["backspace", "c-h"],
-    title="Delete previous character",
     filter=buffer_has_focus & ~has_selection,
     save_before=if_no_repeat,
-)(backward_delete_char)
-add_cmd(
-    name="micro-delete",
-    keys=["delete"],
-    title="Delete character",
-    filter=buffer_has_focus & ~has_selection,
-)(delete_char)
+)
 
 
 @add_cmd(
@@ -214,59 +195,52 @@ def micro_backward_kill_word(event: KeyPressEvent) -> None:
 
 # Navigation
 
-add_cmd(
-    keys=["c-left", "A-b"],
+get_cmd("backward-word").update(
     title="Move back one word",
     filter=buffer_has_focus,
-    name="micro-backward-word",
-)(backward_word)
-add_cmd(
-    keys=["c-right", "A-f"],
+).add_keys(
+    keys=["c-left", "A-b"],
+)
+get_cmd("forward-word").update(
     title="Move forward one word",
     filter=buffer_has_focus,
-    name="micro-forward-word",
-)(forward_word)
-add_cmd(
-    keys=["c-up", "c-home"],
+).add_keys(
+    keys=["c-right", "A-f"],
+)
+get_cmd("beginning-of-buffer").update(
     title="Move to the beginning of the input",
     filter=buffer_has_focus,
-    name="micro-beginning-of-buffer",
-)(beginning_of_buffer)
-add_cmd(
-    keys=["c-down", "c-end"],
+).add_keys(
+    keys=["c-up", "c-home"],
+)
+get_cmd("end-of-buffer").update(
     title="Move to the end of the input",
     filter=buffer_has_focus,
-    name="micro-end-of-buffer",
-)(end_of_buffer)
-
-add_cmd(
+).add_keys(
+    keys=["c-down", "c-end"],
+)
+get_cmd("scroll-backward").update(
     filter=buffer_has_focus,
-    name="micro-scroll-backward",
-)(scroll_backward)
-add_cmd(
+)
+get_cmd("scroll-forward").update(
     filter=buffer_has_focus,
-    name="micro-scroll-forward",
-)(scroll_forward)
-add_cmd(
+)
+get_cmd("scroll-half-page-down").update(
     title="Scroll down half a page",
     filter=buffer_has_focus,
-    name="micro-scroll-half-page-down",
-)(scroll_half_page_down)
-add_cmd(
+)
+get_cmd("scroll-half-page-up").update(
     title="Scroll up half a page",
     filter=buffer_has_focus,
-    name="micro-scroll-half-page-up",
-)(scroll_half_page_up)
-add_cmd(
+)
+get_cmd("scroll-one-line-down").update(
     title="Scroll down one line",
     filter=buffer_has_focus,
-    name="micro-scroll-one-line-down",
-)(scroll_one_line_down)
-add_cmd(
+)
+get_cmd("scroll-one-line-up").update(
     title="Scroll up one line",
     filter=buffer_has_focus,
-    name="micro-scroll-one-line-up",
-)(scroll_one_line_up)
+)
 
 
 @add_cmd(
@@ -599,12 +573,10 @@ def micro_move_lines_down() -> None:
     move_line(1)
 
 
-add_cmd(
-    keys=["enter"],
+get_cmd("accept-line").update(
     filter=insert_mode & is_returnable & ~is_multiline,
-    name="micro-accept-line",
     description="Accept an input.",
-)(accept_line)
+).add_keys("enter")
 
 
 def dent_buffer(event: KeyPressEvent, indenting: bool = True) -> None:
@@ -698,16 +670,21 @@ def micro_indent_lines(event: KeyPressEvent) -> None:
 
 
 @add_cmd(
-    name="micro-unindent-line",
-    keys=["backspace"],
-    filter=cursor_in_leading_ws & ~has_selection & ~cursor_at_start_of_line,
-)
-@add_cmd(
-    name="micro-unindent-lines",
-    keys=["s-tab"],
-    filter=buffer_has_focus
-    & (cursor_in_leading_ws | has_selection)
-    & (~cursor_at_start_of_line | cursor_at_start_of_line),
+    bindings=[
+        {
+            "keys": "backspace",
+            "filter": buffer_has_focus
+            & cursor_in_leading_ws
+            & ~has_selection
+            & ~cursor_at_start_of_line,
+        },
+        {
+            "keys": "s-tab",
+            "filter": buffer_has_focus
+            & (cursor_in_leading_ws | has_selection)
+            & (~cursor_at_start_of_line | cursor_at_start_of_line),
+        },
+    ],
 )
 def micro_unindent_lines(event: KeyPressEvent) -> None:
     """Unindent the current or selected lines."""

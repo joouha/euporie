@@ -172,7 +172,6 @@ class Setting:
         nargs: str | int | None = None,
         hidden: FilterOrBool = False,
         hooks: list[Callable[[Setting], None]] | None = None,
-        cmd_filter: FilterOrBool = True,
         **kwargs: Any,
     ) -> None:
         """Create a new configuration item."""
@@ -195,7 +194,6 @@ class Setting:
         self.nargs = nargs
         self.hidden = to_filter(hidden)
         self.hooks = hooks or []
-        self.cmd_filter = cmd_filter
         self.kwargs = kwargs
 
     @cached_property
@@ -582,7 +580,7 @@ class Config:
                     title=f"Add {choice} to {setting.title} setting",
                     menu_title=str(choice).replace("_", " ").capitalize(),
                     description=f'Add or remove "{choice}" to or from the list of "{setting.name}"',
-                    filter=setting.cmd_filter,
+                    filter=setting.kwargs.get("filter", True),
                 )(
                     partial(
                         lambda choice: (
@@ -602,7 +600,8 @@ class Config:
                 title=f"Toggle {setting.title}",
                 menu_title=setting.kwargs.get("menu_title", setting.title.capitalize()),
                 description=setting.help,
-                filter=setting.cmd_filter,
+                filter=setting.kwargs.get("filter", True),
+                keys=setting.kwargs.get("keys"),
             )(partial(self.toggle, setting.name))
 
         elif setting.type is int or setting.choices is not None:
@@ -612,7 +611,8 @@ class Config:
                 title=f"Switch {setting.title}",
                 menu_title=setting.kwargs.get("menu_title"),
                 description=f'Switch the value of the "{setting.name}" configuration option.',
-                filter=setting.cmd_filter,
+                filter=setting.kwargs.get("filter", True),
+                keys=setting.kwargs.get("keys"),
             )(partial(self.toggle, setting.name))
 
         for choice in setting.choices or schema.get("enum", []) or []:
@@ -626,7 +626,7 @@ class Config:
                 menu_title=str(choice).replace("_", " ").capitalize(),
                 description=f'Set the value of the "{setting.name}" '
                 f'configuration option to "{choice}"',
-                filter=setting.cmd_filter,
+                filter=setting.kwargs.get("filter", True),
             )(partial(setattr, self, setting.name, choice))
 
     def toggle(self, name: str) -> None:

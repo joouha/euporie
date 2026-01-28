@@ -7,18 +7,12 @@ import logging
 from abc import ABCMeta
 from typing import TYPE_CHECKING, ClassVar
 
-from euporie.apptk.application.current import get_app
 from euporie.apptk.utils import Event
 from upath import UPath
 
-from euporie.apptk.commands import add_cmd
 from euporie.apptk.layout.containers import Window, WindowAlign
 from euporie.apptk.layout.controls import FormattedTextControl
 from euporie.apptk.path import parse_path
-from euporie.core.filters import tab_can_save, tab_has_focus
-from euporie.core.key_binding.registry import (
-    register_bindings,
-)
 from euporie.core.path import UntitledPath
 
 if TYPE_CHECKING:
@@ -26,7 +20,6 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any
 
-    from euporie.apptk.key_binding.key_processor import KeyPressEvent
     from euporie.apptk.layout.containers import AnyContainer
     from euporie.core.app.app import BaseApp
     from euporie.core.bars.status import StatusBarFields
@@ -45,6 +38,11 @@ class Tab(metaclass=ABCMeta):
     _untitled_count = 0
 
     container: AnyContainer
+
+    commands = (
+        "save-file",
+        "refresh-tab",
+    )
 
     def __init_subclass__(cls, *args: Any, **kwargs: Any) -> None:
         """Compile a registry of named tabs."""
@@ -198,43 +196,3 @@ class Tab(metaclass=ABCMeta):
     def __pt_container__(self) -> AnyContainer:
         """Return the main container object."""
         return self.container
-
-    # ################################### Commands ####################################
-
-    @staticmethod
-    @add_cmd(filter=tab_has_focus, title="Refresh the current tab")
-    def _refresh_tab() -> None:
-        """Reload the tab contents and reset the tab."""
-        if (tab := get_app().tab) is not None:
-            tab.reset()
-
-    # Depreciated v2.5.0
-    @staticmethod
-    @add_cmd(filter=tab_has_focus, title="Reset the current tab")
-    def _reset_tab() -> None:
-        log.warning(
-            "The `reset-tab` command was been renamed to `refresh-tab` in v2.5.0,"
-            " and will be removed in a future version"
-        )
-        Tab._refresh_tab()
-
-    @staticmethod
-    @add_cmd(filter=tab_can_save, aliases=["w"])
-    def _save_file(event: KeyPressEvent, path: str = "") -> None:
-        """Save the current file."""
-        if (tab := get_app().tab) is not None:
-            try:
-                tab._save(UPath(path) if path else None)
-            except NotImplementedError:
-                pass
-
-    # ################################# Key Bindings ##################################
-
-    register_bindings(
-        {
-            "euporie.core.tabs.base:Tab": {
-                "save-file": "c-s",
-                "refresh-tab": "f5",
-            }
-        }
-    )

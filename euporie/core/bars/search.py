@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING
 from euporie.apptk.application.current import get_app
 from euporie.apptk.buffer import Buffer
 from euporie.apptk.document import Document
-from euporie.apptk.filters.app import is_searching
 from euporie.apptk.filters.base import Condition
 from euporie.apptk.formatted_text.base import to_formatted_text
 from euporie.apptk.search import SearchDirection
@@ -17,13 +16,11 @@ from euporie.apptk.selection import SelectionState
 from euporie.apptk.widgets import SearchToolbar as PtkSearchToolbar
 
 from euporie.apptk.commands import add_cmd
+from euporie.apptk.filters.app import is_searching
+from euporie.apptk.key_binding.key_bindings import KeyBindings
 from euporie.apptk.key_binding.vi_state import InputMode
 from euporie.apptk.layout.controls import BufferControl, SearchBufferControl
 from euporie.core.bars import SEARCH_BAR_BUFFER
-from euporie.core.key_binding.registry import (
-    load_registered_bindings,
-    register_bindings,
-)
 
 if TYPE_CHECKING:
     from euporie.apptk.formatted_text.base import AnyFormattedText
@@ -39,6 +36,8 @@ class SearchBar(PtkSearchToolbar):
 
     A search toolbar with custom style and text.
     """
+
+    commands = ("accept-search", "stop-search")
 
     def __init__(
         self,
@@ -63,28 +62,11 @@ class SearchBar(PtkSearchToolbar):
                 backward_search_prompt, "class:status-field"
             ),
         )
-        self.control.key_bindings = load_registered_bindings(
-            "euporie.core.bars.search:SearchBar",
-            config=get_app().config,
-        )
+        self.control.key_bindings = KeyBindings.from_commands(self.commands)
         search_state = self.control.searcher_search_state
         search_state.ignore_case = Condition(
             lambda: self.search_buffer.text.islower() or search_state.text.islower()
         )
-
-    register_bindings(
-        {
-            "euporie.core.app.app:BaseApp": {
-                "find": ["c-f", "f3", "f7"],
-                "find-next": "c-g",
-                "find-previous": "c-p",
-            },
-            "euporie.core.bars.search:SearchBar": {
-                "accept-search": "enter",
-                "stop-search": "escape",
-            },
-        }
-    )
 
 
 def find_search_control() -> tuple[SearchBufferControl | None, BufferControl | None]:
@@ -184,7 +166,7 @@ def start_global_search(
     app.vi_state.input_mode = InputMode.INSERT
 
 
-@add_cmd(menu_title="Find")
+@add_cmd(menu_title="Find", keys=["c-f", "f3", "f7"])
 def find() -> None:
     """Enter search mode."""
     start_global_search(direction=SearchDirection.FORWARD)
@@ -273,21 +255,19 @@ def find_prev_next(direction: SearchDirection) -> None:
             break
 
 
-@add_cmd()
+@add_cmd(keys=["c-g"])
 def find_next() -> None:
     """Find the next search match."""
     find_prev_next(SearchDirection.FORWARD)
 
 
-@add_cmd()
+@add_cmd(keys=["c-p"])
 def find_previous() -> None:
     """Find the previous search match."""
     find_prev_next(SearchDirection.BACKWARD)
 
 
-@add_cmd(
-    filter=is_searching,
-)
+@add_cmd(filter=is_searching, keys=["escape"])
 def stop_search() -> None:
     """Abort the search."""
     layout = get_app().layout
@@ -306,10 +286,7 @@ def stop_search() -> None:
     get_app().refresh()
 
 
-@add_cmd(
-    name="accept-search",
-    filter=is_searching,
-)
+@add_cmd(name="accept-search", filter=is_searching, keys=["enter"])
 def accept_search() -> None:
     """Accept the search input."""
     layout = get_app().layout

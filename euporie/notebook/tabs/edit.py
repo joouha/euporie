@@ -6,13 +6,12 @@ import logging
 from functools import partial
 from typing import TYPE_CHECKING, ClassVar
 
-from euporie.apptk.layout.dimension import Dimension
-
 from euporie.apptk.filters.modes import insert_mode, replace_mode
+from euporie.apptk.key_binding.key_bindings import KeyBindings
 from euporie.apptk.layout.containers import HSplit
+from euporie.apptk.layout.dimension import Dimension
 from euporie.apptk.lexers.utils import detect_lexer
 from euporie.core.kernel.base import BaseKernel, MsgCallbacks
-from euporie.core.key_binding.registry import load_registered_bindings
 from euporie.core.tabs.kernel import KernelTab
 from euporie.core.widgets.inputs import KernelInput
 
@@ -148,10 +147,7 @@ class EditorTab(KernelTab):
             [self.input_box],
             width=Dimension(weight=1),
             height=Dimension(weight=1),
-            key_bindings=load_registered_bindings(
-                "euporie.core.tabs.base:Tab",
-                config=self.app.config,
-            ),
+            key_bindings=KeyBindings.from_commands(self.commands),
         )
 
     def write_file(self, path: Path) -> None:

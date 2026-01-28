@@ -18,14 +18,11 @@ from euporie.apptk.eventloop.utils import get_or_create_loop, run_coro_async
 from euporie.apptk.filters import Condition
 from euporie.apptk.formatted_text.html import HTML, Node
 from euporie.apptk.formatted_text.utils import fragment_list_width, paste, split_lines
+from euporie.apptk.key_binding.key_bindings import KeyBindings
 from euporie.apptk.layout.containers import Window
 from euporie.apptk.layout.controls import UIContent, UIControl
 from euporie.apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
 from euporie.apptk.path import parse_path
-from euporie.core.key_binding.registry import (
-    load_registered_bindings,
-    register_bindings,
-)
 
 if TYPE_CHECKING:
     import asyncio
@@ -34,12 +31,12 @@ if TYPE_CHECKING:
     from typing import Any
 
     from euporie.apptk.formatted_text.base import AnyFormattedText, StyleAndTextTuples
+    from euporie.apptk.layout.mouse_handlers import MouseHandler
+
     from euporie.apptk.key_binding.key_bindings import (
         KeyBindingsBase,
         NotImplementedOrNone,
     )
-    from euporie.apptk.layout.mouse_handlers import MouseHandler
-
     from euporie.apptk.layout.controls import GetLinePrefixCallable
 
 
@@ -59,6 +56,19 @@ class WebViewControl(UIControl):
     """
 
     _window: Window
+
+    commands = (
+        "webview-scroll-left",
+        "webview-scroll-right",
+        "webview-scroll-up",
+        "webview-scroll-down",
+        "webview-page-up",
+        "webview-page-down",
+        "webview-go-to-start",
+        "webview-go-to-end",
+        "webview-nav-prev",
+        "webview-nav-next",
+    )
 
     def __init__(
         self,
@@ -91,10 +101,7 @@ class WebViewControl(UIControl):
 
         self.loop = get_or_create_loop("convert")
 
-        self.key_bindings = load_registered_bindings(
-            "euporie.web.widgets.webview:WebViewControl",
-            config=get_app().config,
-        )
+        self.key_bindings = KeyBindings.from_commands(self.commands)
 
         self._dom_cache: FastDictCache[tuple[Path], HTML] = FastDictCache(
             get_value=self.get_dom, size=100
@@ -460,7 +467,7 @@ class WebViewControl(UIControl):
     # ################################### Commands ####################################
 
     @staticmethod
-    @add_cmd(filter=webview_has_focus)
+    @add_cmd(filter=webview_has_focus, keys=["A-left"])
     def _webview_nav_prev() -> None:
         """Navigate backwards in the browser history."""
         from euporie.web.widgets.webview import WebViewControl
@@ -470,7 +477,7 @@ class WebViewControl(UIControl):
             current_control.nav_prev()
 
     @staticmethod
-    @add_cmd(filter=webview_has_focus)
+    @add_cmd(filter=webview_has_focus, keys=["A-right"])
     def _webview_nav_next() -> None:
         """Navigate forwards in the browser history."""
         from euporie.web.widgets.webview import WebViewControl
@@ -480,32 +487,32 @@ class WebViewControl(UIControl):
             current_control.nav_next()
 
     @staticmethod
-    @add_cmd(filter=webview_has_focus)
-    def _scroll_webview_left() -> None:
+    @add_cmd(filter=webview_has_focus, keys=["left"])
+    def _webview_scroll_left() -> None:
         """Scroll the display up one line."""
         get_app().layout.current_window._scroll_left()
 
     @staticmethod
-    @add_cmd(filter=webview_has_focus)
-    def _scroll_webview_right() -> None:
+    @add_cmd(filter=webview_has_focus, keys=["right"])
+    def _webview_scroll_right() -> None:
         """Scroll the display down one line."""
         get_app().layout.current_window._scroll_right()
 
     @staticmethod
-    @add_cmd(filter=webview_has_focus)
-    def _scroll_webview_up() -> None:
+    @add_cmd(filter=webview_has_focus, keys=["up", "k"])
+    def _webview_scroll_up() -> None:
         """Scroll the display up one line."""
         get_app().layout.current_window._scroll_up()
 
     @staticmethod
-    @add_cmd(filter=webview_has_focus)
-    def _scroll_webview_down() -> None:
+    @add_cmd(filter=webview_has_focus, keys=["down", "j"])
+    def _webview_scroll_down() -> None:
         """Scroll the display down one line."""
         get_app().layout.current_window._scroll_down()
 
     @staticmethod
-    @add_cmd(filter=webview_has_focus)
-    def _page_up_webview() -> None:
+    @add_cmd(filter=webview_has_focus, keys=["pageup"])
+    def _webview_page_up() -> None:
         """Scroll the display up one page."""
         window = get_app().layout.current_window
         if window.render_info is not None:
@@ -513,8 +520,8 @@ class WebViewControl(UIControl):
                 window._scroll_up()
 
     @staticmethod
-    @add_cmd(filter=webview_has_focus)
-    def _page_down_webview() -> None:
+    @add_cmd(filter=webview_has_focus, keys="pagedown")
+    def _webview_page_down() -> None:
         """Scroll the display down one page."""
         window = get_app().layout.current_window
         if window.render_info is not None:
@@ -522,8 +529,8 @@ class WebViewControl(UIControl):
                 window._scroll_down()
 
     @staticmethod
-    @add_cmd(filter=webview_has_focus)
-    def _go_to_start_of_webview() -> None:
+    @add_cmd(filter=webview_has_focus, keys=["home"])
+    def _webview_go_to_start() -> None:
         """Scroll the display to the top."""
         from euporie.web.widgets.webview import WebViewControl
 
@@ -532,8 +539,8 @@ class WebViewControl(UIControl):
             current_control.cursor_position = Point(0, 0)
 
     @staticmethod
-    @add_cmd(filter=webview_has_focus)
-    def _go_to_end_of_webview() -> None:
+    @add_cmd(filter=webview_has_focus, keys=["end"])
+    def _webview_go_to_end() -> None:
         """Scroll the display down one page."""
         from euporie.web.widgets.webview import WebViewControl
 
@@ -548,34 +555,15 @@ class WebViewControl(UIControl):
                 0, window.render_info.ui_content.line_count - 1
             )
 
-    # ################################# Key Bindings ##################################
-
-    register_bindings(
-        {
-            "euporie.web.widgets.webview:WebViewControl": {
-                "scroll-webview-left": "left",
-                "scroll-webview-right": "right",
-                "scroll-webview-up": ["up", "k"],
-                "scroll-webview-down": ["down", "j"],
-                "page-up-webview": "pageup",
-                "page-down-webview": "pagedown",
-                "go-to-start-of-webview": "home",
-                "go-to-end-of-webview": "end",
-                "webview-nav-prev": ("A-left"),
-                "webview-nav-next": ("A-right"),
-            }
-        }
-    )
-
 
 if __name__ == "__main__":
     import sys
 
-    from euporie.apptk.key_binding.key_bindings import KeyBindings
     from euporie.apptk.layout.layout import Layout
     from euporie.apptk.output.color_depth import ColorDepth
 
     from euporie.apptk.application.application import Application
+    from euporie.apptk.key_binding.key_bindings import KeyBindings
     from euporie.web.widgets.webview import WebViewControl
 
     kb = KeyBindings()

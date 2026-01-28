@@ -14,6 +14,7 @@ from euporie.apptk.validation import Validator
 
 from euporie.apptk.commands import COMMANDS, add_cmd, get_cmd
 from euporie.apptk.filters import buffer_has_focus, has_focus, vi_navigation_mode
+from euporie.apptk.key_binding.key_bindings import KeyBindings
 from euporie.apptk.key_binding.vi_state import InputMode
 from euporie.apptk.layout.containers import ConditionalContainer, Container, Window
 from euporie.apptk.layout.controls import (
@@ -22,10 +23,6 @@ from euporie.apptk.layout.controls import (
 from euporie.apptk.layout.processors import BeforeInput, HighlightSelectionProcessor
 from euporie.apptk.lexers import SimpleLexer
 from euporie.core.bars import COMMAND_BAR_BUFFER
-from euporie.core.key_binding.registry import (
-    load_registered_bindings,
-    register_bindings,
-)
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -105,10 +102,7 @@ class CommandBar:
                 HighlightSelectionProcessor(),
             ],
             include_default_input_processors=False,
-            key_bindings=load_registered_bindings(
-                "euporie.core.bars.command:CommandBar",
-                config=get_app().config,
-            ),
+            key_bindings=KeyBindings.from_commands(("deactivate-command-bar",)),
         )
         self.window = Window(
             self.control,
@@ -141,31 +135,30 @@ class CommandBar:
         """Magic method for widget container."""
         return self.container
 
-    register_bindings(
-        {
-            "euporie.core.app.app:BaseApp": {
-                "activate-command-bar": ":",
-                "activate-command-bar-alt": "A-:",
-                "activate-command-bar-shell": "!",
-                "activate-command-bar-shell-alt": "A-!",
-            },
-            "euporie.core.bars.command:CommandBar": {
-                "deactivate-command-bar": ["escape", "c-c"],
-            },
-        }
-    )
-
     @staticmethod
-    @add_cmd(name="activate-command-bar-alt", hidden=True)
-    @add_cmd(filter=~buffer_has_focus | vi_navigation_mode)
+    @add_cmd(
+        hidden=True,
+        bindings=[
+            {"keys": "A-:", "is_global": True},
+            {
+                "keys": ":",
+                "filter": ~buffer_has_focus | vi_navigation_mode,
+            },
+        ],
+    )
     def _activate_command_bar(event: KeyPressEvent) -> None:
         """Enter command mode."""
         event.app.layout.focus(COMMAND_BAR_BUFFER)
         event.app.vi_state.input_mode = InputMode.INSERT
 
     @staticmethod
-    @add_cmd(filter=~buffer_has_focus)
-    @add_cmd(name="activate-command-bar-shell-alt", hidden=True)
+    @add_cmd(
+        hidden=True,
+        bindings=[
+            {"keys": ["A-!"], "is_global": True},
+            {"keys": ["!"], "filter": ~buffer_has_focus},
+        ],
+    )
     def _activate_command_bar_shell(event: KeyPressEvent) -> None:
         """Enter command mode."""
         app = event.app
@@ -178,7 +171,7 @@ class CommandBar:
             buffer.cursor_position = 6
 
     @staticmethod
-    @add_cmd(hidden=True)
+    @add_cmd(keys=["escape", "c-c"], hidden=True)
     def _deactivate_command_bar(event: KeyPressEvent) -> None:
         """Exit command mode."""
         app = event.app
@@ -191,7 +184,7 @@ class CommandBar:
             app.layout.focus_previous()
 
     @staticmethod
-    @add_cmd(aliases=["shell"])
+    @add_cmd(aliases=["shell", "!"])
     async def _run_shell_command(
         event: KeyPressEvent, *cmd_arg: Unpack[tuple[str]]
     ) -> None:

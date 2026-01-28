@@ -72,6 +72,7 @@ def _accept_input() -> None:
 
 @add_cmd(
     filter=buffer_is_code & buffer_has_focus & ~has_selection & ~buffer_is_empty,
+    keys=["c-c", "<sigint>"],
 )
 def _clear_input() -> None:
     """Clear the console input."""
@@ -83,6 +84,7 @@ def _clear_input() -> None:
 
 @add_cmd(
     filter=buffer_is_code & buffer_has_focus,
+    keys=["c-enter", "c-e"],
 )
 def _run_input() -> None:
     """Run the console input."""
@@ -97,6 +99,7 @@ def _run_input() -> None:
     name="cc-interrupt-kernel",
     hidden=True,
     filter=buffer_is_code & buffer_is_empty,
+    keys=["c-c", "<sigint>"],
 )
 @add_cmd(filter=kernel_tab_has_focus)
 def _interrupt_kernel() -> None:
@@ -120,13 +123,14 @@ def _restart_kernel() -> None:
     filter=buffer_is_code & buffer_is_empty,
     hidden=True,
     description="Signals the end of the input, causing the console to exit.",
+    keys=["c-d"],
 )
 def _end_of_file(event: KeyPressEvent) -> None:
     """Exit when Control-D has been pressed."""
     event.app.exit(exception=EOFError)
 
 
-@add_cmd()
+@add_cmd(keys=["c-l"])
 def _clear_screen() -> None:
     """Clear the screen and the previous output."""
     from euporie.console.app import get_app

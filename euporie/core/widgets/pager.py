@@ -12,15 +12,12 @@ from euporie.apptk.layout.dimension import Dimension
 from euporie.apptk.commands import add_cmd
 from euporie.apptk.convert.registry import find_route
 from euporie.apptk.filters import Condition
+from euporie.apptk.key_binding.key_bindings import KeyBindings
 from euporie.apptk.layout.containers import DummyContainer, DynamicContainer, HSplit
 from euporie.apptk.layout.decor import Line
-from euporie.core.filters import pager_has_focus
-from euporie.core.key_binding.registry import (
-    load_registered_bindings,
-    register_bindings,
-)
-from euporie.core.widgets.cell_outputs import CellOutput, CellOutputDataElement
 from euporie.apptk.layout.display import Display
+from euporie.core.filters import pager_has_focus
+from euporie.core.widgets.cell_outputs import CellOutput, CellOutputDataElement
 from euporie.core.widgets.layout import Box
 
 if TYPE_CHECKING:
@@ -84,7 +81,7 @@ class PagerOutputDataElement(CellOutputDataElement):
             always_hide_cursor=True,
             style="class:pager",
             scrollbar_autohide=False,
-            dont_extend_height=True,
+            expand_height=True,
             height=lambda: Dimension(
                 max=int(get_app().output.get_size().rows // 3.5),
             ),
@@ -119,6 +116,8 @@ class Pager:
 
     """
 
+    commands = ("close-pager",)
+
     def __init__(self, height: AnyDimension | None = None) -> None:
         """Create a new page instance."""
         self._state: PagerState | None = None
@@ -138,10 +137,7 @@ class Pager:
                 Box(self.output, padding=0, padding_left=1),
             ],
             style="class:pager",
-            key_bindings=load_registered_bindings(
-                "euporie.core.widgets.pager:Pager",
-                config=get_app().config,
-            ),
+            key_bindings=KeyBindings.from_commands(self.commands),
             height=height,
         )
         dummy = DummyContainer()
@@ -183,19 +179,9 @@ class Pager:
     # ################################## Commands #####################################
 
     @staticmethod
-    @add_cmd(filter=pager_has_focus)
+    @add_cmd(keys=["escape", "q"], filter=pager_has_focus)
     def _close_pager() -> None:
         """Close the pager."""
         app = get_app()
         if app.pager is not None:
             app.pager.hide()
-
-    # ################################# Keybindings ###################################
-
-    register_bindings(
-        {
-            "euporie.core.widgets.pager:Pager": {
-                "close-pager": ["escape", "q"],
-            }
-        }
-    )

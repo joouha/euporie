@@ -12,7 +12,7 @@ from euporie.core.filters import tab_can_save, tab_has_focus
 log = logging.getLogger(__name__)
 
 
-@add_cmd(filter=tab_can_save, aliases=["w"])
+@add_cmd(filter=tab_can_save, aliases=["w"], keys=["c-s"])
 def _save_file(path: str = "") -> None:
     """Save the current file."""
     if (tab := get_app().tab) is not None:
@@ -40,6 +40,7 @@ def _save_and_quit(path: str = "") -> None:
 
 
 @add_cmd(
+    keys=["A-s"],
     menu_title="Save As…",
     filter=tab_can_save,
 )
@@ -53,18 +54,13 @@ def _save_as(path: str = "") -> None:
             dialog.show(tab=app.tab)
 
 
-@add_cmd(filter=tab_has_focus, title="Refresh the current tab")
+@add_cmd(
+    keys=["f5"],
+    aliases=["reset-tab"],
+    filter=tab_has_focus,
+    title="Refresh the current tab",
+)
 def _refresh_tab() -> None:
     """Reload the tab contents and reset the tab."""
     if (tab := get_app().tab) is not None:
         tab.reset()
-
-
-# Depreciated v2.5.0
-@add_cmd(filter=tab_has_focus, title="Reset the current tab")
-def _reset_tab() -> None:
-    log.warning(
-        "The `reset-tab` command was been renamed to `refresh-tab` in v2.5.0,"
-        " and will be removed in a future version"
-    )
-    _refresh_tab()

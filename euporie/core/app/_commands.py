@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from euporie.apptk.key_binding.key_processor import KeyPressEvent
 
 
-@add_cmd(aliases=["q"])
+@add_cmd(keys=["c-q", "<sigint>"], aliases=["q"])
 def _quit() -> None:
     """Quit euporie."""
     get_app().exit()
@@ -28,7 +28,9 @@ def _force_quit() -> None:
     Application.exit(get_app())
 
 
-@add_cmd(menu_title="Open File…", aliases=["o"], icon="", style="class:purple")
+@add_cmd(
+    keys=["c-o"], menu_title="Open File…", aliases=["o"], icon="", style="class:purple"
+)
 def _open_file(path: str = "") -> None:
     """Open a file."""
     if path:
@@ -40,37 +42,37 @@ def _open_file(path: str = "") -> None:
             dialog.show()
 
 
-@add_cmd(aliases=["bc"], filter=tab_has_focus, menu_title="Close File")
+@add_cmd(keys=["c-w"], aliases=["bc"], filter=tab_has_focus, menu_title="Close File")
 def _close_tab() -> None:
     """Close the current tab."""
     get_app().close_tab()
 
 
-@add_cmd(aliases=["bn"], filter=tab_has_focus)
+@add_cmd(keys=["c-pagedown"], aliases=["bn"], filter=tab_has_focus)
 def _next_tab() -> None:
     """Switch to the next tab."""
     get_app().tab_idx += 1
 
 
-@add_cmd(aliases=["bp"], filter=tab_has_focus)
+@add_cmd(keys=["c-pageup"], aliases=["bp"], filter=tab_has_focus)
 def _previous_tab() -> None:
     """Switch to the previous tab."""
     get_app().tab_idx -= 1
 
 
-@add_cmd(filter=~buffer_has_focus)
+@add_cmd(keys=["tab"], filter=~buffer_has_focus)
 def _focus_next() -> None:
     """Focus the next control."""
     get_app().layout.focus_next()
 
 
-@add_cmd(filter=~buffer_has_focus)
+@add_cmd(keys=["s-tab"], filter=~buffer_has_focus)
 def _focus_previous() -> None:
     """Focus the previous control."""
     get_app().layout.focus_previous()
 
 
-@add_cmd()
+@add_cmd(keys=["c-l"])
 def _clear_screen() -> None:
     """Clear the screen."""
     get_app().renderer.clear()

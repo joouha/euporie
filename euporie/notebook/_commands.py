@@ -3,7 +3,7 @@
 from euporie.apptk.commands import add_cmd
 
 
-@add_cmd(aliases=["n"], icon="", style="class:orange")
+@add_cmd(aliases=["n"], icon="", style="class:orange", keys=["c-n"])
 def _new_notebook() -> None:
     """Create a new notebook file."""
     from euporie.notebook.current import get_app
@@ -45,7 +45,7 @@ def _view_documentation() -> None:
     get_app().open_file(UPath("https://euporie.readthedocs.io/"))
 
 
-@add_cmd()
+@add_cmd(keys=["c-b"])
 def _toggle_side_bar_pane() -> None:
     """Open or close the current side-bar pane."""
     from euporie.notebook.current import get_app

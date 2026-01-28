@@ -29,21 +29,23 @@ for name, binding in _readline_commands.items():
 # Update some commands
 
 get_cmd("menu-complete").update(
-    keys=["c-i"],
-    filter=buffer_has_focus & insert_mode & ~has_selection & ~cursor_in_leading_ws,
     hidden=True,
     aliases=["next-completion"],
     description="Show the completion menu and select the next completion.",
+).add_keys(
+    keys=["c-i"],
+    filter=buffer_has_focus & insert_mode & ~has_selection & ~cursor_in_leading_ws,
 )
 
 get_cmd("menu-complete-backward").update(
+    hidden=True,
+    aliases=["previous-completion"],
+    description="Show the completion menu and select the previous completion.",
+).add_keys(
     keys=["s-tab"],
     filter=buffer_has_focus
     & completion_is_selected
     & insert_mode
     & ~has_selection
     & ~cursor_in_leading_ws,
-    hidden=True,
-    aliases=["previous-completion"],
-    description="Show the completion menu and select the previous completion.",
 )
