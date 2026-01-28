@@ -156,7 +156,7 @@ class Datum(Generic[T], metaclass=_MetaDatum):
         elif isinstance(data, str):
             hash_data = data.encode()
         elif isinstance(data, list):
-            hash_data = hash(tuple(data)).to_bytes(8)
+            hash_data = hash(tuple(data)).to_bytes(8, signed=True)
         elif isinstance(data, bytes):
             hash_data = data
         else:
