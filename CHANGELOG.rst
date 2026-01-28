@@ -16,6 +16,17 @@ Added
 ----
 
 ********************
+Upcoming
+********************
+
+Changed
+=======
+
+- Use language-aware comment prefixes when toggling comments
+
+----
+
+********************
 v2.10.3 (2025-12-19)
 ********************
 

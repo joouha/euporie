@@ -68,6 +68,53 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
+def _comment_prefix_for_language() -> str:
+    """Return a comment prefix for the current input language.
+
+    Returns:
+        The comment prefix string for the current input language.
+    """
+    language = ""
+    app = get_app()
+    tab = getattr(app, "tab", None)
+    if tab is not None:
+        current_input = getattr(tab, "current_input", None)
+        if current_input is not None:
+            language = getattr(current_input, "language", "") or ""
+
+    language = str(language).casefold()
+    comment_map = {
+        "bash": "# ",
+        "c": "// ",
+        "c++": "// ",
+        "cpp": "// ",
+        "csharp": "// ",
+        "cs": "// ",
+        "go": "// ",
+        "java": "// ",
+        "javascript": "// ",
+        "js": "// ",
+        "julia": "# ",
+        "kotlin": "// ",
+        "lua": "-- ",
+        "perl": "# ",
+        "php": "// ",
+        "python": "# ",
+        "r": "# ",
+        "ruby": "# ",
+        "rust": "// ",
+        "scala": "// ",
+        "sh": "# ",
+        "sql": "-- ",
+        "swift": "// ",
+        "ts": "// ",
+        "typescript": "// ",
+        "yaml": "# ",
+        "yml": "# ",
+    }
+    return comment_map.get(language, "# ")
+
+
 class EditMode:
     """Micro style editor key-bindings."""
 
@@ -367,7 +414,7 @@ def go_to_end_of_paragraph() -> None:
 )
 def toggle_comment() -> None:
     """Comment or uncomments the current or selected lines."""
-    comment = "# "
+    comment = _comment_prefix_for_language()
     buffer = get_app().current_buffer
     document = buffer.document
     selection_state = buffer.selection_state
