@@ -16,6 +16,8 @@ from euporie.apptk.color import style_fg_bg
 from euporie.apptk.convert.datum import Datum
 from euporie.apptk.convert.registry import find_route
 from euporie.apptk.data_structures import DiInt, Point
+from euporie.apptk.enums import FitMode
+from euporie.apptk.layout.display import calculate_render_size
 from euporie.apptk.formatted_text.utils import split_lines
 from euporie.apptk.layout.controls import GetLinePrefixCallable, UIContent, UIControl
 from euporie.apptk.layout.screen import WritePosition
@@ -38,6 +40,8 @@ class GraphicControl(UIControl, metaclass=ABCMeta):
         scale: float = 0,
         bbox: DiInt | None = None,
         style: str = "",
+        fit_width: FitMode = FitMode.SHRINK,
+        fit_height: FitMode = FitMode.NONE,
     ) -> None:
         """Initialize the graphic control."""
         self.app = get_app()
@@ -46,6 +50,8 @@ class GraphicControl(UIControl, metaclass=ABCMeta):
         self.scale = scale
         self.bbox = bbox or DiInt(0, 0, 0, 0)
         self.style = style
+        self.fit_width = fit_width
+        self.fit_height = fit_height
         self.rendered_lines: list[StyleAndTextTuples] = []
         self._content_cache: SimpleCache = SimpleCache(maxsize=50)
         self._format_cache: SimpleCache = SimpleCache(maxsize=50)
@@ -65,9 +71,56 @@ class GraphicControl(UIControl, metaclass=ABCMeta):
         """Return the number of lines in the rendered content."""
         cols, aspect = self.datum.cell_size()
         if aspect:
-            return ceil(min(width, cols) * aspect)
+            render_width = calculate_render_size(cols, width, self.fit_width) or width
+            return ceil(render_width * aspect)
         self.rendered_lines = self.get_rendered_lines(width, max_available_height)
         return len(self.rendered_lines)
+
+    def _calculate_display_dimensions(
+        self,
+        visible_width: int,
+        visible_height: int,
+    ) -> tuple[int, int]:
+        """Calculate the display dimensions based on fit modes.
+
+        Args:
+            visible_width: The available width in cells.
+            visible_height: The available height in cells.
+
+        Returns:
+            Tuple of (cols, rows) for rendering the graphic.
+        """
+        bbox = self.bbox
+        d_cols, d_aspect = self.datum.cell_size()
+        d_rows = ceil(d_cols * d_aspect) if d_aspect else d_cols
+
+        total_available_width = visible_width + bbox.left + bbox.right
+        total_available_height = visible_height + bbox.top + bbox.bottom
+
+        # Calculate render dimensions using fit modes
+        cols = (
+            calculate_render_size(d_cols, total_available_width, self.fit_width)
+            or total_available_width
+        )
+        rows = (
+            calculate_render_size(d_rows, total_available_height, self.fit_height)
+            or total_available_height
+        )
+
+        # Maintain aspect ratio if we have one
+        if d_aspect:
+            # Determine which dimension is the constraint
+            width_ratio = cols / d_cols if d_cols else 1
+            height_ratio = rows / d_rows if d_rows else 1
+
+            if width_ratio < height_ratio:
+                # Width is more constrained, adjust height
+                rows = ceil(cols * d_aspect)
+            else:
+                # Height is more constrained, adjust width
+                cols = floor(rows / d_aspect) if d_aspect else cols
+
+        return cols, rows
 
     @abstractmethod
     def convert_data(self, wp: WritePosition) -> str:
@@ -186,24 +239,13 @@ class SixelGraphicControl(GraphicControl):
         output = self.output
         bbox = self.bbox
 
-        d_cols, d_aspect = self.datum.cell_size()
-        d_rows = d_cols * d_aspect
+        # Calculate display dimensions using fit modes
+        cols, rows = self._calculate_display_dimensions(visible_width, visible_height)
 
         total_available_width = visible_width + bbox.left + bbox.right
         total_available_height = visible_height + bbox.top + bbox.bottom
 
-        # Scale down the graphic to fit in the available space
-        if d_rows > total_available_height or d_cols > total_available_width:
-            if d_rows / total_available_height > d_cols / total_available_width:
-                ratio = min(1, total_available_height / d_rows)
-            else:
-                ratio = min(1, total_available_width / d_cols)
-        else:
-            ratio = 1
-
-        # Calculate the size and cropping bbox at which we want to display the graphic
-        cols = floor(d_cols * ratio)
-        rows = ceil(cols * d_aspect)
+        # Calculate the cropping bbox
         d_bbox = DiInt(
             top=self.bbox.top,
             right=max(0, cols - (total_available_width - self.bbox.right)),
@@ -262,38 +304,6 @@ class SixelGraphicControl(GraphicControl):
 class ItermGraphicControl(GraphicControl):
     """A graphic control which displays images using iTerm's graphics protocol."""
 
-    def convert_data(self, wp: WritePosition) -> str:
-        """Convert the graphic's data to base64 data."""
-        datum = self.datum
-        bbox = wp.bbox
-        # Crop image if necessary
-        if any(bbox):
-            import io
-
-            fg, bg = style_fg_bg(self.style)
-            image = datum.convert(to="pil", cols=wp.width, rows=wp.height, fg=fg, bg=bg)
-            if image is not None:
-                cell_size_x, cell_size_y = self.app.output.cell_pixel_size
-                # Downscale image to fit target region for precise cropping
-                image.thumbnail((wp.width * cell_size_x, wp.height * cell_size_y))
-                left = bbox.left * cell_size_x
-                top = bbox.top * cell_size_y
-                right = (wp.width - bbox.right) * cell_size_x
-                bottom = (wp.height - bbox.bottom) * cell_size_y
-                upper, lower = sorted((top, bottom))
-                image = image.crop((left, upper, right, lower))
-                with io.BytesIO() as output:
-                    image.save(output, format="PNG")
-                    datum = Datum(data=output.getvalue(), format="png")
-
-        if datum.format.startswith("base64-"):
-            b64data = datum.data
-        else:
-            b64data = datum.convert(
-                to="base64-png", cols=wp.width, rows=wp.height, fg=fg, bg=bg
-            )
-        return b64data.replace("\n", "").strip()
-
     def get_rendered_lines(
         self, visible_width: int, visible_height: int, wrap_lines: bool = False
     ) -> list[StyleAndTextTuples]:
@@ -301,24 +311,13 @@ class ItermGraphicControl(GraphicControl):
         output = self.output
         bbox = self.bbox
 
-        d_cols, d_aspect = self.datum.cell_size()
-        d_rows = d_cols * d_aspect
+        # Calculate display dimensions using fit modes
+        cols, rows = self._calculate_display_dimensions(visible_width, visible_height)
 
         total_available_width = visible_width + bbox.left + bbox.right
         total_available_height = visible_height + bbox.top + bbox.bottom
 
-        # Scale down the graphic to fit in the available space
-        if d_rows > total_available_height or d_cols > total_available_width:
-            if d_rows / total_available_height > d_cols / total_available_width:
-                ratio = min(1, total_available_height / d_rows)
-            else:
-                ratio = min(1, total_available_width / d_cols)
-        else:
-            ratio = 1
-
-        # Calculate the size and cropping bbox at which we want to display the graphic
-        cols = floor(d_cols * ratio)
-        rows = ceil(cols * d_aspect)
+        # Calculate the cropping bbox
         d_bbox = DiInt(
             top=self.bbox.top,
             right=max(0, cols - (total_available_width - self.bbox.right)),
@@ -377,6 +376,38 @@ class ItermGraphicControl(GraphicControl):
         )
         return self._format_cache.get(key, render_lines)
 
+    def convert_data(self, wp: WritePosition) -> str:
+        """Convert the graphic's data to base64 data."""
+        datum = self.datum
+        bbox = wp.bbox
+        # Crop image if necessary
+        if any(bbox):
+            import io
+
+            fg, bg = style_fg_bg(self.style)
+            image = datum.convert(to="pil", cols=wp.width, rows=wp.height, fg=fg, bg=bg)
+            if image is not None:
+                cell_size_x, cell_size_y = self.app.output.cell_pixel_size
+                # Downscale image to fit target region for precise cropping
+                image.thumbnail((wp.width * cell_size_x, wp.height * cell_size_y))
+                left = bbox.left * cell_size_x
+                top = bbox.top * cell_size_y
+                right = (wp.width - bbox.right) * cell_size_x
+                bottom = (wp.height - bbox.bottom) * cell_size_y
+                upper, lower = sorted((top, bottom))
+                image = image.crop((left, upper, right, lower))
+                with io.BytesIO() as output:
+                    image.save(output, format="PNG")
+                    datum = Datum(data=output.getvalue(), format="png")
+
+        if datum.format.startswith("base64-"):
+            b64data = datum.data
+        else:
+            b64data = datum.convert(
+                to="base64-png", cols=wp.width, rows=wp.height, fg=fg, bg=bg
+            )
+        return b64data.replace("\n", "").strip()
+
 
 class BaseKittyGraphicControl(GraphicControl):
     """Base graphic control with common methods for both styles of kitty display."""
@@ -389,9 +420,18 @@ class BaseKittyGraphicControl(GraphicControl):
         scale: float = 0,
         bbox: DiInt | None = None,
         style: str = "",
+        fit_width: FitMode = FitMode.SHRINK,
+        fit_height: FitMode = FitMode.NONE,
     ) -> None:
         """Create a new kitty graphic instance."""
-        super().__init__(datum=datum, scale=scale, bbox=bbox)
+        super().__init__(
+            datum=datum,
+            scale=scale,
+            bbox=bbox,
+            style=style,
+            fit_width=fit_width,
+            fit_height=fit_height,
+        )
         self.kitty_image_id = 0
         self.loaded = False
         self._datum_pad_cache: FastDictCache[tuple[Datum, int, int], Datum] = (
@@ -524,24 +564,13 @@ class KittyGraphicControl(BaseKittyGraphicControl):
         px = px or 100
         py = py or 100
 
-        d_cols, d_aspect = datum.cell_size()
-        d_rows = d_cols * d_aspect
+        # Calculate display dimensions using fit modes
+        cols, rows = self._calculate_display_dimensions(visible_width, visible_height)
 
         total_available_width = visible_width + bbox.left + bbox.right
         total_available_height = visible_height + bbox.top + bbox.bottom
 
-        # Scale down the graphic to fit in the available space
-        if d_rows > total_available_height or d_cols > total_available_width:
-            if d_rows / total_available_height > d_cols / total_available_width:
-                ratio = min(1, total_available_height / d_rows)
-            else:
-                ratio = min(1, total_available_width / d_cols)
-        else:
-            ratio = 1
-
-        # Calculate the size and cropping bbox at which we want to display the graphic
-        cols = floor(d_cols * ratio)
-        rows = ceil(cols * d_aspect)
+        # Calculate the cropping bbox
         d_bbox = DiInt(
             top=self.bbox.top,
             right=max(0, cols - (total_available_width - self.bbox.right)),
@@ -689,9 +718,18 @@ class KittyUnicodeGraphicControl(BaseKittyGraphicControl):
         scale: float = 0,
         bbox: DiInt | None = None,
         style: str = "",
+        fit_width: FitMode = FitMode.SHRINK,
+        fit_height: FitMode = FitMode.NONE,
     ) -> None:
         """Create a new kitty graphic instance."""
-        super().__init__(datum, scale, bbox)
+        super().__init__(
+            datum=datum,
+            scale=scale,
+            bbox=bbox,
+            style=style,
+            fit_width=fit_width,
+            fit_height=fit_height,
+        )
         self.placements: set[tuple[int, int]] = set()
 
     def get_rendered_lines(
@@ -703,29 +741,14 @@ class KittyUnicodeGraphicControl(BaseKittyGraphicControl):
 
         cell_size_px = self.app.output.cell_pixel_size
         datum = self._datum_pad_cache[(self.datum, *cell_size_px)]
-        px, py = datum.pixel_size()
-        # Fall back to a default pixel size
-        px = px or 100
-        py = py or 100
 
-        d_cols, d_aspect = datum.cell_size()
-        d_rows = d_cols * d_aspect
+        # Calculate display dimensions using fit modes
+        cols, rows = self._calculate_display_dimensions(visible_width, visible_height)
 
         total_available_width = visible_width + bbox.left + bbox.right
         total_available_height = visible_height + bbox.top + bbox.bottom
 
-        # Scale down the graphic to fit in the available space
-        if d_rows > total_available_height or d_cols > total_available_width:
-            if d_rows / total_available_height > d_cols / total_available_width:
-                ratio = min(1, total_available_height / d_rows)
-            else:
-                ratio = min(1, total_available_width / d_cols)
-        else:
-            ratio = 1
-
-        # Calculate the size and cropping bbox at which we want to display the graphic
-        cols = floor(d_cols * ratio)
-        rows = ceil(cols * d_aspect)
+        # Calculate the cropping bbox
         d_bbox = DiInt(
             top=self.bbox.top,
             right=max(0, cols - (total_available_width - self.bbox.right)),

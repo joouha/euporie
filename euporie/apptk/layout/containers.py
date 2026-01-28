@@ -39,7 +39,6 @@ from euporie.apptk.layout.controls import (
     to_formatted_text,
 )
 from euporie.apptk.layout.controls import DummyControl as PtkDummyControl
-from euporie.apptk.layout.graphics import select_graphic_control
 from euporie.apptk.layout.margins import ClickableMargin, Margin
 from euporie.apptk.layout.screen import _CHAR_CACHE, WritePosition
 from euporie.apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
@@ -1342,16 +1341,18 @@ class Window(ptk_containers.Window):
             horizontal_scroll: Current horizontal scroll offset
             z_index: The z-index of the graphic's window
         """
+        from euporie.apptk.layout.graphics import select_graphic_control
+
         app = get_app()
         renderer = app.renderer
         positions = ui_content.graphic_positions
 
         for key, content_pos in positions.items():
-            # Get datum and size
+            # Get datum, size, and fit modes
             sized_datum = Datum.get_size(key)
             if sized_datum is None:
                 continue
-            datum, size = sized_datum
+            datum, size, fit_width, fit_height = sized_datum
 
             # Checks whether the datum has a graphical representation, and if so, create
             # a graphic control for it and add it to the screen for deferred drawing
@@ -1367,7 +1368,13 @@ class Window(ptk_containers.Window):
                 continue
             graphic_control = self._graphic_control_cache.get(
                 (key, datum.hash, parent_style, ControlClass),
-                partial(ControlClass, datum, style=parent_style),
+                partial(
+                    ControlClass,
+                    datum,
+                    style=parent_style,
+                    fit_width=fit_width,
+                    fit_height=fit_height,
+                ),
             )
 
             screen.draw_with_z_index(

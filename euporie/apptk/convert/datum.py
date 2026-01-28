@@ -21,7 +21,7 @@ from euporie.apptk.convert.registry import (
     converters,
 )
 from euporie.apptk.data_structures import Size
-from euporie.apptk.enums import HorizontalAlign
+from euporie.apptk.enums import FitMode, HorizontalAlign
 from euporie.apptk.eventloop.utils import get_or_create_loop, run_coro_sync
 
 if TYPE_CHECKING:
@@ -80,7 +80,9 @@ class Datum(Generic[T], metaclass=_MetaDatum):
     _hash: str
     _root: ReferenceType[Datum]
 
-    _sizes: ClassVar[dict[str, tuple[ReferenceType[Datum], Size]]] = {}
+    _sizes: ClassVar[
+        dict[str, tuple[ReferenceType[Datum], Size, FitMode, FitMode]]
+    ] = {}
 
     def __init__(
         self,
@@ -138,7 +140,7 @@ class Datum(Generic[T], metaclass=_MetaDatum):
     def _cleanup_datum_sizes(cls, data_hash: str) -> None:
         """Remove all sizes for a given datum hash."""
         size_instances = cls._sizes
-        for key, (datum_ref, _size) in list(size_instances.items()):
+        for key, (datum_ref, _size, _fit_width, _fit_height) in list(size_instances.items()):
             datum = datum_ref()
             if not datum or datum.hash == data_hash:
                 try:
@@ -461,18 +463,39 @@ class Datum(Generic[T], metaclass=_MetaDatum):
     # def crop(self, bbox: DiInt) -> T:
     #     """Crop displayable data."""
 
-    def add_size(self, size: tuple[int, int] | Size) -> str:
-        """Store a size for a :py:class`Datum`."""
-        sized_datum = (ref(self), Size(*size))
-        key = str(hash(sized_datum))
+    def add_size(
+        self,
+        size: tuple[int, int] | Size,
+        fit_width: FitMode = FitMode.SHRINK,
+        fit_height: FitMode = FitMode.NONE,
+    ) -> str:
+        """Store a size for a :py:class`Datum`.
+
+        Args:
+            size: The size as (rows, cols) or Size object.
+            fit_width: How to fit content horizontally.
+            fit_height: How to fit content vertically.
+
+        Returns:
+            A key that can be used to retrieve the datum and size.
+        """
+        sized_datum = (ref(self), Size(*size), fit_width, fit_height)
+        key = str(hash((sized_datum[0](), sized_datum[1])))
         self._sizes[key] = sized_datum
         return key
 
     @classmethod
-    def get_size(cls, key: str) -> tuple[Datum, Size] | None:
-        """Retrieve a :py:class:`Datum` and it's size by its key."""
+    def get_size(cls, key: str) -> tuple[Datum, Size, FitMode, FitMode] | None:
+        """Retrieve a :py:class:`Datum` and its size by its key.
+
+        Args:
+            key: The key returned by add_size.
+
+        Returns:
+            Tuple of (datum, size, fit_width, fit_height) or None if not found.
+        """
         if sized_datum := cls._sizes.get(key):
-            datum_ref, size = sized_datum
+            datum_ref, size, fit_width, fit_height = sized_datum
             if datum := datum_ref():
-                return datum, size
+                return datum, size, fit_width, fit_height
         return None
