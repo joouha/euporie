@@ -348,6 +348,9 @@ class Datum(Generic[T], metaclass=_MetaDatum):
             if format == "ansi":
                 break
 
+            if format == "ft":
+                break
+
             from PIL.Image import Image as PilImage
 
             if isinstance(self_data, PilImage):
@@ -411,13 +414,40 @@ class Datum(Generic[T], metaclass=_MetaDatum):
                 converted to a image.
         """
         if self._cell_size is None:
-            cols, aspect = 0, 0.0
-            px, py = await self.pixel_size_async()
-            if px is not None and py is not None:
-                app = get_app()
-                cell_px, cell_py = app.output.cell_pixel_size
-                cols = max(1, int(px // cell_px))
-                aspect = (py / cell_py) / (px / cell_px)
+            cols = 0
+            aspect = 0.0
+            format = self.format
+            data = self.data
+
+            if format == "ansi":
+                from euporie.apptk.formatted_text.ansi import ANSI
+
+                format = "ft"
+                data = ANSI(data)
+
+            if format == "ft":
+                from euporie.apptk.formatted_text.base import to_formatted_text
+
+                from euporie.apptk.formatted_text.utils import (
+                    max_line_width,
+                    split_lines,
+                )
+
+                ft = to_formatted_text(data)
+                cols = max_line_width(ft)
+                rows = len(list(split_lines(ft)))
+                if cols > 0:
+                    aspect = rows / cols
+
+            else:
+                cols, aspect = 0, 0.0
+                px, py = await self.pixel_size_async()
+                if px is not None and py is not None:
+                    app = get_app()
+                    cell_px, cell_py = app.output.cell_pixel_size
+                    cols = max(1, int(px // cell_px))
+                    aspect = (py / cell_py) / (px / cell_px)
+
             self._cell_size = cols, aspect
         return self._cell_size
 
