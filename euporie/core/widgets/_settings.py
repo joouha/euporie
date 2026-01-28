@@ -96,6 +96,7 @@ add_setting(
     """,
     hooks=[lambda x: get_app().refresh()],
     keys=["l"],
+    filter=~buffer_has_focus,
 )
 
 add_setting(

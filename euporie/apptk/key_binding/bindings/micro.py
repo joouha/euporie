@@ -36,9 +36,6 @@ from euporie.apptk.filters.modes import (
     micro_replace_mode,
 )
 from euporie.apptk.key_binding import ConditionalKeyBindings, KeyBindings
-from euporie.apptk.key_binding.bindings.named_commands import (
-    get_by_name,
-)
 from euporie.apptk.key_binding.micro_state import MicroInputMode
 from euporie.apptk.key_binding.utils import if_no_repeat
 from euporie.apptk.keys import Keys
@@ -874,7 +871,7 @@ def micro_extend_selection(event: KeyPressEvent) -> None:
 def micro_replace_selection(event: KeyPressEvent) -> None:
     """Replace selection by what is typed."""
     event.current_buffer.cut_selection()
-    get_by_name("self-insert").call(event)
+    get_cmd("self-insert").handler(event)
 
 
 @add_cmd(

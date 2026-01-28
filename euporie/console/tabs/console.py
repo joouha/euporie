@@ -60,7 +60,6 @@ class Console(BaseConsole):
     commands = (
         *BaseConsole.commands,
         "clear-input",
-        "cc-interrupt-kernel",
         "run-input",
         "end-of-file",
         "clear-screen",

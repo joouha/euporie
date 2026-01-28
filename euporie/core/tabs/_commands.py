@@ -7,7 +7,18 @@ import logging
 from euporie.apptk.application.current import get_app
 
 from euporie.apptk.commands import add_cmd
-from euporie.core.filters import tab_can_save, tab_has_focus
+from euporie.apptk.filters import (
+    buffer_has_focus,
+)
+from euporie.apptk.filters.app import display_has_focus
+from euporie.apptk.filters.buffer import buffer_is_code, buffer_is_empty
+from euporie.core.filters import (
+    kernel_tab_has_focus,
+    tab_can_save,
+    tab_has_focus,
+    tab_type_has_focus,
+)
+from euporie.core.tabs.kernel import KernelTab
 
 log = logging.getLogger(__name__)
 
@@ -64,3 +75,33 @@ def _refresh_tab() -> None:
     """Reload the tab contents and reset the tab."""
     if (tab := get_app().tab) is not None:
         tab.reset()
+
+
+@add_cmd(
+    bindings=[
+        {
+            "keys": [("i", "i")],
+            "filter": kernel_tab_has_focus & ~buffer_has_focus & ~display_has_focus,
+        },
+        {
+            "filter": buffer_is_code
+            & buffer_is_empty
+            & tab_type_has_focus("euporie.core.tabs.console:BaseConsole"),
+            "keys": ["c-c", "<sigint>"],
+        },
+    ]
+)
+def _interrupt_kernel() -> None:
+    """Interrupt the notebook's kernel."""
+    if isinstance(kt := get_app().tab, KernelTab):
+        kt.interrupt_kernel()
+
+
+@add_cmd(
+    keys=[("0", "0")],
+    filter=kernel_tab_has_focus & ~buffer_has_focus & ~display_has_focus,
+)
+def _restart_kernel() -> None:
+    """Restart the notebook's kernel."""
+    if isinstance(kt := get_app().tab, KernelTab):
+        kt.restart_kernel()

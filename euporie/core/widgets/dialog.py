@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING
 
 from euporie.apptk.application.current import get_app
 from euporie.apptk.key_binding.bindings.focus import focus_next, focus_previous
-from euporie.apptk.key_binding.key_bindings import DynamicKeyBindings, KeyBindings
 from euporie.apptk.layout.dimension import Dimension
 from euporie.apptk.widgets.base import Label
 
@@ -30,6 +29,7 @@ from euporie.apptk.filters import (
     vi_insert_mode,
 )
 from euporie.apptk.formatted_text.utils import lex
+from euporie.apptk.key_binding.key_bindings import DynamicKeyBindings, KeyBindings
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
@@ -54,10 +54,10 @@ if TYPE_CHECKING:
 
     from euporie.apptk.buffer import Buffer
     from euporie.apptk.formatted_text.base import StyleAndTextTuples
-    from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
     from euporie.apptk.layout.layout import FocusableElement
 
     from euporie.apptk.formatted_text import AnyFormattedText
+    from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
     from euporie.apptk.key_binding.key_processor import KeyPressEvent
     from euporie.apptk.layout.containers import AnyContainer
     from euporie.core.app.app import BaseApp
@@ -778,28 +778,20 @@ class ShortcutsDialog(Dialog):
 
     def load(self, *args: Any, **kwargs: Any) -> None:
         """Load the dialog body."""
-        from euporie.apptk.formatted_text.utils import max_line_width
-        from euporie.apptk.layout.containers import MarginContainer
-        from euporie.apptk.layout.margins import ScrollbarMargin
-        from euporie.core.widgets.formatted_text_area import FormattedTextArea
+        from euporie.apptk.convert.datum import Datum
+        from euporie.apptk.layout.display import Display
 
         if not self.details:
             self.details = self.format_key_info()
-        assert self.details is not None
 
-        width = max_line_width(self.details)
-
-        fta = FormattedTextArea(
-            formatted_text=self.details,
-            multiline=True,
-            focusable=True,
-            wrap_lines=False,
-            width=width - 2,
+        self.body = Display(
+            Datum(self.details, format="ft"), focusable=True, focus_on_click=True
         )
-        self.body = VSplit([fta, MarginContainer(ScrollbarMargin(), target=fta.window)])
 
     def format_key_info(self) -> StyleAndTextTuples:
         """Generate a table with the current key bindings."""
+        import importlib
+        import inspect
         import pkgutil
         from textwrap import dedent
 
@@ -810,17 +802,49 @@ class ShortcutsDialog(Dialog):
         from euporie.apptk.data_structures import DiInt
         from euporie.apptk.formatted_text.table import Table
         from euporie.apptk.formatted_text.utils import HorizontalAlign
-        from euporie.apptk.key_binding.utils import format_keys, parse_keys
-        from euporie.core.key_binding.registry import BINDINGS
 
-        table = Table(padding=0)
+        table = Table(padding=DiInt(0, 1, 0, 1))
 
-        for group, bindings in BINDINGS.items():
-            if any(not get_cmd(cmd_name).hidden() for cmd_name in bindings):
-                app_cls = pkgutil.resolve_name(group)
-                section_title = (
-                    dedent(app_cls.__doc__).strip().split("\n")[0].rstrip(".")
-                )
+        # Import the root package
+        package_name = "euporie"
+        package = importlib.import_module(package_name)
+        modules_to_check = pkgutil.walk_packages(
+            path=package.__path__,
+            prefix=package_name + ".",
+        )
+        for _importer, modname, _ispkg in modules_to_check:
+            # Import the module
+            module = importlib.import_module(modname)
+            # Get all classes defined in the module
+            for _name, cls in inspect.getmembers(
+                module, lambda x: hasattr(x, "commands")
+            ):
+                # Check if the class is defined in this module (not just imported)
+                # Check if the class has 'commands' attribute
+                if cls.__module__ != modname:  # or not hasattr(cls, "commands"):
+                    continue
+                # Remove commands defined in base class
+                commands = dict.fromkeys(cls.commands).keys()
+                for base in cls.__bases__:  # Skip class itself and object
+                    commands ^= dict.fromkeys(getattr(base, "commands", [])).keys()
+                if not commands:
+                    continue
+                # Get commands from names, excluding hidden commands
+                cmds = []
+                for name in commands:
+                    try:
+                        cmd = get_cmd(name)
+                    except KeyError:
+                        log.exception("Command not found: '%s'", name)
+                        continue
+                    else:
+                        if not cmd.hidden() and cmd.bindings:
+                            cmds.append(cmd)
+                # Skip this class if all commands are hidden
+                if not cmds:
+                    continue
+
+                section_title = dedent(cls.__doc__).strip().split("\n")[0].rstrip(".")
 
                 row = table.new_row()
                 row.new_cell(
@@ -831,26 +855,23 @@ class ShortcutsDialog(Dialog):
                     border_visibility=True,
                     border_line=InvisibleLine,
                 )
-                for i, (cmd_name, keys) in enumerate(bindings.items()):
-                    cmd = get_cmd(cmd_name)
-                    if not cmd.hidden():
-                        key_strs = format_keys(parse_keys(keys))
-                        row = table.new_row(
-                            style="class:shortcuts.row" + (",alt" if i % 2 else "")
-                        )
-                        row.new_cell(
-                            "\n".join(key_strs),
-                            align=HorizontalAlign.RIGHT,
-                            style="class:key",
-                            border_visibility=False,
-                            border_line=InvisibleLine,
-                        )
-                        row.new_cell(
-                            cmd.title,
-                            border_visibility=False,
-                            border_line=InvisibleLine,
-                        )
-        table.padding = DiInt(0, 1, 0, 1)
+                for i, cmd in enumerate(cmds):
+                    key_strs = cmd.key_strs()
+                    row = table.new_row(
+                        style="class:shortcuts.row" + (",alt" if i % 2 else "")
+                    )
+                    row.new_cell(
+                        "\n".join(key_strs),
+                        align=HorizontalAlign.RIGHT,
+                        style="class:key",
+                        border_visibility=False,
+                        border_line=InvisibleLine,
+                    )
+                    row.new_cell(
+                        cmd.title,
+                        border_visibility=False,
+                        border_line=InvisibleLine,
+                    )
 
         return to_formatted_text(table)
 
