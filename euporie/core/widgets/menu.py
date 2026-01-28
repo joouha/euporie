@@ -156,7 +156,7 @@ class MenuItem:
         return cls(
             formatted_text=cmd.menu_title,
             handler=cmd.run,
-            shortcut=cmd.key_str,
+            shortcut=lambda: next(cmd.key_strs(), ""),
             disabled=~cmd.filter,
             hidden=cmd.hidden,
             toggled=cmd.toggled,

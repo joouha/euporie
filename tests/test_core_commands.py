@@ -198,29 +198,29 @@ def test_command_bind(command: Command) -> None:
     key_bindings.bindings.append.assert_called_once()
 
 
-def test_key_str(command: Command) -> None:
+def test_key_strs(command: Command) -> None:
     """Key strings are formatted as expected."""
     kb = Mock()
 
     command.keys = []
     command.bind(kb, Keys.ControlA)
-    assert command.key_str() == "Ctrl+A"
+    assert command.key_strs() == ["Ctrl+A"]
 
     command.keys = []
     command.bind(kb, "c-a")
-    assert command.key_str() == "Ctrl+A"
+    assert command.key_strs() == ["Ctrl+A"]
 
     command.keys = []
     command.bind(kb, ("escape", "a"))
-    assert command.key_str() == "Alt+A"
+    assert command.key_strs() == ["Alt+A"]
 
     command.keys = []
     command.bind(kb, ("a", "b"))
-    assert command.key_str() == "A, B"
+    assert command.key_strs() == ["A, B"]
 
     command.keys = []
     command.bind(kb, [("a", "b"), ("c-a", "c-b")])
-    assert command.key_str() == "A, B"
+    assert command.key_strs() == ["A, B", "c-A, c-B"]
 
 
 def test_command_menu_handler(command: Command, mock_handler: CommandHandler) -> None:

@@ -7,7 +7,7 @@ from euporie.apptk.commands import get_cmd
 
 def k(cmd: str) -> str:
     """Shortcut to get formatted key-binding for a command."""
-    return get_cmd(cmd).key_str()
+    return next(get_cmd(cmd).key_strs(), "")
 
 
 TIPS: list[str] = [

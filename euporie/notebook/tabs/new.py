@@ -186,9 +186,15 @@ class NewTab(Tab):
             [
                 [
                     ("", "Press "),
-                    ("bold", get_cmd("new-notebook").key_str()),
+                    ("bold", next(get_cmd("new-notebook").key_strs(), "")),
                     ("", " to start a new notebook"),
                 ],
             ],
-            [[("", "Press "), ("bold", get_cmd("quit").key_str()), ("", " to quit")]],
+            [
+                [
+                    ("", "Press "),
+                    ("bold", next(get_cmd("quit").key_strs(), "")),
+                    ("", " to quit"),
+                ]
+            ],
         )

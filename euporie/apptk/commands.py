@@ -16,7 +16,7 @@ from euporie.apptk.key_binding.key_processor import KeyPressEvent
 from euporie.apptk.key_binding.utils import format_keys, parse_keys
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Coroutine
+    from collections.abc import Callable, Coroutine, Iterator
     from typing import Any, TypedDict, Unpack
 
     from euporie.apptk.filters import Filter, FilterOrBool
@@ -500,14 +500,11 @@ class Command:
         for binding in self.bindings:
             key_bindings.bindings.append(binding)
 
-    def key_str(self) -> str:
-        """Return a string representing the first registered key-binding."""
-        # keys = get_app().key_processor._bindings.handler_keys.get(self.key_handler, [])
-        # if keys:
-        #     return format_keys(keys[0])[0]
-        if self.bindings:
-            return format_keys(list(self.bindings[0].keys))[0]
-        return ""
+    def key_strs(self) -> Iterator[str]:
+        """Return a list of strings representing registered key-bindings."""
+        yield from (
+            ",".join(format_keys(list(binding.keys))) for binding in self.bindings
+        )
 
 
 def add_cmd(
