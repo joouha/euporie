@@ -16,7 +16,6 @@ from euporie.apptk.io import PseudoTTY
 from euporie.apptk.layout.containers import DynamicContainer, FloatContainer, Window
 from euporie.apptk.output.vt100 import Vt100_Output
 from euporie.core.app.app import BaseApp
-from euporie.core.key_binding.registry import register_bindings
 from euporie.preview.tabs.notebook import PreviewNotebook
 
 if TYPE_CHECKING:
@@ -191,19 +190,6 @@ class PreviewApp(BaseApp):
 
     def _update_invalidate_events(self) -> None:
         """Do nothing, as we don't need invalidation events for the preview app."""
-
-    # def load_key_bindings(self) -> None:
-    #     """Do no load any additional key-bindings for the preview app."""
-
-    # ################################# Key Bindings ##################################
-
-    register_bindings(
-        {
-            "euporie.preview.app:PreviewApp": {
-                "quit": ["c-c", "c-q"],
-            }
-        }
-    )
 
 
 def get_preview_app() -> PreviewApp:

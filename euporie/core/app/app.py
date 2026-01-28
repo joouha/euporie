@@ -20,6 +20,7 @@ from euporie.apptk.utils import Event
 from euporie.apptk.application.application import Application, _CombinedRegistry
 from euporie.apptk.color import Color, ColorPalette
 from euporie.apptk.filters import Condition
+from euporie.apptk.key_binding.key_bindings import KeyBindings
 from euporie.apptk.key_binding.key_processor import KeyProcessor
 from euporie.apptk.layout.containers import Float, FloatContainer, Window, to_container
 from euporie.apptk.output.vt100 import (
@@ -45,10 +46,6 @@ from euporie.core.app.base import ConfigurableApp
 from euporie.core.app.cursor import CursorConfig
 from euporie.core.filters import has_toolbar
 from euporie.core.format import CliFormatter
-from euporie.core.key_binding.registry import (
-    load_registered_bindings,
-    register_bindings,
-)
 from euporie.core.log import setup_logs
 from euporie.core.lsp import KNOWN_LSP_SERVERS, LspClient
 from euporie.core.style import (
@@ -118,6 +115,24 @@ class BaseApp(ConfigurableApp, Application, ABC):
     """
 
     _config_defaults: ClassVar[dict[str, Any]] = {"log_level_stdout": "critical"}
+
+    commands = (
+        "quit",
+        "close-tab",
+        "next-tab",
+        "previous-tab",
+        "focus-next",
+        "focus-previous",
+        "clear-screen",
+        "open-file",
+        "save-as",
+        "toggle-command-palette",
+        "activate-command-bar",
+        "activate-command-bar-shell",
+        "find",
+        "find-next",
+        "find-previous",
+    )
 
     def __init__(
         self,
@@ -222,11 +237,6 @@ class BaseApp(ConfigurableApp, Application, ABC):
         self.ttimeoutlen = 0.0
         # Use a custom key-processor which does not wait after escape keys
         self.key_processor = KeyProcessor(_CombinedRegistry(self))
-        # List of key-bindings groups to load
-        self.bindings_to_load = [
-            "euporie.core.app.app:BaseApp",
-            "euporie.core.key_binding.bindings.terminal:TerminalQueries",
-        ]
         # Allow hiding element when manually redrawing app
         self._redrawing = False
         self.redrawing = Condition(lambda: self._redrawing)
@@ -252,7 +262,9 @@ class BaseApp(ConfigurableApp, Application, ABC):
             CliFormatter(**info) for info in self.config.formatters
         ]
 
-        self.pre_run_callables.append(self.load_key_bindings)
+        # Load key-bindings
+        self.key_bindings = KeyBindings.from_commands(self.commands)
+        self.bindings_to_load = []
 
     def pause_rendering(self) -> None:
         """Block rendering, but allows input to be processed.
@@ -314,12 +326,6 @@ class BaseApp(ConfigurableApp, Application, ABC):
         # Call extra callables
         for cb in self.post_load_callables:
             cb()
-
-    def load_key_bindings(self) -> None:
-        """Load the application's key bindings."""
-        self.key_bindings = load_registered_bindings(
-            *self.bindings_to_load, config=self.config
-        )
 
     def _on_resize(self) -> None:
         """Query the terminal dimensions on a resize event."""
@@ -668,21 +674,3 @@ class BaseApp(ConfigurableApp, Application, ABC):
         exception = context.get("exception")
         # Log observed exceptions to the log
         log.exception("An unhandled exception occurred", exc_info=exception)
-
-    # ################################# Key Bindings ##################################
-
-    register_bindings(
-        {
-            "euporie.core.app.app:BaseApp": {
-                "quit": ["c-q", "<sigint>"],
-                "close-tab": "c-w",
-                "next-tab": "c-pagedown",
-                "previous-tab": "c-pageup",
-                "focus-next": "tab",
-                "focus-previous": "s-tab",
-                "clear-screen": "c-l",
-                "open-file": "c-o",
-                "save-as": "A-s",
-            }
-        }
-    )

@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 from collections import deque
 from copy import deepcopy
-from functools import partial
 from typing import TYPE_CHECKING, ClassVar
 from uuid import uuid4
 
@@ -15,6 +14,7 @@ from euporie.apptk.layout.dimension import Dimension
 from euporie.apptk.commands import get_cmd
 from euporie.apptk.filters import Condition
 from euporie.apptk.filters.modes import insert_mode, replace_mode
+from euporie.apptk.key_binding.key_bindings import KeyBindings
 from euporie.apptk.layout.cache import CachedContainer
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
@@ -29,10 +29,6 @@ from euporie.apptk.mouse_events import MouseEventType
 from euporie.core.filters import (
     multiple_cells_selected,
 )
-from euporie.core.key_binding.registry import (
-    load_registered_bindings,
-    register_bindings,
-)
 from euporie.core.nbformat import NOTEBOOK_EXTENSIONS, new_code_cell
 from euporie.core.style import KERNEL_STATUS_REPR
 from euporie.core.tabs.notebook import BaseNotebook
@@ -44,8 +40,8 @@ if TYPE_CHECKING:
     from typing import Any
 
     from euporie.apptk.formatted_text.base import AnyFormattedText
-    from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
 
+    from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
     from euporie.apptk.layout.containers import AnyContainer
     from euporie.apptk.mouse_events import MouseEvent
     from euporie.core.app.app import BaseApp
@@ -245,11 +241,7 @@ class Notebook(BaseNotebook):
             ],
             width=Dimension(weight=1),
             height=Dimension(min=1, weight=2),
-            key_bindings=load_registered_bindings(
-                "euporie.core.tabs.base:Tab",
-                "euporie.notebook.tabs.notebook:Notebook",
-                config=self.app.config,
-            ),
+            key_bindings=KeyBindings.from_commands(self.commands),
         )
 
     @property
@@ -598,58 +590,55 @@ class Notebook(BaseNotebook):
 
     # ################################# Key Bindings ##################################
 
-    register_bindings(
-        {
-            "euporie.notebook.tabs.notebook:Notebook": {
-                "enter-cell-edit-mode": "enter",
-                "exit-edit-mode": "escape",
-                "run-selected-cells": ["c-enter", "c-e", "c-s-f8"],
-                "run-and-select-next": ["s-enter", "c-r", "s-f9"],
-                "run-cell-and-insert-below": ("A-enter"),
-                "add-cell-above": "a",
-                "add-cell-below": "b",
-                "delete-cells": ("d", "d"),
-                "undelete-cells": "z",
-                "cut-cells": "x",
-                "copy-cells": "c",
-                "copy-outputs": ("A-c"),
-                "paste-cells": "v",
-                "interrupt-kernel": ("i", "i"),
-                "restart-kernel": ("0", "0"),
-                "scroll-up": ["[", "<scroll-up>"],
-                "scroll-down": ["]", "<scroll-down>"],
-                "scroll-up-5-lines": "{",
-                "scroll-down-5-lines": "}",
-                "select-first-cell": ["home", "c-up"],
-                "select-5th-previous-cell": "pageup",
-                "select-previous-cell": ["up", "k"],
-                "select-next-cell": ["down", "j"],
-                "select-5th-next-cell": "pagedown",
-                "select-last-cell": ["end", "c-down"],
-                "select-all-cells": "c-a",
-                "extend-cell-selection-to-top": "s-home",
-                "extend-cell-selection-up": ["s-up", "K"],
-                "extend-cell-selection-down": ["s-down", "J"],
-                "extend-cell-selection-to-bottom": "s-end",
-                "move-cells-up": ("A-up"),
-                "move-cells-down": ("A-down"),
-                "cells-to-markdown": "m",
-                "cells-to-code": "y",
-                "cells-to-raw": "r",
-                "reformat-cells": "f",
-                "reformat-notebook": "F",
-                "edit-in-external-editor": "e",
-                "merge-cells": "M",
-                "split-cell": "c-\\",
-                "edit-previous-cell": "up",
-                "edit-next-cell": "down",
-                "edit-previous-cell-vi": "k",
-                "edit-next-cell-vi": "j",
-                "scroll-output-left": "left",
-                "scroll-output-right": "right",
-                "toggle-expand": "w",
-                "toggle-wrap-cell-outputs": "W",
-                "notebook-toggle-line-numbers": "l",
-            }
-        }
+    commands = (
+        *BaseNotebook.commands,
+        "enter-cell-edit-mode",
+        "exit-edit-mode",
+        "run-selected-cells",
+        "run-and-select-next",
+        "run-cell-and-insert-below",
+        "add-cell-above",
+        "add-cell-below",
+        "delete-cells",
+        "undelete-cells",
+        "cut-cells",
+        "copy-cells",
+        "copy-outputs",
+        "paste-cells",
+        "interrupt-kernel",
+        "restart-kernel",
+        "scroll-up",
+        "scroll-down",
+        "scroll-up-5-lines",
+        "scroll-down-5-lines",
+        "select-first-cell",
+        "select-5th-previous-cell",
+        "select-previous-cell",
+        "select-next-cell",
+        "select-5th-next-cell",
+        "select-last-cell",
+        "select-all-cells",
+        "extend-cell-selection-to-top",
+        "extend-cell-selection-up",
+        "extend-cell-selection-down",
+        "extend-cell-selection-to-bottom",
+        "move-cells-up",
+        "move-cells-down",
+        "cells-to-markdown",
+        "cells-to-code",
+        "cells-to-raw",
+        "reformat-cells",
+        "reformat-notebook",
+        "edit-in-external-editor",
+        "merge-cells",
+        "split-cell",
+        "edit-previous-cell",
+        "edit-next-cell",
+        "edit-previous-cell-vi",
+        "edit-next-cell-vi",
+        "scroll-output-left",
+        "scroll-output-right",
+        "toggle-expand",
+        "toggle-wrap-cell-outputs",
+        "toggle-line-numbers",
     )

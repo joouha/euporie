@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from euporie.apptk.application.current import get_app
 
-from euporie.apptk.commands import add_cmd, get_cmd
+from euporie.apptk.commands import add_cmd
 from euporie.apptk.filters import (
     buffer_has_focus,
     has_completions,
@@ -55,6 +55,7 @@ def _view_logs() -> None:
 
 
 @add_cmd(
+    keys=["enter"],
     filter=cell_has_focus & ~buffer_has_focus,
 )
 def _enter_cell_edit_mode() -> None:
@@ -66,6 +67,7 @@ def _enter_cell_edit_mode() -> None:
 
 
 @add_cmd(
+    keys=["escape"],
     filter=cell_has_focus
     & buffer_has_focus
     & (~vi_mode | (vi_mode & vi_navigation_mode)),
@@ -79,6 +81,7 @@ def _exit_edit_mode() -> None:
 
 
 @add_cmd(
+    keys=["c-enter", "c-e", "c-s-f8"],
     filter=cell_has_focus,
 )
 def _run_selected_cells() -> None:
@@ -90,6 +93,7 @@ def _run_selected_cells() -> None:
 
 
 @add_cmd(
+    keys=["s-enter", "c-r", "s-f9"],
     title="Run selected cells and select next cell",
     filter=cell_has_focus,
 )
@@ -102,6 +106,7 @@ def _run_and_select_next() -> None:
 
 
 @add_cmd(
+    keys=["A-enter"],
     filter=cell_has_focus,
 )
 def _run_cell_and_insert_below() -> None:
@@ -124,6 +129,7 @@ def _run_all_cells() -> None:
 
 
 @add_cmd(
+    keys=["a"],
     filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
 )
 def _add_cell_above() -> None:
@@ -135,6 +141,7 @@ def _add_cell_above() -> None:
 
 
 @add_cmd(
+    keys=["b"],
     filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
 )
 def _add_cell_below() -> None:
@@ -146,6 +153,7 @@ def _add_cell_below() -> None:
 
 
 @add_cmd(
+    keys=[("d", "d")],
     filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
 )
 def _delete_cells() -> None:
@@ -157,6 +165,7 @@ def _delete_cells() -> None:
 
 
 @add_cmd(
+    keys=["z"],
     menu_title="Undo delete cell",
     filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus & deleted_cells,
 )
@@ -169,6 +178,7 @@ def _undelete_cells() -> None:
 
 
 @add_cmd(
+    keys=["x"],
     filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
 )
 def _cut_cells() -> None:
@@ -180,6 +190,7 @@ def _cut_cells() -> None:
 
 
 @add_cmd(
+    keys=["c"],
     filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
 )
 def _copy_cells() -> None:
@@ -191,6 +202,7 @@ def _copy_cells() -> None:
 
 
 @add_cmd(
+    keys=["A-c"],
     menu_title="Copy cell outputs",
     filter=cell_has_focus & ~buffer_has_focus,
 )
@@ -203,6 +215,7 @@ def _copy_outputs() -> None:
 
 
 @add_cmd(
+    keys=["y"],
     filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
 )
 def _paste_cells() -> None:
@@ -214,6 +227,7 @@ def _paste_cells() -> None:
 
 
 @add_cmd(
+    keys=["M"],
     filter=notebook_has_focus
     & ~buffer_has_focus
     & ~display_has_focus
@@ -228,10 +242,8 @@ def _merge_cells() -> None:
 
 
 @add_cmd(
+    keys=["[", "<scroll-up>"],
     filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
-)
-@add_cmd(
-    filter=notebook_has_focus,
 )
 def _scroll_up() -> NotImplementedOrNone:
     """Scroll the page up a line."""
@@ -243,10 +255,8 @@ def _scroll_up() -> NotImplementedOrNone:
 
 
 @add_cmd(
+    keys=["]", "<scroll-down>"],
     filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
-)
-@add_cmd(
-    filter=notebook_has_focus,
 )
 def _scroll_down() -> NotImplementedOrNone:
     """Scroll the page down a line."""
@@ -258,6 +268,7 @@ def _scroll_down() -> NotImplementedOrNone:
 
 
 @add_cmd(
+    keys=["{"],
     filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
 )
 def _scroll_up_5_lines() -> None:
@@ -269,6 +280,7 @@ def _scroll_up_5_lines() -> None:
 
 
 @add_cmd(
+    keys=["}"],
     filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
 )
 def _scroll_down_5_lines() -> None:
@@ -280,6 +292,7 @@ def _scroll_down_5_lines() -> None:
 
 
 @add_cmd(
+    keys=["home", "c-up"],
     filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
 )
 def _select_first_cell() -> None:
@@ -291,6 +304,7 @@ def _select_first_cell() -> None:
 
 
 @add_cmd(
+    keys=["pageup"],
     filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
 )
 def _select_5th_previous_cell() -> None:
@@ -302,6 +316,7 @@ def _select_5th_previous_cell() -> None:
 
 
 @add_cmd(
+    keys=["up", "k"],
     filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
 )
 def _select_previous_cell() -> None:
@@ -313,6 +328,7 @@ def _select_previous_cell() -> None:
 
 
 @add_cmd(
+    keys=["down", "j"],
     filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
 )
 def _select_next_cell() -> None:
@@ -324,6 +340,7 @@ def _select_next_cell() -> None:
 
 
 @add_cmd(
+    keys=["pagedown"],
     filter=~buffer_has_focus,
 )
 def _select_5th_next_cell() -> None:
@@ -335,6 +352,7 @@ def _select_5th_next_cell() -> None:
 
 
 @add_cmd(
+    keys=["end", "c-down"],
     filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
 )
 def _select_last_cell() -> None:
@@ -346,6 +364,7 @@ def _select_last_cell() -> None:
 
 
 @add_cmd(
+    keys=["c-a"],
     filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
 )
 def _select_all_cells() -> None:
@@ -360,6 +379,7 @@ def _select_all_cells() -> None:
 
 
 @add_cmd(
+    keys=["s-home"],
     filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
 )
 def _extend_cell_selection_to_top() -> None:
@@ -371,6 +391,7 @@ def _extend_cell_selection_to_top() -> None:
 
 
 @add_cmd(
+    keys=["s-up", "K"],
     filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
 )
 def _extend_cell_selection_up() -> None:
@@ -382,6 +403,7 @@ def _extend_cell_selection_up() -> None:
 
 
 @add_cmd(
+    keys=["s-down", "J"],
     filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
 )
 def _extend_cell_selection_down() -> None:
@@ -393,6 +415,7 @@ def _extend_cell_selection_down() -> None:
 
 
 @add_cmd(
+    keys=["s-end"],
     filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
 )
 def _extend_cell_selection_to_bottom() -> None:
@@ -404,6 +427,7 @@ def _extend_cell_selection_to_bottom() -> None:
 
 
 @add_cmd(
+    keys=["A-up"],
     filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
 )
 def _move_cells_up() -> None:
@@ -415,6 +439,7 @@ def _move_cells_up() -> None:
 
 
 @add_cmd(
+    keys=["A-down"],
     filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
 )
 def _move_cells_down() -> None:
@@ -426,6 +451,7 @@ def _move_cells_down() -> None:
 
 
 @add_cmd(
+    keys=["m"],
     filter=cell_has_focus & ~buffer_has_focus,
 )
 def _cells_to_markdown() -> None:
@@ -443,6 +469,7 @@ def _cells_to_markdown() -> None:
 
 
 @add_cmd(
+    keys=["y"],
     filter=cell_has_focus & ~buffer_has_focus,
 )
 def _cells_to_code() -> None:
@@ -455,6 +482,7 @@ def _cells_to_code() -> None:
 
 
 @add_cmd(
+    keys=["r"],
     filter=cell_has_focus & ~buffer_has_focus,
 )
 def _cells_to_raw() -> None:
@@ -567,6 +595,7 @@ def _toggle_cell_outputs() -> None:
 
 
 @add_cmd(
+    keys=["f"],
     title="Reformat cells",
     filter=code_cell_selected & cell_has_focus & ~buffer_has_focus & notebook_has_focus,
 )
@@ -580,7 +609,7 @@ def _reformat_cells() -> None:
                 cell.input_box.reformat()
 
 
-@add_cmd(aliases=["fmt"], filter=notebook_has_focus & ~buffer_has_focus)
+@add_cmd(keys=["F"], aliases=["fmt"], filter=notebook_has_focus & ~buffer_has_focus)
 def _reformat_notebook() -> None:
     """Automatically reformat all code cells in the notebook."""
     from euporie.notebook.tabs.notebook import Notebook
@@ -590,6 +619,7 @@ def _reformat_notebook() -> None:
 
 
 @add_cmd(
+    keys=["e"],
     filter=cell_has_focus & ~buffer_has_focus,
 )
 async def _edit_in_external_editor() -> None:
@@ -601,6 +631,7 @@ async def _edit_in_external_editor() -> None:
 
 
 @add_cmd(
+    keys=["c-\\"],
     filter=cell_has_focus & buffer_has_focus,
 )
 def _split_cell() -> None:
@@ -612,16 +643,14 @@ def _split_cell() -> None:
 
 
 @add_cmd(
-    name="edit-previous-cell-vi",
-    filter=cell_has_focus
-    & buffer_has_focus
-    & cursor_on_first_line
-    & ~has_completions
-    & vi_mode
-    & vi_navigation_mode,
-)
-@add_cmd(
-    filter=cell_has_focus & buffer_has_focus & cursor_on_first_line & ~has_completions
+    keys=["up", "k"],
+    filter=(
+        cell_has_focus
+        & buffer_has_focus
+        & cursor_on_first_line
+        & ~has_completions
+        & (~vi_mode | (vi_mode & vi_navigation_mode))
+    ),
 )
 def _edit_previous_cell() -> None:
     """Move the cursor up to the previous cell."""
@@ -635,16 +664,14 @@ def _edit_previous_cell() -> None:
 
 
 @add_cmd(
-    name="edit-next-cell-vi",
-    filter=cell_has_focus
-    & buffer_has_focus
-    & cursor_on_last_line
-    & ~has_completions
-    & vi_mode
-    & vi_navigation_mode,
-)
-@add_cmd(
-    filter=cell_has_focus & buffer_has_focus & cursor_on_last_line & ~has_completions
+    keys=["down", "j"],
+    filter=(
+        cell_has_focus
+        & buffer_has_focus
+        & cursor_on_last_line
+        & ~has_completions
+        & (~vi_mode | (vi_mode & vi_navigation_mode))
+    ),
 )
 def _edit_next_cell() -> None:
     """Move the cursor down to the next cell."""
@@ -658,6 +685,7 @@ def _edit_next_cell() -> None:
 
 
 @add_cmd(
+    keys=["left"],
     filter=cell_has_focus & ~buffer_has_focus,
 )
 def _scroll_output_left() -> None:
@@ -669,6 +697,7 @@ def _scroll_output_left() -> None:
 
 
 @add_cmd(
+    keys=["right"],
     filter=cell_has_focus & ~buffer_has_focus,
 )
 def _scroll_output_right() -> None:
@@ -680,6 +709,7 @@ def _scroll_output_right() -> None:
 
 
 @add_cmd(
+    keys=[("i", "i")],
     filter=kernel_tab_has_focus & ~buffer_has_focus & ~display_has_focus,
 )
 def _interrupt_kernel() -> None:
@@ -689,6 +719,7 @@ def _interrupt_kernel() -> None:
 
 
 @add_cmd(
+    keys=[("0", "0")],
     filter=kernel_tab_has_focus & ~buffer_has_focus & ~display_has_focus,
 )
 def _restart_kernel() -> None:
@@ -706,11 +737,3 @@ def _restart_kernel_and_clear_all_outputs() -> None:
 
     if isinstance(nb := get_app().tab, Notebook):
         nb.restart_kernel(cb=_clear_all_outputs)
-
-
-@add_cmd(
-    filter=~buffer_has_focus,
-)
-def _notebook_toggle_line_numbers() -> None:
-    """Toggle line numbers when a buffer does not have focus."""
-    get_cmd("toggle-line-numbers").run()

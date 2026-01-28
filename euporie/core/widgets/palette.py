@@ -26,7 +26,6 @@ from euporie.apptk.layout.decor import FocusedStyle
 from euporie.apptk.layout.margins import ScrollbarMargin
 from euporie.apptk.mouse_events import MouseEvent, MouseEventType
 from euporie.core.bars.status import StatusContainer
-from euporie.core.key_binding.registry import register_bindings
 from euporie.core.widgets.dialog import Dialog
 from euporie.core.widgets.forms import Text
 
@@ -170,7 +169,6 @@ class CommandPalette(Dialog):
         self._visible = False
         self.visible = Condition(lambda: self._visible)
 
-        # self.kb = KeyBindings()
         self.kb.add("s-tab")(focus_previous)
         self.kb.add("tab")(focus_next)
         self.kb.add("up", filter=Condition(lambda: bool(self.matches)))(
@@ -281,7 +279,7 @@ class CommandPalette(Dialog):
     # ################################### Commands ####################################
 
     @staticmethod
-    @add_cmd()
+    @add_cmd(is_global=True, keys=["c-@"])
     def _toggle_command_palette() -> None:
         """Show the command palette."""
         if command_palette := get_app().get_dialog("command-palette"):
@@ -300,13 +298,3 @@ class CommandPalette(Dialog):
         """Hide the command palette."""
         if command_palette := get_app().get_dialog("command-palette"):
             command_palette.hide()
-
-    # ################################# Key Bindings ##################################
-
-    register_bindings(
-        {
-            "euporie.core.app.app:BaseApp": {
-                "show-command-palette": "c-@",
-            }
-        }
-    )

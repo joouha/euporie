@@ -6,13 +6,14 @@ import logging
 from functools import partial
 from typing import TYPE_CHECKING, cast
 
-from euporie.apptk.filters.app import (
-    renderer_height_is_known,
-)
 from euporie.apptk.filters.base import Condition
 from euporie.apptk.layout.layout import Layout
 
 from euporie.apptk.commands import get_cmd
+from euporie.apptk.filters.app import (
+    renderer_height_is_known,
+)
+from euporie.apptk.key_binding.key_bindings import KeyBindings
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
     FloatContainer,
@@ -23,10 +24,6 @@ from euporie.apptk.layout.containers import (
 from euporie.apptk.layout.controls import FormattedTextControl
 from euporie.apptk.layout.print import PrintingContainer
 from euporie.core.format import LspFormatter
-from euporie.core.key_binding.registry import (
-    load_registered_bindings,
-    register_bindings,
-)
 from euporie.core.nbformat import new_code_cell, new_output
 from euporie.core.tabs.console import BaseConsole
 from euporie.core.widgets.cell_outputs import CellOutputArea
@@ -59,6 +56,15 @@ class Console(BaseConsole):
     live_output: CellOutputArea
     input_box: KernelInput
     stdin_box: StdInput
+
+    commands = (
+        *BaseConsole.commands,
+        "clear-input",
+        "cc-interrupt-kernel",
+        "run-input",
+        "end-of-file",
+        "clear-screen",
+    )
 
     def __init__(
         self,
@@ -486,10 +492,7 @@ class Console(BaseConsole):
                 ),
                 *input_row,
             ],
-            key_bindings=load_registered_bindings(
-                "euporie.console.tabs.console:Console",
-                config=self.app.config,
-            ),
+            key_bindings=KeyBindings.from_commands(self.commands),
         )
 
     def set_next_input(self, text: str, replace: bool = False) -> None:
@@ -510,18 +513,3 @@ class Console(BaseConsole):
 
         if path is not None:
             BaseNotebook.save(cast("BaseNotebook", self), path)
-
-    # ################################# Key Bindings ##################################
-
-    register_bindings(
-        {
-            "euporie.console.tabs.console:Console": {
-                "clear-input": ["c-c", "<sigint>"],
-                "cc-interrupt-kernel": ["c-c", "<sigint>"],
-                "run-input": ["c-enter", "c-e"],
-                "end-of-file": "c-d",
-                "clear-screen": "c-l",
-            },
-            "euporie.console.app:ConsoleApp": {},
-        }
-    )

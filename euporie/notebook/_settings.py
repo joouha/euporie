@@ -32,6 +32,7 @@ add_setting(
     """,
 )
 
+
 add_setting(
     name="background_pattern",
     group="euporie.notebook.app",
@@ -111,6 +112,7 @@ add_setting(
     description="""
         Whether the top bar should be shown at the top of the screen.
     """,
+    keys=["A-m"],
 )
 
 add_setting(
