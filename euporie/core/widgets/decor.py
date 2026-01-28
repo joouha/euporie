@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from euporie.apptk.application.current import get_app
 from euporie.apptk.widgets.base import Label
 
 from euporie.apptk.border import ThinLine
@@ -24,6 +23,7 @@ from euporie.apptk.layout.decor import DropShadow
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from euporie.apptk.filters.core import FilterOrBool
     from euporie.apptk.formatted_text.base import AnyFormattedText
 
     from euporie.apptk.border import GridStyle
@@ -201,13 +201,14 @@ class Shadow:
     The container must be in a float.
     """
 
-    def __init__(self, body: AnyContainer) -> None:
+    def __init__(self, body: AnyContainer, filter: FilterOrBool = True) -> None:
         """Initialize a new drop-shadow container.
 
         Args:
             body: Another container object.
+            filter: Determines if the shadow should be applied
         """
-        filter_ = get_app().config.filters.show_shadows
+        filter = to_filter(filter)
 
         spacer = DummyContainer(width=1, height=1)
         shadow = VSplit(
@@ -218,7 +219,7 @@ class Shadow:
         )
 
         def get_contents() -> AnyContainer:
-            if filter_():
+            if filter():
                 return shadow
             else:
                 return body
