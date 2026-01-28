@@ -208,6 +208,7 @@ class Datum(Generic[T], metaclass=_MetaDatum):
             # TODO - crop
             return self.data
 
+        fg = Color(fg).hex if fg else self.fg
         bg = Color(bg).hex if bg else self.bg
 
         key_tail = (
