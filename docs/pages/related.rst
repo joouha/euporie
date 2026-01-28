@@ -53,6 +53,9 @@ Notebook Viewers
 `nbpreview <https://github.com/paw-lu/nbpreview>`_
    An excellent terminal viewer for Jupyter notebooks, with image and LaTeX support
 
+`nbsee <https://github.com/AnakTeka/nbsee>`_
+   Terminal viewer for Jupyter notebooks with easy code/output copying (build with Textual)
+
 `jupyterm <https://github.com/sidneymau/jupyterm>`_
    TUI Jupyter notebook viewer that uses prompt_toolkit for its terminal interface
 
