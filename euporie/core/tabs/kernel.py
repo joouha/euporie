@@ -75,6 +75,12 @@ class KernelTab(Tab, metaclass=ABCMeta):
     default_callbacks: MsgCallbacks
     allow_stdin: bool
 
+    commands = (
+        *Tab.commands,
+        "interrupt-kernel",
+        "restart-kernel",
+    )
+
     def __init__(
         self,
         app: BaseApp,

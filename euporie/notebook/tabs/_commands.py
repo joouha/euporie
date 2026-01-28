@@ -22,7 +22,6 @@ from euporie.core.filters import (
     kernel_tab_has_focus,
     multiple_cells_selected,
 )
-from euporie.core.tabs.kernel import KernelTab
 from euporie.notebook.filters import (
     cell_has_focus,
     code_cell_selected,
@@ -706,26 +705,6 @@ def _scroll_output_right() -> None:
 
     if isinstance(nb := get_app().tab, Notebook):
         nb.cell.output_area.scroll_right()
-
-
-@add_cmd(
-    keys=[("i", "i")],
-    filter=kernel_tab_has_focus & ~buffer_has_focus & ~display_has_focus,
-)
-def _interrupt_kernel() -> None:
-    """Interrupt the notebook's kernel."""
-    if isinstance(kt := get_app().tab, KernelTab):
-        kt.interrupt_kernel()
-
-
-@add_cmd(
-    keys=[("0", "0")],
-    filter=kernel_tab_has_focus & ~buffer_has_focus & ~display_has_focus,
-)
-def _restart_kernel() -> None:
-    """Restart the notebook's kernel."""
-    if isinstance(kt := get_app().tab, KernelTab):
-        kt.restart_kernel()
 
 
 @add_cmd(

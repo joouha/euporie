@@ -4,12 +4,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from euporie.apptk.commands import add_cmd
 from euporie.apptk.filters.app import (
     buffer_has_focus,
     has_selection,
 )
-
-from euporie.apptk.commands import add_cmd
 from euporie.apptk.filters.buffer import buffer_is_code, buffer_is_empty
 from euporie.core.filters import kernel_tab_has_focus
 from euporie.core.tabs.kernel import KernelTab
@@ -93,30 +92,6 @@ def _run_input() -> None:
 
     if isinstance(console := get_app().tab, Console):
         console.run()
-
-
-@add_cmd(
-    name="cc-interrupt-kernel",
-    hidden=True,
-    filter=buffer_is_code & buffer_is_empty,
-    keys=["c-c", "<sigint>"],
-)
-@add_cmd(filter=kernel_tab_has_focus)
-def _interrupt_kernel() -> None:
-    """Interrupt the notebook's kernel."""
-    from euporie.console.app import get_app
-
-    if isinstance(kt := get_app().tab, KernelTab):
-        kt.interrupt_kernel()
-
-
-@add_cmd(filter=kernel_tab_has_focus)
-def _restart_kernel() -> None:
-    """Restart the notebook's kernel."""
-    from euporie.console.app import get_app
-
-    if isinstance(kt := get_app().tab, KernelTab):
-        kt.restart_kernel()
 
 
 @add_cmd(

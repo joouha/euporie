@@ -90,7 +90,7 @@ def tab_can_save() -> bool:
 
 @Condition
 def pager_has_focus() -> bool:
-    """Determine if there is a currently focused notebook."""
+    """Determine if the pager is focused."""
     app = get_app()
     pager = app.pager
     if pager is not None:
@@ -100,7 +100,7 @@ def pager_has_focus() -> bool:
 
 @Condition
 def kernel_is_python() -> bool:
-    """Determine if the current notebook has a python kernel."""
+    """Determine if the current tab has a python kernel."""
     from euporie.core.tabs.kernel import KernelTab
 
     kernel_tab = get_app().tab
