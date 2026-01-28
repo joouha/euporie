@@ -214,7 +214,7 @@ def _copy_outputs() -> None:
 
 
 @add_cmd(
-    keys=["y"],
+    keys=["v"],
     filter=notebook_has_focus & ~buffer_has_focus & ~display_has_focus,
 )
 def _paste_cells() -> None:
