@@ -769,10 +769,10 @@ def unshift_move(event: KeyPressEvent) -> None:
 
     # the other keys are handled through their readline command
     key_to_command: dict[tuple[Keys | str, ...], str] = {
-        (Keys.ShiftLeft,): "move-cursor-left",
-        (Keys.ShiftRight,): "move-cursor-right",
-        (Keys.ShiftHome,): "go-to-start-of-line",
-        (Keys.ShiftEnd,): "go-to-end-of-line",
+        (Keys.ShiftLeft,): "micro-move-cursor-left",
+        (Keys.ShiftRight,): "micro-move-cursor-right",
+        (Keys.ShiftHome,): "micro-go-to-start-of-line",
+        (Keys.ShiftEnd,): "micro-go-to-end-of-line",
         (
             Keys.Escape,
             Keys.ShiftLeft,
@@ -791,7 +791,7 @@ def unshift_move(event: KeyPressEvent) -> None:
     try:
         command = get_cmd(key_to_command[key_sequence])
     except KeyError:
-        pass
+        log.exception("")
     else:
         command.key_handler(event)
 
