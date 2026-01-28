@@ -26,19 +26,20 @@ def if_no_repeat(event: KeyPressEvent) -> bool:
     return not event.is_repeat
 
 
-def parse_keys(keys: AnyKeys) -> set[tuple[str | Keys, ...]]:
+def parse_keys(keys: AnyKeys) -> list[tuple[str | Keys, ...]]:
     """Parse a list of keys."""
-    output: set[tuple[str | Keys, ...]] = set()
+    # Use dict keys as ordered set
+    output: dict[tuple[str | Keys, ...], None] = {}
     if not isinstance(keys, list):
         keys = [keys]
     for key in keys:
         if isinstance(key, Keys):
-            output.add((key,))
+            output[(key,)] = None
         elif isinstance(key, tuple):
-            output.add(tuple(_parse_key(k) for k in key))
+            output[tuple(_parse_key(k) for k in key)] = None
         else:
-            output.add((_parse_key(key),))
-    return output
+            output[(_parse_key(key),)] = None
+    return list(output.keys())
 
 
 def _format_key_str(key: str) -> str:
