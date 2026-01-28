@@ -98,8 +98,8 @@ class Datum(Generic[T], metaclass=_MetaDatum):
         self.data: T = data
         self.format = format
         self.px, self.py = px, py
-        self.fg = Color(fg) if fg is not None else None
-        self.bg = Color(bg) if bg is not None else None
+        self.fg = Color(fg).hex if fg else None
+        self.bg = Color(bg).hex if bg else None
         self.path = path
         self.source: ReferenceType[Datum] = ref(source) if source else ref(self)
         self.align = align
@@ -208,8 +208,7 @@ class Datum(Generic[T], metaclass=_MetaDatum):
             # TODO - crop
             return self.data
 
-        fg = fg or self.fg
-        bg = bg or self.bg
+        bg = Color(bg).hex if bg else self.bg
 
         key_tail = (
             cols,

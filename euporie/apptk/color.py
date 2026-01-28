@@ -11,7 +11,7 @@ from euporie.apptk.application.current import get_app
 from euporie.apptk.utils import to_str
 
 from euporie.apptk.cache import SimpleCache
-from euporie.apptk.output.vt100 import TERMINAL_COLORS_TO_RGB
+from euporie.apptk.output.vt100 import TERMINAL_COLORS_TO_RGB, ANSI_COLORS_TO_RGB
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Hashable
@@ -32,6 +32,8 @@ class Color(str):
 
     def __new__(cls, value: str, name: str = "") -> Color:
         """Create a new color from a hex code."""
+        if isinstance(value, Color):
+            return value
         # Perform validation
         parsed = value.upper()
         if parsed[0] != "#":
@@ -298,15 +300,26 @@ def style_fg_bg(style: str | Callable[[], str]) -> tuple[Color, Color]:
     def _get_style_colors() -> tuple[str, str]:
         attrs_for_style = app.renderer._attrs_for_style
         attrs = attrs_for_style[style_str] if attrs_for_style else None
+
+        color = attrs.color if attrs else "default"
+        bgcolor = attrs.bgcolor if attrs else "default"
         fg = (
-            Color(attrs.color)
-            if attrs and attrs.color and attrs.color != "default"
-            else Color.from_rgb(*fg_default)
+            (
+                Color(color)
+                if color not in ANSI_COLORS_TO_RGB
+                else Color.from_rgb(*ANSI_COLORS_TO_RGB[color], name=color)
+            )
+            if color and color != "default"
+            else Color.from_rgb(*fg_default, name="default")
         )
         bg = (
-            Color(attrs.bgcolor)
-            if attrs and attrs.bgcolor and attrs.bgcolor != "default"
-            else Color.from_rgb(*bg_default)
+            (
+                Color(bgcolor)
+                if bgcolor not in ANSI_COLORS_TO_RGB
+                else Color.from_rgb(*ANSI_COLORS_TO_RGB[bgcolor], name=bgcolor)
+            )
+            if bgcolor and bgcolor != "default"
+            else Color.from_rgb(*bg_default, name="default")
         )
         return fg, bg
 
