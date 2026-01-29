@@ -24,6 +24,7 @@ MIME_FORMATS = {
     "image/jpeg": "jpeg",
     "image/gif": "gif",
     "application/pdf": "pdf",
+    "text/vnd.mermaid": "mermaid",
     "text/html": "html",
     "text/latex": "latex",
     "application/x-latex": "latex",
