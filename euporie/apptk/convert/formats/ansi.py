@@ -525,3 +525,21 @@ async def rich_to_ansi_py(
         options = options.update(max_width=cols)
     buffer = console.render(datum.data, options)
     return console._render_buffer(buffer)
+
+
+@register(
+    from_="mermaid",
+    to="ansi",
+    filter_=command_exists("mermaid-ascii"),
+)
+async def mermaid_to_ascii(
+    datum: Datum,
+    cols: int | None = None,
+    rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
+    **kwargs: Any,
+) -> str:
+    """Convert HTML text to formatted ANSI using :command:`w3m`."""
+    cmd: list[Any] = ["mermaid-ascii", "-f", "-"]
+    return (await call_subproc(datum.data.encode(), cmd)).decode()
