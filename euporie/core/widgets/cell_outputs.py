@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import weakref
 from abc import ABCMeta, abstractmethod
+from collections import defaultdict
 from functools import cache
 from pathlib import PurePath
 from typing import TYPE_CHECKING
@@ -141,17 +142,19 @@ class CellOutputDataElement(CellOutputElement):
             bg=bg_color,
         )
 
-        convert_kwargs = {"css": {}}
+        convert_kwargs = {"css": defaultdict(dict)}
 
         # Apply Jupyter notbooks specific CSS styles
         if format_ == "html":
             from euporie.core.css import NOTEBOOK_CSS
 
-            convert_kwargs["css"].update(NOTEBOOK_CSS)
+            for k, v in NOTEBOOK_CSS.items():
+                convert_kwargs["css"][k].update(v)
         elif format_ == "markdown":
             from euporie.core.css import MARKDOWN_CSS
 
-            convert_kwargs["css"].update(MARKDOWN_CSS)
+            for k, v in MARKDOWN_CSS.items():
+                convert_kwargs["css"][k].update(v)
 
         self.container = Display(
             self._datum,

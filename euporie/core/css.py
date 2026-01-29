@@ -13,10 +13,11 @@ from euporie.apptk.formatted_text.html import CssSelector
 if TYPE_CHECKING:
     from euporie.apptk.formatted_text.html import CssSelectors
 
+Always = to_filter(True)
 
 # Special CSS for Jupyter notebook outputs
 NOTEBOOK_CSS: CssSelectors = {
-    to_filter(True): {
+    Always: {
         # Dataframes for Jupyter
         ((CssSelector(item="table.dataframe"),),): {
             "border_top_width": "0 !important",

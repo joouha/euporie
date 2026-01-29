@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from euporie.apptk.filters.base import Condition
 from euporie.apptk.filters.utils import to_filter
 
+from euporie.apptk.convert.registry import find_route
 from euporie.apptk.formatted_text.html import CssSelector
 
 if TYPE_CHECKING:
@@ -213,6 +215,25 @@ MARKDOWN_CSS: CssSelectors = {
             "overflow_x": "hidden",
             "overflow_y": "hidden",
             "vertical_align": "middle",
+        },
+    },
+    Condition(lambda: bool(find_route("mermaid", "ft"))): {
+        (
+            (
+                CssSelector(item="pre"),
+                CssSelector(comb=">", item="code.language-mermaid"),
+            ),
+        ): {
+            "border_top_style": "none",
+            "border_top_width": "0",
+            "border_right_style": "none",
+            "border_right_width": "0",
+            "border_bottom_style": "none",
+            "border_bottom_width": "0",
+            "border_left_style": "none",
+            "border_left_width": "0",
+            "_pt_class": "",
+            "_pt_format": "mermaid",
         },
     },
 }
