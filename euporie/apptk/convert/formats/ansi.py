@@ -25,6 +25,33 @@ log = logging.getLogger(__name__)
 @register(
     from_="html",
     to="ansi",
+    filter_=command_exists("cha"),
+)
+async def html_to_ansi_chawan(
+    datum: Datum,
+    cols: int | None = None,
+    rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
+    **kwargs: Any,
+) -> str:
+    """Convert HTML text to formatted ANSI using :command:`w3m`."""
+    cmd: list[Any] = [
+        "cha",
+        "--dump",
+        "--opt",
+        "display.color-mode=true-color",
+    ]
+    if cols is not None:
+        cmd += ["--opt", f"display.columns={cols}"]
+    return (
+        await call_subproc(datum.data.encode(), cmd, use_tempfile=True, suffix=".html")
+    ).decode()
+
+
+@register(
+    from_="html",
+    to="ansi",
     filter_=command_exists("w3m"),
 )
 async def html_to_ansi_w3m(
