@@ -1646,12 +1646,15 @@ class MarginContainer(Window):
         self.render_info: WindowRenderInfo | None = None
         self.content = FormattedTextControl(self.create_fragments)
         self.always_hide_cursor = to_filter(True)
+        self.write_position: WritePosition | None = None
 
         if isinstance(self.margin, ClickableMargin):
             self.margin.set_margin_window(self)
 
     def create_fragments(self) -> StyleAndTextTuples:
         """Generate text fragments to display."""
+        if self.write_position is None:
+            return []
         return self.margin.create_margin(
             self.target.render_info,
             self.write_position.width,
@@ -1662,7 +1665,7 @@ class MarginContainer(Window):
         """Reset the state of this container and all the children."""
 
     def preferred_width(self, max_available_width: int) -> Dimension:
-        """Return a the desired width for this container."""
+        """Return the desired width for this container."""
 
         def _get_ui_content() -> UIContent:
             render_info = self.target.render_info
@@ -1673,7 +1676,7 @@ class MarginContainer(Window):
         return Dimension(min=width, max=width)
 
     def preferred_height(self, width: int, max_available_height: int) -> Dimension:
-        """Return a thedesired height for this container."""
+        """Return the desired height for this container."""
         return Dimension()
 
     def write_to_screen(
@@ -1685,9 +1688,38 @@ class MarginContainer(Window):
         erase_bg: bool,
         z_index: int | None,
     ) -> None:
-        """Write the actual content to the screen."""
+        """Write the actual content to the screen.
+
+        Defers actual rendering using screen.draw_with_z_index to ensure the target
+        window has been rendered and its render_info is up-to-date.
+        """
         self.write_position = write_position
 
+        # Defer drawing to ensure target's render_info is available
+        # Use z_index 0 to draw after main content but before floats
+        screen.draw_with_z_index(
+            z_index=z_index or 0,
+            draw_func=partial(
+                self._write_to_screen_deferred,
+                screen,
+                mouse_handlers,
+                write_position,
+                parent_style,
+                erase_bg,
+                z_index,
+            ),
+        )
+
+    def _write_to_screen_deferred(
+        self,
+        screen: Screen,
+        mouse_handlers: MouseHandlers,
+        write_position: WritePosition,
+        parent_style: str,
+        erase_bg: bool,
+        z_index: int | None,
+    ) -> None:
+        """Perform the actual rendering after the target has been drawn."""
         margin_content: UIContent = self.content.create_content(
             write_position.width + 1, write_position.height
         )
