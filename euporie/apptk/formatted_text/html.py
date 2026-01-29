@@ -45,7 +45,7 @@ from euporie.apptk.border import (
     UpperRightHalfDottedLine,
     UpperRightHalfLine,
 )
-from euporie.apptk.convert.datum import Datum
+from euporie.apptk.convert.datum import ConversionFailure, Datum
 from euporie.apptk.convert.mime import get_format
 from euporie.apptk.data_structures import DiBool, DiInt, DiStr, Size
 from euporie.apptk.enums import FitMode, HorizontalAlign, VerticalAlign
@@ -108,9 +108,9 @@ if TYPE_CHECKING:
 
     from euporie.apptk.filters.base import Filter, FilterOrBool
     from euporie.apptk.formatted_text.base import StyleAndTextTuples
-    from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
     from fsspec.spec import AbstractFileSystem
 
+    from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
     from euporie.apptk.mouse_events import MouseEvent
 
     CssSelectors = dict[
@@ -1254,6 +1254,11 @@ class Theme(Mapping):
             or self.d_table_cell
             or self.d_list_item
         )
+
+    @cached_property
+    def include(self) -> bool:
+        """Is this element directly renderable using the conversion system."""
+        return self.theme.get("_pt_format") is not None
 
     @cached_property
     def floated(self) -> str | None:
@@ -3493,6 +3498,9 @@ class HTML(PtkHTML):
         elif theme.latex:
             render_func = self.render_latex_content
 
+        elif theme.include:
+            render_func = self.render_include_content
+
         else:
             name = element.name.lstrip(":")
             render_func = getattr(
@@ -4034,23 +4042,34 @@ class HTML(PtkHTML):
         rows = max(len(list(split_lines(ft))), ceil(cols * aspect))
         cols = max(cols, max_line_width(ft))
 
-        # Use SHRINK for width (scale down if too large) and NONE for height
         key = datum.add_size(Size(rows, cols), FitMode.SHRINK, FitMode.NONE)
         ft = [(f"[Graphic_{key}]", ""), *ft]
         ft = valign(ft, height=rows, how=VerticalAlign.TOP)
         return ft
 
     @overload
-    async def _render_image(
-        self, data: bytes, format_: str, theme: Theme, path: Path | None = None
+    async def _render_datum(
+        self,
+        data: bytes,
+        format_: str,
+        theme: Theme,
+        path: Path | None = None,
+        raise_on_error: bool = False,
     ) -> StyleAndTextTuples: ...
 
     @overload
-    async def _render_image(
-        self, data: str, format_: str, theme: Theme, path: Path | None = None
+    async def _render_datum(
+        self,
+        data: str,
+        format_: str,
+        theme: Theme,
+        path: Path | None = None,
+        raise_on_error: bool = False,
     ) -> StyleAndTextTuples: ...
 
-    async def _render_image(self, data, format_, theme, path=None):
+    async def _render_datum(
+        self, data, format_, theme, path=None, raise_on_error=False
+    ):
         """Render an image and prepare graphic representation."""
         datum = Datum(
             data,
@@ -4074,6 +4093,7 @@ class HTML(PtkHTML):
                 rows=rows or None,
                 fg=theme.color,
                 bg=theme.background_color,
+                raise_on_error=raise_on_error,
             )
             or []
         )
@@ -4114,7 +4134,7 @@ class HTML(PtkHTML):
         if not element.attrs.get("_missing") and (data := element.attrs.get("_data")):
             # Display it graphically
             format_ = get_format(path, default="png")
-            ft = await self._render_image(data, format_, theme, path)
+            ft = await self._render_datum(data, format_, theme, path)
 
         else:
             style = f"class:image,placeholder {theme.style}"
@@ -4151,8 +4171,27 @@ class HTML(PtkHTML):
         data = element._outer_html().replace(" viewbox=", " viewBox=")
         # Replace "currentColor" with theme foreground color
         data = data.replace("currentColor", theme.color)
-        ft = await self._render_image(data, "svg", theme)
+        ft = await self._render_datum(data, "svg", theme)
         return ft
+
+    async def render_include_content(
+        self,
+        element: Node,
+        left: int = 0,
+        fill: bool = True,
+        align_content: bool = True,
+    ) -> StyleAndTextTuples:
+        """Render content as a Datum."""
+        theme = element.theme
+        data = element.text + "".join(
+            child.text for child in element.renderable_descendents
+        )
+        try:
+            return await self._render_datum(
+                data, theme["_pt_format"], theme, raise_on_error=True
+            )
+        except ConversionFailure:
+            return await self.render_node_content(element, left, fill, align_content)
 
     async def render_input_content(
         self,

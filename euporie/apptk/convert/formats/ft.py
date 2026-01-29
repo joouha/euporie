@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from collections import defaultdict
 from functools import partial
 from typing import TYPE_CHECKING
 
@@ -46,11 +47,12 @@ async def html_to_ft(
     data = datum.data
     markup = data.decode() if isinstance(data, bytes) else data
 
-    css = css or {}
+    css = defaultdict(dict, css or {})
     if datum.root.format == "markdown":
         from euporie.apptk.css import MARKDOWN_CSS
 
-        css = {**MARKDOWN_CSS, **css}
+        for k, v in MARKDOWN_CSS.items():
+            css[k].update(v)
 
     html = _html_cache.get(
         (datum.hash, *kwargs.items()),

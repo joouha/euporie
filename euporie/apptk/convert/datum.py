@@ -47,6 +47,10 @@ ERROR_OUTPUTS: dict[str, Any] = {
 }
 
 
+class ConversionFailure(ValueError):
+    """An exception which occurs when conversion fails."""
+
+
 class _MetaDatum(type):
     _instances: WeakValueDictionary[tuple[Any, ...], Datum] = WeakValueDictionary()
 
@@ -140,7 +144,9 @@ class Datum(Generic[T], metaclass=_MetaDatum):
     def _cleanup_datum_sizes(cls, data_hash: str) -> None:
         """Remove all sizes for a given datum hash."""
         size_instances = cls._sizes
-        for key, (datum_ref, _size, _fit_width, _fit_height) in list(size_instances.items()):
+        for key, (datum_ref, _size, _fit_width, _fit_height) in list(
+            size_instances.items()
+        ):
             datum = datum_ref()
             if not datum or datum.hash == data_hash:
                 try:
@@ -203,6 +209,7 @@ class Datum(Generic[T], metaclass=_MetaDatum):
         fg: str | None = None,
         bg: str | None = None,
         bbox: DiInt | None = None,
+        raise_on_error: bool = False,
         **kwargs: Any,
     ) -> Any:
         """Perform conversion asynchronously, caching the result."""
@@ -303,7 +310,10 @@ class Datum(Generic[T], metaclass=_MetaDatum):
         # if bbox and any(bbox):
 
         if output is None:
-            output = ERROR_OUTPUTS.get(to, "(Conversion Error)")
+            if raise_on_error:
+                raise ConversionFailure("Conversion failed")
+            else:
+                output = ERROR_OUTPUTS.get(to, "(Conversion Error)")
 
         event.set()
         del self._queue[key_conv]
@@ -318,11 +328,13 @@ class Datum(Generic[T], metaclass=_MetaDatum):
         fg: str | None = None,
         bg: str | None = None,
         bbox: DiInt | None = None,
+        raise_on_error: bool = False,
         **kwargs: Any,
     ) -> Any:
         """Convert between formats."""
         return run_coro_sync(
-            self.convert_async(to, cols, rows, fg, bg, bbox, **kwargs), self.loop
+            self.convert_async(to, cols, rows, fg, bg, bbox, raise_on_error, **kwargs),
+            self.loop,
         )
 
     async def pixel_size_async(self) -> tuple[int | None, int | None]:
