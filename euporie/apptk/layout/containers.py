@@ -1237,12 +1237,15 @@ class Window(ptk_containers.Window):
         # Calculate the visible region (bbox for cropping)
         bbox = DiInt(
             top=max(0, win_bbox.top - y + vertical_scroll),
-            right=win_bbox.right,
+            right=max(
+                0,
+                win_bbox.right - (write_position.width - x - cols) - horizontal_scroll,
+            ),
             bottom=max(
                 0,
                 win_bbox.bottom - (write_position.height - y - rows) - vertical_scroll,
             ),
-            left=win_bbox.left,
+            left=max(0, win_bbox.left - x + horizontal_scroll),
         )
 
         # Calculate screen position
