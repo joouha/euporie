@@ -17,7 +17,7 @@ from euporie.apptk.history import DummyHistory, InMemoryHistory
 from euporie.apptk.auto_suggest import DummyAutoSuggest, DynamicAutoSuggest
 from euporie.apptk.commands import add_cmd
 from euporie.apptk.completion.deduplicate import DeduplicateCompleter
-from euporie.apptk.diagnostics import Report
+from euporie.core.diagnostics import Report
 from euporie.core.comm.registry import open_comm
 from euporie.core.completion import KernelCompleter, LspCompleter
 from euporie.core.filters import kernel_tab_has_focus
