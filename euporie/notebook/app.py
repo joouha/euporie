@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from functools import partial
 from typing import TYPE_CHECKING, cast
 from weakref import WeakKeyDictionary
@@ -10,7 +11,6 @@ from weakref import WeakKeyDictionary
 from euporie.apptk.formatted_text.base import to_formatted_text
 from euporie.apptk.layout.dimension import Dimension
 
-from euporie.apptk.commands import get_cmd
 from euporie.apptk.filters import Condition
 from euporie.apptk.formatted_text.utils import truncate
 from euporie.apptk.layout.containers import (
@@ -259,6 +259,7 @@ class NotebookApp(BaseApp):
                         "File Browser",
                         "",
                         FileBrowser(
+                            on_chdir=os.chdir,
                             on_open=self.open_file,
                             show_hidden=self.config.filters.show_hidden_files,
                             show_icons=self.config.filters.show_file_icons,
@@ -412,8 +413,9 @@ class NotebookApp(BaseApp):
                         "New",
                         children=[
                             MenuItem.from_cmd("new-notebook"),
-                            separator,
                             MenuItem.from_cmd("new-console"),
+                            MenuItem.from_cmd("new-terminal"),
+                            separator,
                             MenuItem.from_cmd("new-text-file"),
                         ],
                     ),

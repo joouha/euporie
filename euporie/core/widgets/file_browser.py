@@ -1174,16 +1174,12 @@ class FileBrowser:
             show_hidden=show_hidden,
             sort=sort,
         )
-        if on_select is not None:
-            control.on_select += (
-                lambda x: on_select(x.path) if callable(on_select) else None
-            )
-        if on_chdir is not None:
-            control.on_chdir += (
-                lambda x: on_chdir(x.path) if callable(on_chdir) else None
-            )
-        if on_open is not None:
-            control.on_open += lambda x: on_open(x.path) if callable(on_open) else None
+        if callable(on_select):
+            control.on_select += lambda x: on_select(x.path)
+        if callable(on_chdir):
+            control.on_chdir += lambda x: on_chdir(x.dir)
+        if callable(on_open):
+            control.on_open += lambda x: on_open(x.path)
 
         self.container = HSplit(
             [
