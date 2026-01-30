@@ -11,16 +11,29 @@ from typing import TYPE_CHECKING, TextIO
 from euporie.apptk.filters.utils import to_filter
 from euporie.apptk.output.color_depth import ColorDepth
 from euporie.apptk.utils import is_dumb_terminal
-from prompt_toolkit.output.vt100 import Vt100_Output as PtkVt100_Output
+from prompt_toolkit.output.vt100 import (
+    BG_ANSI_COLORS,
+    FG_ANSI_COLORS,
+    _16_bg_colors,
+    _16_fg_colors,
+    _256_colors,
+)
+from prompt_toolkit.output.vt100 import (
+    Vt100_Output as PtkVt100_Output,
+)
+from prompt_toolkit.output.vt100 import (
+    _EscapeCodeCache as _PtkEscapeCodeCache,
+)
 
 from euporie.apptk.filters.environment import in_screen, in_tmux
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Iterable
 
     from euporie.apptk.filters.base import FilterOrBool
 
     from euporie.apptk.data_structures import Size
+    from euporie.apptk.styles import Attrs
 
 log = logging.getLogger(__name__)
 
@@ -58,6 +71,152 @@ def _tiocgwinsz() -> tuple[int, int, int, int]:
             pass
     rows, cols, xpixels, ypixels = output
     return rows, cols, xpixels, ypixels
+
+
+class _EscapeCodeCache(_PtkEscapeCodeCache):
+    """Cache for VT100 escape codes.
+
+    It maps (fgcolor, bgcolor, bold, dim, underline, doubleunderline, curvyunderline,
+    strike, italic, blink, blinkfast, reverse, hidden and overline) tuples to VT100
+    escape sequences.
+
+    Args:
+        true_color: When True, use 24bit colors instead of 256 colors.
+    """
+
+    def __init__(self, color_depth: ColorDepth) -> None:
+        self.color_depth = color_depth
+
+    def __missing__(self, attrs: Attrs) -> str:
+        (
+            fgcolor,
+            bgcolor,
+            bold,
+            dim,
+            underline,
+            strike,
+            italic,
+            blink,
+            reverse,
+            hidden,
+            blinkfast,
+            ulcolor,
+            doubleunderline,
+            curvyunderline,
+            dottedunderline,
+            dashedunderline,
+            overline,
+        ) = attrs
+        parts: list[str] = []
+
+        parts.extend(self._colors_to_code(fgcolor or "", bgcolor or "", ulcolor or ""))
+
+        if bold:
+            parts.append("1")
+        if dim:
+            parts.append("2")
+        if italic:
+            parts.append("3")
+        if blink:
+            parts.append("5")
+        if underline:
+            parts.append("4")
+        if doubleunderline:
+            parts.append("4:2")
+        if curvyunderline:
+            parts.append("4:3")
+        if dottedunderline:
+            parts.append("4:4")
+        if dashedunderline:
+            parts.append("4:5")
+        if blink:
+            parts.append("5")
+        if blinkfast:
+            parts.append("6")
+        if reverse:
+            parts.append("7")
+        if hidden:
+            parts.append("8")
+        if strike:
+            parts.append("9")
+        if overline:
+            parts.append("53")
+
+        if parts:
+            result = "\x1b[0;" + ";".join(parts) + "m"
+        else:
+            result = "\x1b[0m"
+
+        self[attrs] = result
+        return result
+
+    def _colors_to_code(
+        self, fg_color: str, bg_color: str, ul_color: str = ""
+    ) -> Iterable[str]:
+        """Return a tuple with the vt100 values that represent this color."""
+        result: list[int] = []
+        fg_ansi = ""
+
+        if self.color_depth == ColorDepth.DEPTH_1_BIT:
+            return result
+
+        # Process foreground color
+        if fg_color:
+            if fg_color in FG_ANSI_COLORS:
+                result.append(FG_ANSI_COLORS[fg_color])
+            else:
+                try:
+                    rgb = self._color_name_to_rgb(fg_color)
+                    if self.color_depth == ColorDepth.DEPTH_4_BIT:
+                        code, fg_ansi = _16_fg_colors.get_code(rgb)
+                        result.append(code)
+                    elif self.color_depth == ColorDepth.DEPTH_24_BIT:
+                        r, g, b = rgb
+                        result.extend([38, 2, r, g, b])
+                    else:
+                        result.extend([38, 5, _256_colors[rgb]])
+                except ValueError:
+                    pass
+
+        # Process background color
+        if bg_color:
+            if bg_color in BG_ANSI_COLORS:
+                result.append(BG_ANSI_COLORS[bg_color])
+            else:
+                try:
+                    rgb = self._color_name_to_rgb(bg_color)
+                    if self.color_depth == ColorDepth.DEPTH_4_BIT:
+                        exclude = [fg_ansi] if fg_color != bg_color else []
+                        code, _ = _16_bg_colors.get_code(rgb, exclude=exclude)
+                        result.append(code)
+                    elif self.color_depth == ColorDepth.DEPTH_24_BIT:
+                        r, g, b = rgb
+                        result.extend([48, 2, r, g, b])
+                    else:
+                        result.extend([48, 5, _256_colors[rgb]])
+                except ValueError:
+                    pass
+
+        # Process underline color (SGR 58 for setting underline color)
+        if ul_color:
+            if ul_color in FG_ANSI_COLORS:
+                # Use SGR 58:5:n for 256-color mode with ANSI color index
+                result.extend([58, 5, FG_ANSI_COLORS[ul_color]])
+            else:
+                try:
+                    rgb = self._color_name_to_rgb(ul_color)
+                    if self.color_depth == ColorDepth.DEPTH_4_BIT:
+                        code, _ = _16_fg_colors.get_code(rgb)
+                        result.extend([58, 5, code])
+                    elif self.color_depth == ColorDepth.DEPTH_24_BIT:
+                        r, g, b = rgb
+                        result.extend([58, 2, r, g, b])
+                    else:
+                        result.extend([58, 5, _256_colors[rgb]])
+                except ValueError:
+                    pass
+
+        return map(str, result)
 
 
 class Vt100_Output(PtkVt100_Output):
