@@ -32,29 +32,43 @@ add_setting(
     """,
 )
 
-
 add_setting(
     name="background_pattern",
     group="euporie.notebook.app",
     flags=["--background-pattern", "--bg-pattern"],
     type_=int,
     choices={
+        # No pattern
         0: lambda x, y: False,
+        # Solid fill
         1: lambda x, y: True,
         2: lambda x, y: (x + y) % 2 == 0,
         3: lambda x, y: (x + 2 * y) % 4 == 0,
+        # Diagonal stripes (down-left)
         4: lambda x, y: (x + y) % 3 == 0,
         5: lambda x, y: ((x + y % 2 * 3) % 6) % 4 == 0,
+        # Large grid
+        6: lambda x, y: x % 4 == 0 and y % 2 == 0,
+        # Trellis
+        7: lambda x, y: (x % 5 == 0) or (y % 3 == 0),
+        # Diamond lattice
+        8: lambda x, y: (x + y) % 4 == 0 or (x - y) % 4 == 0,
+        # Small checkerboard
+        9: lambda x, y: (x % 4 < 2) ^ (y % 2 < 1),
+        # Large checkerboard
+        10: lambda x, y: (x % 8 < 4) ^ (y % 4 < 2),
+        # Sparse dots
+        11: lambda x, y: (x % 6 in (0, 1)) and (y % 3 == 0),
     },
     help_="The background pattern to use",
     default=2,
     schema={
         "minimum": 0,
-        "maximum": 5,
+        "maximum": 11,
     },
     description="""
         The background pattern to use when the notebook is narrower than the
-        available width. Zero mean no pattern is used.
+        available width. Zero means no pattern is used.
     """,
 )
 
