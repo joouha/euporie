@@ -602,6 +602,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
             tab = self.tab
         if tab is not None:
             tab.close(cb=partial(self.cleanup_closed_tab, tab))
+        self.invalidate()
 
     @property
     def syntax_theme(self) -> str:

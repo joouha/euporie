@@ -1,6 +1,7 @@
 """Commands for the notebook app."""
 
 from euporie.apptk.commands import add_cmd
+from euporie.apptk.filters.environment import have_modules
 
 
 @add_cmd(aliases=["n"], icon="", style="class:orange", keys=["c-n"])
@@ -33,6 +34,26 @@ def _new_text_file() -> None:
 
     app = get_app()
     app.add_tab(tab := EditorTab(app, None))
+    tab.focus()
+
+
+have_ptterm = have_modules("ptterm")
+
+
+@add_cmd(
+    aliases=["nx"],
+    icon="$",
+    style="class:pink",
+    filter=have_ptterm,
+    hidden=~have_ptterm,
+)
+def _new_terminal() -> None:
+    """Create a text file."""
+    from euporie.notebook.current import get_app
+    from euporie.notebook.tabs.terminal import TerminalTab
+
+    app = get_app()
+    app.add_tab(tab := TerminalTab(app, None))
     tab.focus()
 
 
