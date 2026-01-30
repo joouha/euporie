@@ -28,7 +28,7 @@ if TYPE_CHECKING:
         NotImplementedOrNone,
     )
 
-    from euporie.apptk.diagnostics import Report
+    from euporie.core.diagnostics import Report
     from euporie.apptk.formatted_text import StyleAndTextTuples
     from euporie.apptk.layout.containers import Window, WindowRenderInfo
     from euporie.apptk.layout.controls import UIContent

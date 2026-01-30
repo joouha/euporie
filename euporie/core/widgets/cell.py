@@ -24,7 +24,7 @@ from euporie.apptk.utils import Event
 
 from euporie.apptk.border import NoLine, ThickLine, ThinLine
 from euporie.apptk.completion.deduplicate import DeduplicateCompleter
-from euporie.apptk.diagnostics import Report
+from euporie.core.diagnostics import Report
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
     Container,
