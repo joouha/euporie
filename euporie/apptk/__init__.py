@@ -2,4 +2,4 @@
 
 from modshim import shim
 
-shim("prompt_toolkit")
+shim("prompt_toolkit", extras=["ptterm"])

@@ -1,6 +1,7 @@
 """Tab for use in euporie notebook editor."""
 
 from euporie.apptk.convert.mime import MIME_FORMATS
+from euporie.apptk.filters.environment import have_modules
 from euporie.core.nbformat import NOTEBOOK_EXTENSIONS
 from euporie.core.tabs import _TAB_REGISTRY, TabRegistryEntry
 
@@ -42,3 +43,11 @@ _TAB_REGISTRY.extend(
         ),
     ]
 )
+
+if have_modules("ptterm")():
+    _TAB_REGISTRY.append(
+        TabRegistryEntry(
+            path="euporie.notebook.tabs.terminal:TerminalTab",
+            name="Terminal",
+        )
+    )
