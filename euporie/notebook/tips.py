@@ -16,7 +16,7 @@ TIPS: list[str] = [
     "GitHub at https://github.com/joouha/euporie to show your support! ⭐️",
     #
     "**Open the Command Palette**<br>"
-    f"Press **{k('show-command-palette')}** anywhere to search and run any "
+    f"Press **{k('toggle-command-palette')}** anywhere to search and run any "
     "available command.",
     #
     "**Run Commands from the Command Bar**<br>"
