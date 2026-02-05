@@ -639,7 +639,7 @@ class ErrorDialog(Dialog):
 
         from euporie.apptk.layout.containers import MarginContainer
         from euporie.apptk.layout.margins import ScrollbarMargin
-        from euporie.core.widgets.formatted_text_area import FormattedTextArea
+        from euporie.apptk.widgets.formatted_text_area import FormattedTextArea
         from euporie.core.widgets.forms import Checkbox
 
         if exception is None:

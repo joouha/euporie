@@ -5,8 +5,6 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from euporie.apptk.widgets import TextArea
-
 from euporie.apptk.filters import to_filter
 from euporie.apptk.formatted_text import (
     fragment_list_to_text,
@@ -15,6 +13,7 @@ from euporie.apptk.formatted_text import (
 )
 from euporie.apptk.layout.margins import ConditionalMargin, NumberedMargin
 from euporie.apptk.layout.processors import DynamicProcessor, Processor, Transformation
+from euporie.apptk.widgets import TextArea
 
 if TYPE_CHECKING:
     from typing import Any
@@ -55,13 +54,7 @@ class FormattedTextProcessor(Processor):
 
 
 class FormattedTextArea(TextArea):
-    """Apply formatted text to a TextArea."""
-
-    _formatted_text: AnyFormattedText
-
-    def _set_formatted_text(self, value: AnyFormattedText) -> None:
-        self._formatted_text = value
-        self.text = fragment_list_to_text(self.formatted_text)
+    """Display formatted text in a read-only TextArea."""
 
     def __init__(
         self,
@@ -74,46 +67,48 @@ class FormattedTextArea(TextArea):
 
         Args:
             formatted_text: A list of `(style, text)` tuples to display.
-            line_numbers: Determines if line numbers are shown,
             args: Arguments to pass to `euporie.apptk.widgets.TextArea`.
+            line_numbers: Determines if line numbers are shown.
             kwargs: Key-word arguments to pass to `euporie.apptk.widgets.TextArea`.
 
         """
-        self._formatted_text = formatted_text
+        self._formatted_text: AnyFormattedText = formatted_text
+        self._processor: FormattedTextProcessor | None = None
         self.line_numbers = to_filter(line_numbers)
-        input_processors = kwargs.pop("input_processors", [])
-        input_processors.append(DynamicProcessor(self.get_processor))
-        # The following is not type checked due to a currently open mypy bug
-        # https://github.com/python/mypy/issues/6799
-        super().__init__(
-            *args,
-            input_processors=input_processors,
-            **kwargs,
-        )  # type: ignore
-        # Set the left margins
-        self.window.left_margins = [
-            ConditionalMargin(
-                NumberedMargin(),
-                self.line_numbers,
-            )
+
+        input_processors = [
+            DynamicProcessor(self.get_processor),
+            *kwargs.get("input_processors", []),
         ]
-        # Set the formatted text to display
-        self._set_formatted_text(formatted_text)
+
+        kwargs.update(
+            {
+                "text": fragment_list_to_text(to_formatted_text(formatted_text)),
+                "input_processors": input_processors,
+                "read_only": True,
+                "line_numbers": False,
+            }
+        )
+        super().__init__(*args, **kwargs)
+
+        self.window.left_margins.append(
+            ConditionalMargin(NumberedMargin(), self.line_numbers)
+        )
 
     @property
     def formatted_text(self) -> StyleAndTextTuples:
         """The formatted text."""
-        ft = to_formatted_text(self._formatted_text)
-        text = fragment_list_to_text(ft)
-        if self.text != text:
-            self.text = text
-        return ft
+        return to_formatted_text(self._formatted_text)
 
     @formatted_text.setter
     def formatted_text(self, value: AnyFormattedText) -> None:
-        """Set the formatted text."""
-        self._set_formatted_text(value)
+        """Set the formatted text and sync plain text."""
+        self._formatted_text = value
+        self._processor = None  # Invalidate cached processor
+        self.text = fragment_list_to_text(to_formatted_text(value))
 
     def get_processor(self) -> FormattedTextProcessor:
-        """Generate a processor for the formatted text."""
-        return FormattedTextProcessor(self.formatted_text)
+        """Generate or return cached processor for the formatted text."""
+        if self._processor is None:
+            self._processor = FormattedTextProcessor(self.formatted_text)
+        return self._processor
