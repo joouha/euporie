@@ -13,7 +13,7 @@ from euporie.apptk.layout.margins import ScrollbarMargin
 from euporie.apptk.path import parse_path
 from euporie.core.log import LOG_QUEUE, QueueHandler
 from euporie.core.tabs.base import Tab
-from euporie.core.widgets.formatted_text_area import FormattedTextArea
+from euporie.apptk.widgets.formatted_text_area import FormattedTextArea
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -38,7 +38,7 @@ class LogView(Tab):
             formatted_text=[],
             read_only=True,
             scrollbar=False,
-            line_numbers=Condition(lambda: self.app.config.line_numbers),
+            line_numbers=self.app.config.filters.line_numbers,
             search_field=self.search_field,
             focus_on_click=True,
             wrap_lines=False,
