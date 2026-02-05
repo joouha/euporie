@@ -237,7 +237,6 @@ class Frame(PtkFrame):
             )
         else:
             self.container = body
-        log.debug(self.add_styles(bs_right, bs_bottom)())
 
     def add_styles(self, *styles: str | Callable[[], str]) -> Callable[[], str]:
         """Return a function which adds a style string to the border style."""
