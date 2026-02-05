@@ -43,7 +43,7 @@ from euporie.apptk.layout.containers import (
 from euporie.apptk.layout.controls import FormattedTextControl
 from euporie.apptk.layout.decor import FocusedStyle
 from euporie.apptk.layout.mouse import MouseHandlerWrapper
-from euporie.core.widgets.decor import Border, Shadow
+from euporie.apptk.widgets.base import Frame, Shadow
 from euporie.core.widgets.file_browser import FileBrowser
 from euporie.core.widgets.forms import Button, LabelledWidget, Select, Text
 from euporie.core.widgets.layout import Box
@@ -162,7 +162,7 @@ class Dialog(Float, metaclass=ABCMeta):
         # Create body
         self.container = ConditionalContainer(
             Shadow(
-                Border(
+                Frame(
                     HSplit(
                         [
                             title_row,

@@ -22,7 +22,7 @@ from euporie.apptk.layout.decor import FocusedStyle
 from euporie.apptk.layout.processors import BeforeInput
 from euporie.core.comm.base import Comm, CommView
 from euporie.core.kernel.jupyter import MsgCallbacks
-from euporie.core.widgets.decor import Border
+from euporie.apptk.widgets.base import Frame
 from euporie.core.widgets.forms import (
     BaseButton,
     Button,
@@ -1393,7 +1393,7 @@ class ColorPickerModel(TextBoxIpyWidgetComm):
 
         container = FocusedStyle(
             LabelledWidget(
-                body=Border(
+                body=Frame(
                     VSplit(
                         [
                             Swatch(

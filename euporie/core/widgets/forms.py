@@ -72,7 +72,7 @@ from euporie.apptk.layout.processors import (
 from euporie.apptk.layout.screen import WritePosition
 from euporie.apptk.lexers import DynamicLexer, Lexer
 from euporie.apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
-from euporie.core.widgets.decor import Border, Shadow
+from euporie.apptk.widgets.base import Frame, Shadow
 from euporie.core.widgets.layout import Box, ConditionalSplit
 
 if TYPE_CHECKING:
@@ -136,7 +136,7 @@ class Swatch:
         self._color = color
         self._style = style
 
-        self.container = Border(
+        self.container = Frame(
             Window(
                 char=" ",
                 style=lambda: f"{self.style} bg:{self.color}",
@@ -227,7 +227,7 @@ class BaseButton:
             handler=self.mouse_handler,
         )
         self.container = Box(
-            Border(
+            Frame(
                 self.mouse_handler_wrapper,
                 border=border,
                 show_borders=show_borders,
@@ -752,7 +752,7 @@ class Text:
             self.buffer.on_text_changed += on_text_changed
         if validation:
             self.buffer.validate_while_typing = Always()
-        self.container = Border(
+        self.container = Frame(
             VSplit(
                 [
                     self.window,
@@ -1018,7 +1018,7 @@ class Progress:
             vertical=self.vertical,
         )
         self.container = Box(
-            Border(
+            Frame(
                 Window(
                     self.control,
                     style=self.add_style("class:progress"),
@@ -1471,7 +1471,7 @@ class Select(SelectableWidget):
     def load_container(self) -> AnyContainer:
         """Load the widget's container."""
         return Box(
-            Border(
+            Frame(
                 VSplit(
                     [
                         window := Window(

@@ -29,7 +29,7 @@ from euporie.apptk.layout.decor import FocusedStyle
 from euporie.apptk.layout.margins import ScrollbarMargin
 from euporie.apptk.layout.screen import WritePosition
 from euporie.apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
-from euporie.core.widgets.decor import Border
+from euporie.apptk.widgets.base import Frame
 from euporie.core.widgets.forms import Button, Text
 
 if TYPE_CHECKING:
@@ -1209,7 +1209,7 @@ class FileBrowser:
                     filter=to_filter(show_address_bar),
                 ),
                 FocusedStyle(
-                    Border(
+                    Frame(
                         VSplit(
                             [
                                 window := Window(
