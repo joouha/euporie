@@ -2,7 +2,7 @@
 
 from euporie.apptk.application.current import get_app
 
-from euporie.apptk.filters import buffer_has_focus
+from euporie.apptk.filters.app import buffer_has_focus, is_read_only
 from euporie.core.config import add_setting
 from euporie.core.filters import tab_type_has_focus
 
@@ -96,7 +96,7 @@ add_setting(
     """,
     hooks=[lambda x: get_app().refresh()],
     keys=["l"],
-    filter=~buffer_has_focus,
+    filter=~buffer_has_focus | (buffer_has_focus & is_read_only),
 )
 
 add_setting(
