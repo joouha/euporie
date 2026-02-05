@@ -1,5 +1,7 @@
 """Contain data reference dictionaries for value lookups."""
 
+from __future__ import annotations
+
 from typing import NamedTuple
 
 from prompt_toolkit.styles.base import ANSI_COLOR_NAMES, ANSI_COLOR_NAMES_ALIASES
@@ -10,6 +12,7 @@ KNOWN_COLORS = [*ANSI_COLOR_NAMES, *ANSI_COLOR_NAMES_ALIASES.keys()]
 class Attrs(NamedTuple):
     """Style attributes."""
 
+    # Original prompt_toolkit fields (must match order in PtkAttrs
     color: str | None
     bgcolor: str | None
     bold: bool | None
@@ -20,6 +23,7 @@ class Attrs(NamedTuple):
     blink: bool | None
     reverse: bool | None
     hidden: bool | None
+    # Extended fields (with default values)
     blinkfast: bool | None = None
     ulcolor: str | None = None
     doubleunderline: bool | None = None

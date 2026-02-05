@@ -8,9 +8,6 @@ from base64 import b64encode
 from functools import lru_cache
 from typing import TYPE_CHECKING, TextIO
 
-from euporie.apptk.filters.utils import to_filter
-from euporie.apptk.output.color_depth import ColorDepth
-from euporie.apptk.utils import is_dumb_terminal
 from prompt_toolkit.output.vt100 import (
     BG_ANSI_COLORS,
     FG_ANSI_COLORS,
@@ -26,14 +23,18 @@ from prompt_toolkit.output.vt100 import (
 )
 
 from euporie.apptk.filters.environment import in_screen, in_tmux
+from euporie.apptk.filters.utils import to_filter
+from euporie.apptk.output.color_depth import ColorDepth
+from euporie.apptk.styles.base import DEFAULT_ATTRS
+from euporie.apptk.utils import is_dumb_terminal
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
-    from euporie.apptk.filters.base import FilterOrBool
+    from prompt_toolkit.styles.base import Attrs
 
     from euporie.apptk.data_structures import Size
-    from euporie.apptk.styles import Attrs
+    from euporie.apptk.filters.base import FilterOrBool
 
 log = logging.getLogger(__name__)
 
@@ -88,25 +89,25 @@ class _EscapeCodeCache(_PtkEscapeCodeCache):
         self.color_depth = color_depth
 
     def __missing__(self, attrs: Attrs) -> str:
-        (
-            fgcolor,
-            bgcolor,
-            bold,
-            dim,
-            underline,
-            strike,
-            italic,
-            blink,
-            reverse,
-            hidden,
-            blinkfast,
-            ulcolor,
-            doubleunderline,
-            curvyunderline,
-            dottedunderline,
-            dashedunderline,
-            overline,
-        ) = attrs
+        attr_args = DEFAULT_ATTRS._asdict() | attrs._asdict()
+        fgcolor = attr_args["color"]
+        bgcolor = attr_args["bgcolor"]
+        bold = attr_args["bold"]
+        dim = attr_args["dim"]
+        underline = attr_args["underline"]
+        strike = attr_args["strike"]
+        italic = attr_args["italic"]
+        blink = attr_args["blink"]
+        reverse = attr_args["reverse"]
+        hidden = attr_args["hidden"]
+        blinkfast = attr_args["blinkfast"]
+        ulcolor = attr_args["ulcolor"]
+        doubleunderline = attr_args["doubleunderline"]
+        curvyunderline = attr_args["curvyunderline"]
+        dottedunderline = attr_args["dottedunderline"]
+        dashedunderline = attr_args["dashedunderline"]
+        overline = attr_args["overline"]
+
         parts: list[str] = []
 
         parts.extend(self._colors_to_code(fgcolor or "", bgcolor or "", ulcolor or ""))
@@ -222,7 +223,7 @@ class _EscapeCodeCache(_PtkEscapeCodeCache):
 class Vt100_Output(PtkVt100_Output):
     """A Vt100 output which enables SGR pixel mouse positioning."""
 
-    pixel_size: tuple[int, int]
+    _pixel_size: tuple[int, int]
 
     def __init__(
         self,
