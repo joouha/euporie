@@ -157,7 +157,7 @@ class Masks:
     )
 
 
-def _lint_to_grid(line: LineStyle, mask: Mask) -> GridStyle:
+def _line_to_grid(line: LineStyle, mask: Mask) -> GridStyle:
     """Get a grid from a line and a mask."""
     return GridStyle(line, mask)
 
@@ -171,7 +171,7 @@ class LineStyle:
     """
 
     _grid_cache: FastDictCache[tuple[LineStyle, Mask], GridStyle] = FastDictCache(
-        get_value=_lint_to_grid
+        get_value=_line_to_grid
     )
 
     def __init__(
