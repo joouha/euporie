@@ -20,7 +20,7 @@ from euporie.core.tabs.base import Tab
 from euporie.apptk.layout.display import Display
 from euporie.core.widgets.file_browser import FileBrowser
 from euporie.core.widgets.forms import BaseButton, Button
-from euporie.core.widgets.layout import Border, Box
+from euporie.core.widgets.layout import Frame, Box
 from euporie.core.widgets.logo import logo_medium
 from euporie.notebook.tips import TIPS
 
@@ -84,7 +84,7 @@ class NewTab(Tab):
                 )
             )
         cmds_section = StatusContainer(
-            Border(
+            Frame(
                 Box(
                     HSplit(
                         buttons,
@@ -117,7 +117,7 @@ class NewTab(Tab):
                 return None
             return NotImplemented
 
-        tip_section = Border(
+        tip_section = Frame(
             Box(
                 tip_display,
                 padding=Dimension(max=1),
@@ -127,7 +127,7 @@ class NewTab(Tab):
             style="class:tab-padding",
         )
 
-        recent_files_section = Border(
+        recent_files_section = Frame(
             FileBrowser(
                 path=lambda: self.app.config.recent_files,
                 on_open=self.app.open_file,
@@ -141,7 +141,7 @@ class NewTab(Tab):
             style="class:tab-padding",
         )
 
-        content = Border(
+        content = Frame(
             Box(
                 HSplit(
                     [

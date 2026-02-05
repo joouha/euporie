@@ -25,7 +25,7 @@ from euporie.core.nbformat import new_code_cell
 from euporie.core.tabs.console import BaseConsole
 from euporie.core.widgets.cell_outputs import CellOutputArea
 from euporie.core.widgets.inputs import KernelInput, StdInput
-from euporie.core.widgets.layout import Border
+from euporie.core.widgets.layout import Frame
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -89,7 +89,7 @@ class Console(BaseConsole):
                 ),
                 FocusedStyle(self.stdin_box),
                 FocusedStyle(
-                    Border(
+                    Frame(
                         self.input_box,
                         border=InsetGrid,
                         style="class:input,text,border",

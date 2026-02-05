@@ -5,18 +5,12 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from euporie.apptk.widgets.base import Label
-
-from euporie.apptk.border import ThinLine
-from euporie.apptk.data_structures import DiBool
 from euporie.apptk.filters import to_filter
 from euporie.apptk.layout.containers import (
-    ConditionalContainer,
     DummyContainer,
     DynamicContainer,
     HSplit,
     VSplit,
-    Window,
 )
 from euporie.apptk.layout.decor import DropShadow
 
@@ -24,175 +18,13 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from euporie.apptk.filters.core import FilterOrBool
-    from euporie.apptk.formatted_text.base import AnyFormattedText
 
-    from euporie.apptk.border import GridStyle
     from euporie.apptk.layout.containers import AnyContainer
     from euporie.apptk.mouse_events import MouseEvent
 
     MouseHandler = Callable[[MouseEvent], object]
 
 log = logging.getLogger(__name__)
-
-
-class Border:
-    """Draw a border around any container."""
-
-    def __init__(
-        self,
-        body: AnyContainer,
-        border: GridStyle | None = ThinLine.grid,
-        style: str | Callable[[], str] = "class:border",
-        show_borders: DiBool | None = None,
-        title: AnyFormattedText | None = None,
-    ) -> None:
-        """Create a new border widget which wraps another container.
-
-        Args:
-            body: The container to surround with a border
-            border: The grid style to use
-            style: The style to apply to the border
-            show_borders: Which of the four borders should be displayed
-            title: Optional text to make a frame
-
-        """
-        self.body = body
-        self.style = style
-
-        if show_borders:
-            show_borders = DiBool(*show_borders)
-        else:
-            show_borders = DiBool(True, True, True, True)
-        border_top = to_filter(show_borders.top)
-        border_right = to_filter(show_borders.right)
-        border_bottom = to_filter(show_borders.bottom)
-        border_left = to_filter(show_borders.left)
-
-        self.container: AnyContainer
-        if border is not None and any(show_borders):
-            top_edge: AnyContainer = Window(
-                char=border.TOP_MID, style=self.add_style("class:top")
-            )
-            if title:
-                top_edge = VSplit(
-                    [
-                        top_edge,
-                        Window(width=1, height=1),
-                        Label(title, dont_extend_width=True),
-                        Window(width=1, height=1),
-                        top_edge,
-                    ]
-                )
-
-            self.container = HSplit(
-                [
-                    ConditionalContainer(
-                        VSplit(
-                            [
-                                ConditionalContainer(
-                                    Window(
-                                        width=1,
-                                        height=1,
-                                        char=border.TOP_LEFT,
-                                        style=self.add_style("class:left,top"),
-                                    ),
-                                    filter=border_top & border_left,
-                                ),
-                                ConditionalContainer(
-                                    top_edge,
-                                    filter=border_top,
-                                ),
-                                ConditionalContainer(
-                                    Window(
-                                        width=1,
-                                        height=1,
-                                        char=border.TOP_RIGHT,
-                                        style=self.add_style("class:right,top"),
-                                    ),
-                                    filter=border_top & border_right,
-                                ),
-                            ],
-                            height=1,
-                        ),
-                        filter=border_top,
-                    ),
-                    VSplit(
-                        [
-                            ConditionalContainer(
-                                Window(
-                                    width=1,
-                                    char=border.MID_LEFT,
-                                    style=self.add_style("class:left"),
-                                ),
-                                filter=border_left,
-                            ),
-                            DynamicContainer(lambda: self.body),
-                            ConditionalContainer(
-                                Window(
-                                    width=1,
-                                    char=border.MID_RIGHT,
-                                    style=self.add_style("class:right"),
-                                ),
-                                filter=border_right,
-                            ),
-                            # Padding is required to make sure that if the content is
-                            # too small, the right frame border is still aligned.
-                        ],
-                        padding=0,
-                    ),
-                    ConditionalContainer(
-                        VSplit(
-                            [
-                                ConditionalContainer(
-                                    Window(
-                                        width=1,
-                                        height=1,
-                                        char=border.BOTTOM_LEFT,
-                                        style=self.add_style("class:left,bottom"),
-                                    ),
-                                    filter=border_bottom & border_left,
-                                ),
-                                ConditionalContainer(
-                                    Window(
-                                        char=border.BOTTOM_MID,
-                                        style=self.add_style("class:bottom"),
-                                    ),
-                                    filter=border_bottom,
-                                ),
-                                ConditionalContainer(
-                                    Window(
-                                        width=1,
-                                        height=1,
-                                        char=border.BOTTOM_RIGHT,
-                                        style=self.add_style("class:right,bottom"),
-                                    ),
-                                    filter=border_bottom & border_right,
-                                ),
-                            ],
-                            # specifying height here will increase the rendering speed.
-                            height=1,
-                        ),
-                        filter=border_bottom,
-                    ),
-                ],
-            )
-        else:
-            self.container = body
-
-    def add_style(self, extra: str) -> Callable[[], str]:
-        """Return a function which adds a style string to the border style."""
-
-        def _style() -> str:
-            if callable(self.style):
-                return f"{self.style()} {extra}"
-            else:
-                return f"{self.style} {extra}"
-
-        return _style
-
-    def __pt_container__(self) -> AnyContainer:
-        """Return the border widget's container."""
-        return self.container
 
 
 class Shadow:

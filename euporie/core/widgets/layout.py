@@ -35,7 +35,7 @@ from euporie.apptk.layout.controls import (
     UIControl,
 )
 from euporie.apptk.mouse_events import MouseButton, MouseEventType
-from euporie.core.widgets.decor import Border
+from euporie.apptk.widgets.base import Frame
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -752,7 +752,7 @@ class TabbedSplit(StackedSplit):
                     style=partial(self.add_style, "class:tab-bar"),
                     height=2,
                 ),
-                Border(
+                Frame(
                     Box(
                         DynamicContainer(self.active_child),
                         padding=0,
@@ -799,7 +799,7 @@ class AccordionSplit(StackedSplit):
         """Render the accordion in it's current state."""
         self._container = HSplit(
             [
-                Border(
+                Frame(
                     HSplit(
                         [
                             Window(

@@ -20,7 +20,7 @@ from euporie.apptk.layout.containers import HSplit, MarginContainer, VSplit, Win
 from euporie.apptk.layout.controls import BufferControl, UIContent, UIControl
 from euporie.apptk.layout.margins import ScrollbarMargin
 from euporie.apptk.mouse_events import MouseButton, MouseEventType
-from euporie.core.widgets.decor import Border
+from euporie.apptk.widgets.base import Frame
 from euporie.core.widgets.forms import Dropdown
 
 if TYPE_CHECKING:
@@ -314,7 +314,7 @@ class TableOfContents:
                     labels=[x.title() for x in TOCs],
                     on_change=lambda s: setattr(control, "kind", s.value),
                 ),
-                Border(
+                Frame(
                     VSplit(
                         [window, MarginContainer(ScrollbarMargin(), target=window)],
                     ),
