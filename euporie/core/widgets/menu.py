@@ -44,7 +44,7 @@ from euporie.apptk.layout.containers import (
 from euporie.apptk.layout.controls import FormattedTextControl, UIContent
 from euporie.apptk.mouse_events import MouseEvent, MouseEventType
 from euporie.core.bars.status import StatusContainer
-from euporie.core.widgets.decor import Shadow
+from euporie.apptk.widgets.base import Shadow
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Sequence

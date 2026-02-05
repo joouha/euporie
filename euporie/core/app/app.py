@@ -57,7 +57,7 @@ from euporie.core.style import (
     get_style_by_name,
 )
 from euporie.core.utils import ChainedList
-from euporie.core.widgets.decor import Shadow
+from euporie.apptk.widgets.base import Shadow
 from euporie.core.widgets.menu import CompletionsMenu
 
 if TYPE_CHECKING:

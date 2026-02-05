@@ -14,30 +14,36 @@ import logging
 from typing import TYPE_CHECKING
 
 from euporie.apptk.layout.dimension import Dimension
-from prompt_toolkit.layout.containers import (
+from prompt_toolkit.widgets.base import Frame as PtkFrame
+from prompt_toolkit.widgets.base import Shadow as PtkShadow
+
+from euporie.apptk.border import ThinGrid, ThinLine
+from euporie.apptk.data_structures import DiStr
+from euporie.apptk.filters import to_filter
+from euporie.apptk.layout.containers import (
     ConditionalContainer,
+    DummyContainer,
     DynamicContainer,
     HSplit,
     VSplit,
     Window,
 )
-from prompt_toolkit.widgets.base import Frame as PtkFrame
-from prompt_toolkit.widgets.base import Label
-
-from euporie.apptk.border import ThinGrid, ThinLine
-from euporie.apptk.data_structures import DiStr
-from euporie.apptk.filters import to_filter
+from euporie.apptk.layout.decor import DropShadow
+from euporie.apptk.widgets.base import Label
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from prompt_toolkit.filters.base import FilterOrBool
+    from euporie.apptk.filters.core import FilterOrBool
     from prompt_toolkit.formatted_text import AnyFormattedText
     from prompt_toolkit.key_binding.key_bindings import KeyBindings
-    from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.layout.dimension import AnyDimension
 
     from euporie.apptk.border import GridStyle
+    from euporie.apptk.layout.containers import AnyContainer
+    from euporie.apptk.mouse_events import MouseEvent
+
+    MouseHandler = Callable[[MouseEvent], object]
 
 log = logging.getLogger(__name__)
 
@@ -238,3 +244,35 @@ class Frame(PtkFrame):
         return lambda: " ".join(
             style() if callable(style) else style for style in [self.style, *styles]
         )
+
+
+class Shadow(PtkShadow):
+    """Draw a shadow underneath/behind this container.
+
+    The container must be in a float.
+    """
+
+    def __init__(self, body: AnyContainer, filter: FilterOrBool = True) -> None:
+        """Initialize a new drop-shadow container.
+
+        Args:
+            body: Another container object.
+            filter: Determines if the shadow should be applied
+        """
+        filter = to_filter(filter)
+
+        spacer = DummyContainer(width=1, height=1)
+        shadow = VSplit(
+            [
+                HSplit([body, VSplit([spacer, DropShadow()])]),
+                HSplit([spacer, DropShadow()]),
+            ]
+        )
+
+        def get_contents() -> AnyContainer:
+            if filter():
+                return shadow
+            else:
+                return body
+
+        self.container = DynamicContainer(get_contents)
