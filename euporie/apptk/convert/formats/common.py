@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import base64
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, overload
 
 from euporie.apptk.application.current import get_app
 
@@ -59,7 +59,7 @@ async def imagemagick_convert(
 
 
 async def chafa_convert_cmd(
-    output_format: str,
+    output_format: Literal["symbols", "sixels", "kitty", "iterm2"],
     datum: Datum,
     cols: int | None = None,
     rows: int | None = None,
@@ -155,3 +155,82 @@ async def chafa_convert_py(
 
     # Return the output
     return canvas.print(fallback=True).decode()
+
+
+@overload
+async def mermaid_rs_renderer_cmd(
+    output_format: Literal["svg"],
+    datum: Datum,
+    cols: int | None = None,
+    rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
+    **kwargs: Any,
+) -> str: ...
+@overload
+async def mermaid_rs_renderer_cmd(
+    output_format: Literal["png"],
+    datum: Datum,
+    cols: int | None = None,
+    rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
+    **kwargs: Any,
+) -> bytes: ...
+async def mermaid_rs_renderer_cmd(output_format, datum, cols, rows, fg, bg, **kwargs):
+    """Convert a mermaid diagram to PNG or SVG using :cmd:`mmdr`."""
+    cmd: list[Any] = [
+        "mmdr",
+        "--outputFormat",
+        output_format,
+        "--output=/dev/stdout",
+    ]
+    if cols is not None:
+        cmd.extend(["--width", cols])
+    if rows is not None:
+        cmd.extend(["--height", rows])
+    return await call_subproc(datum.data, cmd)
+
+
+@overload
+async def mermaid_cli_cmd(
+    output_format: Literal["svg"],
+    datum: Datum,
+    cols: int | None = None,
+    rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
+    **kwargs: Any,
+) -> str: ...
+@overload
+async def mermaid_cli_cmd(
+    output_format: Literal["png"],
+    datum: Datum,
+    cols: int | None = None,
+    rows: int | None = None,
+    fg: str | None = None,
+    bg: str | None = None,
+    **kwargs: Any,
+) -> bytes: ...
+async def mermaid_cli_cmd(output_format, datum, cols, rows, fg, bg, **kwargs):
+    """Convert a mermaid diagram to PNG or SVG using :cmd:`mmdc` (``mermaid-cli``)."""
+    cmd: list[Any] = [
+        "mmdc",
+        "--input",
+        "-",
+        "--outputFormat",
+        output_format,
+        "--output",
+        "-",
+        "--quiet",
+    ]
+    if cols is not None:
+        cmd.extend(["--width", str(cols)])
+    if rows is not None:
+        cmd.extend(["--height", str(rows)])
+    if bg is not None:
+        cmd.extend(["--backgroundColor", bg])
+    result = await call_subproc(datum.data, cmd)
+    if output_format == "svg" and isinstance(result, bytes):
+        return result.decode()
+    return result

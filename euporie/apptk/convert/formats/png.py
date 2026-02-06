@@ -6,7 +6,12 @@ import asyncio
 from functools import partial
 from typing import TYPE_CHECKING
 
-from euporie.apptk.convert.formats.common import base64_to_bytes_py, imagemagick_convert
+from euporie.apptk.convert.formats.common import (
+    base64_to_bytes_py,
+    imagemagick_convert,
+    mermaid_cli_cmd,
+    mermaid_rs_renderer_cmd,
+)
 from euporie.apptk.convert.registry import register
 from euporie.apptk.filters.environment import command_exists, have_modules
 
@@ -187,3 +192,16 @@ async def svg_to_png_py_cairosvg(
     data = datum.data
     markup = data.decode() if isinstance(data, bytes) else data
     return cairosvg.surface.PNGSurface.convert(markup, write_to=None)
+
+
+register(
+    from_=("mermaid"),
+    to="png",
+    filter_=command_exists("mmdr"),
+)(partial(mermaid_rs_renderer_cmd, "png"))
+
+register(
+    from_=("mermaid"),
+    to="png",
+    filter_=command_exists("mmdc"),
+)(partial(mermaid_cli_cmd, "png"))
