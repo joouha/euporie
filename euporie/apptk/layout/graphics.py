@@ -17,9 +17,9 @@ from euporie.apptk.convert.datum import Datum
 from euporie.apptk.convert.registry import find_route
 from euporie.apptk.data_structures import DiInt, Point
 from euporie.apptk.enums import FitMode
-from euporie.apptk.layout.display import calculate_render_size
 from euporie.apptk.formatted_text.utils import split_lines
 from euporie.apptk.layout.controls import GetLinePrefixCallable, UIContent, UIControl
+from euporie.apptk.layout.display import calculate_render_size
 from euporie.apptk.layout.screen import WritePosition
 
 if TYPE_CHECKING:
@@ -380,11 +380,11 @@ class ItermGraphicControl(GraphicControl):
         """Convert the graphic's data to base64 data."""
         datum = self.datum
         bbox = wp.bbox
+        fg, bg = style_fg_bg(self.style)
         # Crop image if necessary
         if any(bbox):
             import io
 
-            fg, bg = style_fg_bg(self.style)
             image = datum.convert(to="pil", cols=wp.width, rows=wp.height, fg=fg, bg=bg)
             if image is not None:
                 cell_size_x, cell_size_y = self.app.output.cell_pixel_size
