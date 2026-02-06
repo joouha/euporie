@@ -45,7 +45,7 @@ from euporie.core.widgets.dialog import (
 from euporie.core.widgets.file_browser import FileBrowser
 from euporie.core.widgets.layout import TabBarControl, TabBarTab
 from euporie.core.widgets.logo import logo_micro
-from euporie.core.widgets.menu import MenuBar, MenuItem
+from euporie.apptk.widgets.menus import MenuBar, MenuItem
 from euporie.core.widgets.minimap import MiniMap
 from euporie.core.widgets.pager import Pager
 from euporie.core.widgets.palette import CommandPalette
@@ -238,14 +238,11 @@ class NotebookApp(BaseApp):
             "msgbox": MsgBoxDialog,
         }
 
+        menu_bar = MenuBar(menu_items=self.load_menu_items())
+        for i, menu in enumerate(menu_bar.floats):
+            self.menus[f"menu-{i}"] = menu
         top_bar = ConditionalContainer(
-            content=VSplit(
-                [
-                    logo_micro,
-                    MenuBar(app=self, menu_items=self.load_menu_items()),
-                    title_bar,
-                ]
-            ),
+            content=VSplit([logo_micro, menu_bar, title_bar]),
             filter=self.config.filters.show_top_bar,
         )
 

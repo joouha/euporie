@@ -36,7 +36,7 @@ if TYPE_CHECKING:
     from _typeshed import SupportsWrite
     from euporie.apptk.filters.base import FilterOrBool
 
-    from euporie.core.widgets.menu import MenuItem
+    from euporie.apptk.widgets.menus import MenuItem
 
 
 log = logging.getLogger(__name__)
@@ -222,7 +222,7 @@ class Setting:
     @property
     def menu(self) -> MenuItem:
         """Return a menu item for the setting."""
-        from euporie.core.widgets.menu import MenuItem
+        from euporie.apptk.widgets.menus import MenuItem
 
         choices = (self.choices or self.schema.get("enum", [])) or []
         if choices:
