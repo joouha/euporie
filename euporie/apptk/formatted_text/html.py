@@ -3206,107 +3206,6 @@ class CustomHTMLParser(HTMLParser):
             self.curr = self.curr.parent
 
 
-def parse_media_condition(condition: str, dom: HTML) -> Filter:
-    """Convert media rules to conditions."""
-    condition = condition.replace(" ", "")
-    result: Filter
-
-    for op_str, op_func in (("<=", le), (">=", ge), ("<", lt), (">", gt), ("=", eq)):
-        if op_str in condition:
-            operator = op_func
-            feature, _, value = condition.partition(op_str)
-            break
-    else:
-        feature, _, value = condition.partition(":")
-        if feature.startswith("max-"):
-            operator = le
-            feature = feature[4:]
-        elif feature.startswith("min-"):
-            operator = ge
-            feature = feature[4:]
-        else:
-            operator = eq
-
-    if feature == "width":
-        result = Condition(
-            lambda: operator(
-                width := dom.width or 80,
-                css_dimension(value, vertical=False, available=width) or 80,
-            )
-        )
-    elif feature == "height":
-        result = Condition(
-            lambda: operator(
-                height := dom.height or 24,
-                css_dimension(value, vertical=True, available=height) or 24,
-            )
-        )
-    elif feature == "aspect":
-        result = Condition(
-            lambda: operator(
-                (width := (dom.width or 80)) / (height := (dom.height or 24)),
-                (
-                    80
-                    if (dim := css_dimension(value, vertical=False, available=width))
-                    is None
-                    else dim
-                )
-                / (
-                    24
-                    if (dim := css_dimension(value, vertical=True, available=height))
-                    is None
-                    else dim
-                ),
-            )
-        )
-
-    elif feature == "device-width":
-        result = Condition(
-            lambda: operator(
-                (
-                    output.get_size()
-                    if (output := get_app_session()._output)
-                    else Size(24, 80)
-                ).columns,
-                css_dimension(value, vertical=False, available=dom.width) or 80,
-            )
-        )
-    elif feature == "device-height":
-        result = Condition(
-            lambda: operator(
-                (
-                    output.get_size()
-                    if (output := get_app_session()._output)
-                    else Size(24, 80)
-                ).rows,
-                css_dimension(value, vertical=True, available=dom.height) or 24,
-            )
-        )
-    elif feature == "device-aspect":
-        result = Condition(
-            lambda: operator(
-                (
-                    size := (
-                        output.get_size()
-                        if (output := get_app_session()._output)
-                        else Size(24, 80)
-                    )
-                ).columns
-                / size.rows,
-                (css_dimension(value, vertical=False, available=dom.width) or 1)
-                / (css_dimension(value, vertical=True, available=dom.height) or 1),
-            )
-        )
-
-    # elif feature == "color":
-    #     Check output color depth
-
-    else:
-        result = always
-
-    return result
-
-
 class HTML(PtkHTML):
     """A HTML formatted text renderer.
 
@@ -3418,6 +3317,116 @@ class HTML(PtkHTML):
             self._css_index = build_css_index(self.css)
         return self._css_index
 
+    def parse_media_condition(self, condition: str) -> Filter:
+        """Convert media rules to conditions."""
+        condition = condition.replace(" ", "")
+        result: Filter
+
+        for op_str, op_func in (
+            ("<=", le),
+            (">=", ge),
+            ("<", lt),
+            (">", gt),
+            ("=", eq),
+        ):
+            if op_str in condition:
+                operator = op_func
+                feature, _, value = condition.partition(op_str)
+                break
+        else:
+            feature, _, value = condition.partition(":")
+            if feature.startswith("max-"):
+                operator = le
+                feature = feature[4:]
+            elif feature.startswith("min-"):
+                operator = ge
+                feature = feature[4:]
+            else:
+                operator = eq
+
+        if feature == "width":
+            result = Condition(
+                lambda: operator(
+                    width := self.width or 80,
+                    css_dimension(value, vertical=False, available=width) or 80,
+                )
+            )
+        elif feature == "height":
+            result = Condition(
+                lambda: operator(
+                    height := self.height or 24,
+                    css_dimension(value, vertical=True, available=height) or 24,
+                )
+            )
+        elif feature == "aspect":
+            result = Condition(
+                lambda: operator(
+                    (width := (self.width or 80)) / (height := (self.height or 24)),
+                    (
+                        80
+                        if (
+                            dim := css_dimension(value, vertical=False, available=width)
+                        )
+                        is None
+                        else dim
+                    )
+                    / (
+                        24
+                        if (
+                            dim := css_dimension(value, vertical=True, available=height)
+                        )
+                        is None
+                        else dim
+                    ),
+                )
+            )
+
+        elif feature == "device-width":
+            result = Condition(
+                lambda: operator(
+                    (
+                        output.get_size()
+                        if (output := get_app_session()._output)
+                        else Size(24, 80)
+                    ).columns,
+                    css_dimension(value, vertical=False, available=self.width) or 80,
+                )
+            )
+        elif feature == "device-height":
+            result = Condition(
+                lambda: operator(
+                    (
+                        output.get_size()
+                        if (output := get_app_session()._output)
+                        else Size(24, 80)
+                    ).rows,
+                    css_dimension(value, vertical=True, available=self.height) or 24,
+                )
+            )
+        elif feature == "device-aspect":
+            result = Condition(
+                lambda: operator(
+                    (
+                        size := (
+                            output.get_size()
+                            if (output := get_app_session()._output)
+                            else Size(24, 80)
+                        )
+                    ).columns
+                    / size.rows,
+                    (css_dimension(value, vertical=False, available=self.width) or 1)
+                    / (css_dimension(value, vertical=True, available=self.height) or 1),
+                )
+            )
+
+        # elif feature == "color":
+        #     Check output color depth
+
+        else:
+            result = always
+
+        return result
+
     def parse_style_sheet(self, css_str: str, condition: Filter = always) -> None:
         """Collect all CSS styles from style tags."""
         dom_css = self.css
@@ -3487,8 +3496,8 @@ class HTML(PtkHTML):
                                 elif (
                                     media_feature := target_m_dict["feature"]
                                 ) is not None:
-                                    target_conditions &= parse_media_condition(
-                                        media_feature, self
+                                    target_conditions &= self.parse_media_condition(
+                                        media_feature
                                     )
                                 # Check for logical 'NOT' inverting the target condition
                                 if target_m_dict["invert"]:
@@ -3496,9 +3505,7 @@ class HTML(PtkHTML):
                         # Logical OR of all media queries
                         query_conditions |= target_conditions
                     # Parse the @media CSS block (may contain nested at-rules)
-                    self.parse_style_sheet(
-                        m_dict["part"], condition & query_conditions
-                    )
+                    self.parse_style_sheet(m_dict["part"], condition & query_conditions)
             # Parse the CSS and always use it
             else:
                 parse_part(condition, part)
@@ -4620,7 +4627,7 @@ class HTML(PtkHTML):
             elif theme.floated == "left":
                 lines = []
                 for ft_left, ft_right in zip_longest(
-                    lines,
+                    lines,  # TODO - should be float_lines_left,
                     split_lines(pad(rendering, style=theme.style)),
                     fillvalue=empty,
                 ):
