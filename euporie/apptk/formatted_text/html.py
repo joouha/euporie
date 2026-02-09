@@ -3206,88 +3206,6 @@ class CustomHTMLParser(HTMLParser):
             self.curr = self.curr.parent
 
 
-def parse_style_sheet(css_str: str, dom: HTML, condition: Filter = always) -> None:
-    """Collect all CSS styles from style tags."""
-    dom_css = dom.css
-    # Invalidate the CSS index and cache since we're about to modify the CSS
-    dom._css_index = None
-    dom._dom_css_cache.clear()
-    # Remove whitespace and newlines
-    css_str = re.sub(r"\s*\n\s*", " ", css_str)
-    # Remove comments
-    css_str = re.sub(r"\/\*[^\*]+\*\/", "", css_str)
-    # Replace ':before' and ':after' with '::before' and '::after'
-    # for compatibility with old CSS and to make root selector work
-    css_str = re.sub("(?<!:):(?=before|after|root)", "::", css_str)
-
-    def parse_part(part_condition: Filter, css_str: str) -> None:
-        """Parse a group of CSS rules."""
-        if css_str:
-            css_str = css_str.replace("\n", "").strip()
-            if css_str:
-                for rule in css_str.rstrip("}").split("}"):
-                    selectors, _, content = rule.partition("{")
-                    content = content.strip().rstrip(";")
-                    rule_content = parse_css_content(content)
-                    if rule_content:
-                        parsed_selectors = tuple(
-                            tuple(
-                                CssSelector(**m.groupdict())
-                                for m in _SELECTOR_RE.finditer(selector.strip())
-                            )
-                            for selector in map(str.strip, selectors.split(","))
-                        )
-                        rules = dom_css.setdefault(part_condition, {})
-                        if parsed_selectors in rules:
-                            rules[parsed_selectors].update(rule_content)
-                        else:
-                            rules[parsed_selectors] = rule_content
-
-    # Split out nested at-rules - we need to process them separately
-    for part in _AT_RULE_RE.split(css_str):
-        if (
-            part
-            and part[0] == "@"
-            and (m := _NESTED_AT_RULE_RE.match(part)) is not None
-        ):
-            m_dict = m.groupdict()
-            # Process '@media' queries
-            if m_dict["identifier"] == "media":
-                # Split each query - separated by "or" or ","
-                queries = re.split("(?: or |,)", m_dict["rule"])
-                query_conditions: Filter = never
-                for query in queries:
-                    # Each query can be the logical sum of multiple targets
-                    target_conditions: Filter = always
-                    for target in query.split(" and "):
-                        if (
-                            target_m := _MEDIA_QUERY_TARGET_RE.match(target)
-                        ) is not None:
-                            target_m_dict = target_m.groupdict()
-                            # Check for media type conditions
-                            if (media_type := target_m_dict["type"]) is not None:
-                                target_conditions &= (
-                                    always if media_type in {"all", "screen"} else never
-                                )
-                            # Check for media feature conditions
-                            elif (
-                                media_feature := target_m_dict["feature"]
-                            ) is not None:
-                                target_conditions &= parse_media_condition(
-                                    media_feature, dom
-                                )
-                            # Check for logical 'NOT' inverting the target condition
-                            if target_m_dict["invert"]:
-                                target_conditions = ~target_conditions
-                    # Logical OR of all media queries
-                    query_conditions |= target_conditions
-                # Parse the @media CSS block (may contain nested at-rules)
-                parse_style_sheet(m_dict["part"], dom, condition & query_conditions)
-        # Parse the CSS and always use it
-        else:
-            parse_part(condition, part)
-
-
 def parse_media_condition(condition: str, dom: HTML) -> Filter:
     """Convert media rules to conditions."""
     condition = condition.replace(" ", "")
@@ -3500,6 +3418,91 @@ class HTML(PtkHTML):
             self._css_index = build_css_index(self.css)
         return self._css_index
 
+    def parse_style_sheet(self, css_str: str, condition: Filter = always) -> None:
+        """Collect all CSS styles from style tags."""
+        dom_css = self.css
+        # Invalidate the CSS index and cache since we're about to modify the CSS
+        self._css_index = None
+        self._dom_css_cache.clear()
+        # Remove whitespace and newlines
+        css_str = re.sub(r"\s*\n\s*", " ", css_str)
+        # Remove comments
+        css_str = re.sub(r"\/\*[^\*]+\*\/", "", css_str)
+        # Replace ':before' and ':after' with '::before' and '::after'
+        # for compatibility with old CSS and to make root selector work
+        css_str = re.sub("(?<!:):(?=before|after|root)", "::", css_str)
+
+        def parse_part(part_condition: Filter, css_str: str) -> None:
+            """Parse a group of CSS rules."""
+            if css_str:
+                css_str = css_str.replace("\n", "").strip()
+                if css_str:
+                    for rule in css_str.rstrip("}").split("}"):
+                        selectors, _, content = rule.partition("{")
+                        content = content.strip().rstrip(";")
+                        rule_content = parse_css_content(content)
+                        if rule_content:
+                            parsed_selectors = tuple(
+                                tuple(
+                                    CssSelector(**m.groupdict())
+                                    for m in _SELECTOR_RE.finditer(selector.strip())
+                                )
+                                for selector in map(str.strip, selectors.split(","))
+                            )
+                            rules = dom_css.setdefault(part_condition, {})
+                            if parsed_selectors in rules:
+                                rules[parsed_selectors].update(rule_content)
+                            else:
+                                rules[parsed_selectors] = rule_content
+
+        # Split out nested at-rules - we need to process them separately
+        for part in _AT_RULE_RE.split(css_str):
+            if (
+                part
+                and part[0] == "@"
+                and (m := _NESTED_AT_RULE_RE.match(part)) is not None
+            ):
+                m_dict = m.groupdict()
+                # Process '@media' queries
+                if m_dict["identifier"] == "media":
+                    # Split each query - separated by "or" or ","
+                    queries = re.split("(?: or |,)", m_dict["rule"])
+                    query_conditions: Filter = never
+                    for query in queries:
+                        # Each query can be the logical sum of multiple targets
+                        target_conditions: Filter = always
+                        for target in query.split(" and "):
+                            if (
+                                target_m := _MEDIA_QUERY_TARGET_RE.match(target)
+                            ) is not None:
+                                target_m_dict = target_m.groupdict()
+                                # Check for media type conditions
+                                if (media_type := target_m_dict["type"]) is not None:
+                                    target_conditions &= (
+                                        always
+                                        if media_type in {"all", "screen"}
+                                        else never
+                                    )
+                                # Check for media feature conditions
+                                elif (
+                                    media_feature := target_m_dict["feature"]
+                                ) is not None:
+                                    target_conditions &= parse_media_condition(
+                                        media_feature, self
+                                    )
+                                # Check for logical 'NOT' inverting the target condition
+                                if target_m_dict["invert"]:
+                                    target_conditions = ~target_conditions
+                        # Logical OR of all media queries
+                        query_conditions |= target_conditions
+                    # Parse the @media CSS block (may contain nested at-rules)
+                    self.parse_style_sheet(
+                        m_dict["part"], condition & query_conditions
+                    )
+            # Parse the CSS and always use it
+            else:
+                parse_part(condition, part)
+
     def process_dom(self) -> None:
         """Load CSS styles and image resources.
 
@@ -3513,7 +3516,7 @@ class HTML(PtkHTML):
             except Exception:
                 log.warning("Error decoding stylesheet '%s...'", data[:20])
             else:
-                parse_style_sheet(css_str, self)
+                self.parse_style_sheet(css_str)
 
         def _process_img(child: Node, data: bytes) -> None:
             child.attrs["_data"] = data
@@ -3550,7 +3553,7 @@ class HTML(PtkHTML):
                 if child.contents:
                     # Use unprocessed text attribute to avoid loading the element's theme
                     css_str = child.contents[0]._text
-                    parse_style_sheet(css_str, self)
+                    self.parse_style_sheet(css_str)
 
             # Load images
             elif child.name == "img" and (src := child.attrs.get("src")):
