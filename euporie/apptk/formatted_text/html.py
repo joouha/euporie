@@ -117,7 +117,197 @@ if TYPE_CHECKING:
         Filter, dict[tuple[tuple[CssSelector, ...], ...], dict[str, str]]
     ]
 
+    # Type for indexed CSS rule entry: (selector_parts, rule)
+    CssRuleEntry = tuple[tuple[CssSelector, ...], dict[str, str]]
+
 log = logging.getLogger(__name__)
+
+
+class CssIndex:
+    """An index for fast CSS selector lookup.
+
+    Instead of iterating through all CSS rules for each element, this index
+    allows elements to quickly look up potentially matching rules based on
+    their tag name, ID, class names, and attributes.
+    """
+
+    __slots__ = (
+        "by_attr",
+        "by_attr_value",
+        "by_class",
+        "by_id",
+        "by_tag",
+        "condition",
+        "universal",
+    )
+
+    def __init__(self, condition: Filter) -> None:
+        """Initialize the CSS index for a specific condition."""
+        self.condition = condition
+        # Maps tag names to list of (selector_parts, rule) tuples
+        self.by_tag: dict[str, list[CssRuleEntry]] = {}
+        # Maps IDs to list of (selector_parts, rule) tuples
+        self.by_id: dict[str, list[CssRuleEntry]] = {}
+        # Maps class names to list of (selector_parts, rule) tuples
+        self.by_class: dict[str, list[CssRuleEntry]] = {}
+        # Maps attribute names to list of (selector_parts, rule) tuples
+        # For selectors like [href], [disabled], [data-foo]
+        self.by_attr: dict[str, list[CssRuleEntry]] = {}
+        # Maps (attr, value) to list of (selector_parts, rule) tuples
+        # For selectors like [type="text"], [name="foo"]
+        self.by_attr_value: dict[tuple[str, str], list[CssRuleEntry]] = {}
+        # Rules that can't be indexed (universal selectors, etc.)
+        self.universal: list[CssRuleEntry] = []
+
+    def add_rule(
+        self, selector_parts: tuple[CssSelector, ...], rule: dict[str, str]
+    ) -> None:
+        """Add a rule to the index based on its final selector."""
+        if not selector_parts:
+            return
+
+        # The last selector in the chain is what must match the element
+        final_selector = selector_parts[-1]
+        item = final_selector.item or ""
+        entry: CssRuleEntry = (selector_parts, rule)
+
+        # Extract tag name, IDs, and classes from the selector item
+        # Selector item format: tag#id.class1.class2 or combinations
+        indexed = False
+
+        # Check for ID selector
+        if "#" in item:
+            # Extract ID (everything after # until . or end)
+            id_start = item.index("#") + 1
+            id_end = len(item)
+            for end_char in (".", "#", "["):
+                if end_char in item[id_start:]:
+                    id_end = min(id_end, id_start + item[id_start:].index(end_char))
+            id_name = item[id_start:id_end]
+            if id_name:
+                self.by_id.setdefault(id_name, []).append(entry)
+                indexed = True
+
+        # Check for class selector
+        if "." in item:
+            # Extract all classes
+            remaining = item
+            while "." in remaining:
+                class_start = remaining.index(".") + 1
+                remaining = remaining[class_start:]
+                class_end = len(remaining)
+                for end_char in (".", "#", "["):
+                    if end_char in remaining:
+                        class_end = min(class_end, remaining.index(end_char))
+                class_name = remaining[:class_end]
+                if class_name:
+                    self.by_class.setdefault(class_name, []).append(entry)
+                    indexed = True
+                remaining = remaining[class_end:]
+
+        # Check for tag selector (starts with letter, not with . # [ or *)
+        if item and item[0] not in ".#[*":
+            # Extract tag name (everything before . # or [)
+            tag_end = len(item)
+            for end_char in (".", "#", "["):
+                if end_char in item:
+                    tag_end = min(tag_end, item.index(end_char))
+            tag_name = item[:tag_end]
+            if tag_name:
+                self.by_tag.setdefault(tag_name, []).append(entry)
+                indexed = True
+
+        # Check for attribute selector
+        attr_selector = final_selector.attr
+        if attr_selector:
+            # Parse attribute selectors like [href], [type="text"], [class*="foo"]
+            # Only index exact match (=) and presence selectors efficiently
+            for attr_part in attr_selector.split("]["):
+                attr_part = attr_part.strip("[]")
+                if not attr_part:
+                    continue
+
+                # Check for exact match [attr=value] or [attr="value"]
+                if "=" in attr_part and not any(
+                    op in attr_part for op in ("*=", "^=", "$=", "~=", "|=")
+                ):
+                    attr_name, _, attr_val = attr_part.partition("=")
+                    attr_val = attr_val.strip("'\"")
+                    if attr_name and attr_val:
+                        self.by_attr_value.setdefault((attr_name, attr_val), []).append(
+                            entry
+                        )
+                        indexed = True
+                elif "=" not in attr_part:
+                    # Presence selector [attr]
+                    self.by_attr.setdefault(attr_part, []).append(entry)
+                    indexed = True
+
+        # If nothing was indexed (universal selector, complex attribute, etc.)
+        if not indexed:
+            self.universal.append(entry)
+
+    def get_potential_rules(
+        self,
+        tag_name: str,
+        element_id: str | None,
+        class_names: list[str],
+        element_attrs: dict[str, str] | None = None,
+    ) -> list[CssRuleEntry]:
+        """Get all rules that could potentially match an element.
+
+        Returns rules that match the element's tag, ID, classes, or attributes,
+        plus universal rules. The returned list may contain duplicates which
+        should be handled by the caller.
+        """
+        rules: list[CssRuleEntry] = []
+
+        # Add tag-based rules
+        if tag_name in self.by_tag:
+            rules.extend(self.by_tag[tag_name])
+
+        # Add ID-based rules
+        if element_id and element_id in self.by_id:
+            rules.extend(self.by_id[element_id])
+
+        # Add class-based rules
+        for class_name in class_names:
+            if class_name in self.by_class:
+                rules.extend(self.by_class[class_name])
+
+        # Add attribute-based rules
+        if element_attrs:
+            for attr_name, attr_value in element_attrs.items():
+                # Check for presence selector [attr]
+                if attr_name in self.by_attr:
+                    rules.extend(self.by_attr[attr_name])
+                # Check for exact match selector [attr=value]
+                key = (attr_name, attr_value)
+                if key in self.by_attr_value:
+                    rules.extend(self.by_attr_value[key])
+
+        # Always add universal rules
+        rules.extend(self.universal)
+
+        return rules
+
+
+def build_css_index(css: CssSelectors) -> list[CssIndex]:
+    """Build a CSS index from a CssSelectors dict.
+
+    Returns a list of CssIndex objects, one per condition block.
+    """
+    indexes: list[CssIndex] = []
+
+    for condition, css_block in css.items():
+        index = CssIndex(condition)
+        for selectors, rule in css_block.items():
+            # Each `selectors` is a tuple of selector alternatives (comma-separated)
+            for selector_parts in selectors:
+                index.add_rule(selector_parts, rule)
+        indexes.append(index)
+
+    return indexes
 
 
 class Direction(NamedTuple):
@@ -1051,9 +1241,9 @@ class Theme(Mapping):
         # cellpadding # TODO
         return theme
 
-    def _css_theme(self, css: CssSelectors) -> dict[str, str]:
-        """Calculate the theme defined in CSS."""
-        specificity_rules = []
+    def _css_theme_indexed(self, indexes: list[CssIndex]) -> dict[str, str]:
+        """Calculate the theme defined in CSS using indexed lookup."""
+        specificity_rules: list[tuple[tuple[int, int, int], dict[str, str]]] = []
         element = self.element
         # Pre-compute element attributes once
         element_name = element.name
@@ -1064,77 +1254,87 @@ class Theme(Mapping):
         element_parent = element.parent
         element_parents_rev = [x for x in element.parents[::-1] if x]
 
-        for condition, css_block in css.items():
-            # TODO - cache CSS within condition blocks
-            if condition():
-                for selectors, rule in css_block.items():
-                    for selector_parts in selectors:
-                        # Last selector item should match the current element
-                        selector = selector_parts[-1]
-                        if not match_css_selector(
-                            selector.item or "",
-                            selector.attr or "",
-                            selector.pseudo or "",
-                            element_name,
-                            element_is_first,
-                            element_is_last,
-                            element_sibling_idx,
-                            **element_attrs,
+        # Get element's ID and classes for index lookup
+        element_id = element_attrs.get("id")
+        element_classes = element_attrs.get("class", "").split()
+
+        # Track which (selector_parts, rule) pairs we've already processed
+        # to avoid checking the same rule multiple times
+        seen_rules: set[int] = set()
+
+        for index in indexes:
+            if not index.condition():
+                continue
+
+            # Get only potentially matching rules from the index
+            potential_rules = index.get_potential_rules(
+                element_name, element_id, element_classes, element_attrs
+            )
+
+            for selector_parts, rule in potential_rules:
+                # Use id() to track unique rule instances
+                rule_id = id(rule)
+                if rule_id in seen_rules:
+                    continue
+                seen_rules.add(rule_id)
+
+                # Last selector item should match the current element
+                selector = selector_parts[-1]
+                if not match_css_selector(
+                    selector.item or "",
+                    selector.attr or "",
+                    selector.pseudo or "",
+                    element_name,
+                    element_is_first,
+                    element_is_last,
+                    element_sibling_idx,
+                    **element_attrs,
+                ):
+                    continue
+
+                # All of the parent selectors should match a separate parent in order
+                # https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors#combinators
+                unmatched_parents: list[Node]
+                if element_parent and (
+                    (selector.comb == ">" and element_parent)
+                    # Pseudo-element selectors only match direct ancestors
+                    or ((item := selector.item) and item.startswith("::"))
+                ):
+                    unmatched_parents = [element_parent]
+                else:
+                    unmatched_parents = element_parents_rev[:]
+
+                # Iterate through selector items in reverse, skipping the last
+                for selector in selector_parts[-2::-1]:
+                    # Pre-compute selector attributes
+                    item = selector.item or ""
+                    attrs = selector.attr or ""
+                    pseudo = selector.pseudo or ""
+                    parent: Node | None
+                    for i, parent in enumerate(unmatched_parents):
+                        if parent and match_css_selector(
+                            item,
+                            attrs,
+                            pseudo,
+                            parent.name,
+                            parent.is_first_child_element,
+                            parent.is_last_child_element,
+                            parent.sibling_element_index,
+                            **parent.attrs,
                         ):
-                            continue
-
-                        # All of the parent selectors should match a separate parent in order
-                        # TODO - combinators
-                        # https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Selectors#combinators
-                        unmatched_parents: list[Node]
-                        if element_parent and (
-                            (selector.comb == ">" and element_parent)
-                            # Pseudo-element selectors only match direct ancestors
-                            or ((item := selector.item) and item.startswith("::"))
-                        ):
-                            unmatched_parents = [element_parent]
-                        else:
-                            unmatched_parents = element_parents_rev[:]
-
-                        # TODO investigate caching element / selector chains so we don't have to
-                        # iterate through every parent every time
-
-                        # Iterate through selector items in reverse, skipping the last
-                        for selector in selector_parts[-2::-1]:
-                            # Pre-compute selector attributes
-                            item = selector.item or ""
-                            attrs = selector.attr or ""
-                            pseudo = selector.pseudo or ""
-                            parent: Node | None
-                            for i, parent in enumerate(unmatched_parents):
-                                if parent and match_css_selector(
-                                    item,
-                                    attrs,
-                                    pseudo,
-                                    parent.name,
-                                    parent.is_first_child_element,
-                                    parent.is_last_child_element,
-                                    parent.sibling_element_index,
-                                    **parent.attrs,
-                                ):
-                                    if selector.comb == ">" and (
-                                        parent := parent.parent
-                                    ):
-                                        unmatched_parents = [parent]
-                                    else:
-                                        unmatched_parents = element_parents_rev[i + 1 :]
-                                    break
+                            if selector.comb == ">" and (parent := parent.parent):
+                                unmatched_parents = [parent]
                             else:
-                                break
-
-                        else:
-                            # Calculate selector specificity score
-                            specificity_rules.append(
-                                (selector_specificity(selector_parts), rule)
-                            )
-                            # We have already matched this rule, we don't need to keep checking
-                            # the rest of the selectors for this rule
+                                unmatched_parents = element_parents_rev[i + 1 :]
                             break
+                    else:
+                        break
+
+                else:
+                    # Calculate selector specificity score
+                    specificity_rules.append(
+                        (selector_specificity(selector_parts), rule)
+                    )
 
         # Shortcut in case of no rules
         if not specificity_rules:
@@ -1152,14 +1352,74 @@ class Theme(Mapping):
         }
 
     @cached_property
+    def _css_cache_key(self) -> tuple:
+        """Generate a cache key for CSS theme lookups.
+
+        The key captures all element characteristics that affect CSS matching:
+        - Tag name, ID, classes, attributes
+        - Position info (first-child, last-child, sibling index)
+        - Parent chain signature (for descendant/child selectors)
+        """
+        element = self.element
+        attrs = element.attrs
+
+        # Sort attributes for consistent hashing (exclude id/class handled separately)
+        attrs_tuple = tuple(
+            sorted((k, v) for k, v in attrs.items() if k not in ("id", "class"))
+        )
+
+        # Create parent chain signature: tuple of (tag, id, classes) for each ancestor
+        # This is needed because descendant selectors like "div p" depend on ancestors
+        parent_sig: list[tuple[str, str | None, tuple[str, ...]]] = []
+        for parent in element.parents:
+            if parent is not None:
+                p_attrs = parent.attrs
+                parent_sig.append(
+                    (
+                        parent.name,
+                        p_attrs.get("id"),
+                        tuple(sorted(p_attrs.get("class", "").split())),
+                    )
+                )
+
+        return (
+            element.name,
+            attrs.get("id"),
+            tuple(sorted(attrs.get("class", "").split())),
+            attrs_tuple,
+            element.is_first_child_element,
+            element.is_last_child_element,
+            element.sibling_element_index,
+            tuple(parent_sig),
+        )
+
+    @cached_property
     def browser_css_theme(self) -> dict[str, str]:
         """Calculate the theme defined in the browser CSS."""
-        return self._css_theme(css=self.element.dom.browser_css)
+        dom = self.element.dom
+        cache = dom._browser_css_cache
+        key = self._css_cache_key
+
+        if key in cache:
+            return cache[key]
+
+        result = self._css_theme_indexed(indexes=dom.browser_css_index)
+        cache[key] = result
+        return result
 
     @cached_property
     def dom_css_theme(self) -> dict[str, str]:
         """Calculate the theme defined in CSS in the DOM."""
-        return self._css_theme(css=self.element.dom.css)
+        dom = self.element.dom
+        cache = dom._dom_css_cache
+        key = self._css_cache_key
+
+        if key in cache:
+            return cache[key]
+
+        result = self._css_theme_indexed(indexes=dom.css_index)
+        cache[key] = result
+        return result
 
     # Computed properties
 
@@ -2949,6 +3209,9 @@ class CustomHTMLParser(HTMLParser):
 def parse_style_sheet(css_str: str, dom: HTML, condition: Filter = always) -> None:
     """Collect all CSS styles from style tags."""
     dom_css = dom.css
+    # Invalidate the CSS index and cache since we're about to modify the CSS
+    dom._css_index = None
+    dom._dom_css_cache.clear()
     # Remove whitespace and newlines
     css_str = re.sub(r"\s*\n\s*", " ", css_str)
     # Remove comments
@@ -3203,6 +3466,12 @@ class HTML(PtkHTML):
         self._assets_loaded = False
         self._url_cbs: dict[Path, Callable[[Any], None]] = {}
         self._url_fs_map: dict[Path, AbstractFileSystem] = {}
+        self._css_index: list[CssIndex] | None = None
+
+        # Caches for computed CSS themes to avoid redundant selector matching
+        # Key: (tag, id, classes, attrs, is_first, is_last, sibling_idx, parent_sig)
+        self._browser_css_cache: dict[tuple, dict[str, str]] = {}
+        self._dom_css_cache: dict[tuple, dict[str, str]] = {}
 
     # Lazily load attributes
 
@@ -3215,6 +3484,21 @@ class HTML(PtkHTML):
     def soup(self) -> Node:
         """Parse the markup."""
         return self.parser.parse(self.value)
+
+    @cached_property
+    def browser_css_index(self) -> list[CssIndex]:
+        """Get the indexed browser CSS for fast selector lookup."""
+        return build_css_index(self.browser_css)
+
+    @property
+    def css_index(self) -> list[CssIndex]:
+        """Get the indexed CSS for fast selector lookup.
+
+        The index is rebuilt when CSS changes (invalidated by parse_style_sheet).
+        """
+        if self._css_index is None:
+            self._css_index = build_css_index(self.css)
+        return self._css_index
 
     def process_dom(self) -> None:
         """Load CSS styles and image resources.
