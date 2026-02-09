@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 
 from euporie.apptk.application.current import get_app
 from euporie.apptk.filters.utils import to_filter
-from euporie.apptk.key_binding.key_bindings import KeyBindings, KeyBindingsBase
 from euporie.apptk.utils import Event
 
 from euporie.apptk.border import InsetGrid
@@ -16,7 +15,8 @@ from euporie.apptk.cache import FastDictCache
 from euporie.apptk.completion import PathCompleter
 from euporie.apptk.data_structures import DiBool, Point
 from euporie.apptk.filters import FilterOrBool
-from euporie.apptk.formatted_text.utils import pad
+from euporie.apptk.formatted_text.utils import pad, truncate
+from euporie.apptk.key_binding.key_bindings import KeyBindings, KeyBindingsBase
 from euporie.apptk.layout.containers import (
     ConditionalContainer,
     HSplit,
@@ -37,10 +37,10 @@ if TYPE_CHECKING:
 
     from euporie.apptk.buffer import Buffer
     from euporie.apptk.filters.base import FilterOrBool
-    from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
     from euporie.apptk.layout.dimension import AnyDimension
 
     from euporie.apptk.formatted_text import StyleAndTextTuples
+    from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
     from euporie.apptk.key_binding.key_processor import KeyPressEvent
     from euporie.apptk.layout.containers import AnyContainer
     from euporie.core.bars.status import StatusBarFields
@@ -831,7 +831,7 @@ def is_dir(path: str | Path) -> bool | None:
         return False
     try:
         return test_path.is_dir()
-    except (ValueError, PermissionError, TypeError):
+    except (ValueError, PermissionError, TypeError, OSError):
         return None
 
 
@@ -997,7 +997,7 @@ class FileBrowserControl(UIControl):
                 style += " class:hovered"
             if i == self.selected:
                 style += " class:selection"
-            row: StyleAndTextTuples = [(style, child.name or str(child))]
+            row: StyleAndTextTuples = [(style, " "), (style, child.name or str(child))]
 
             if self.show_icons():
                 icon = (
@@ -1007,7 +1007,8 @@ class FileBrowserControl(UIControl):
                     or FILE_ICONS.get(child.name)
                     or FILE_ICONS["__file"]
                 )
-                row[0:0] = [(style, " "), (f"{icon[0]} {style}", icon[1]), (style, " ")]
+                row[0:0] = [(style, " "), (f"{icon[0]} {style}", icon[1])]
+            row = truncate(row, width)
 
             return pad(row, width=width, style=style)
 
