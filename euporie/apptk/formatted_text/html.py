@@ -1257,7 +1257,7 @@ class Theme(Mapping):
         element_sibling_idx = element.sibling_element_index
         element_attrs = element.attrs
         element_parent = element.parent
-        element_parents_rev = [x for x in element.parents[::-1] if x]
+        element_parents_rev = element.parents
 
         # Get element's ID and classes for index lookup
         element_id = element_attrs.get("id")
@@ -3108,13 +3108,17 @@ class Node:
 
     @cached_property
     def parents(self) -> list[Node]:
-        """Yield all parent elements."""
+        """Return all parent elements, closest parent first (element-to-root order).
+
+        This is the order needed for CSS selector matching where we match
+        from the element up through its ancestors.
+        """
         parents = []
         parent = self.parent
         while parent is not None:
             parents.append(parent)
             parent = parent.parent
-        return parents[::-1]
+        return parents
 
     @cached_property
     def is_first_child_node(self) -> bool:
