@@ -2909,8 +2909,6 @@ _BROWSER_CSS: dict[Filter, CssRuleSet] = {
 class Node:
     """Represent an node in the DOM."""
 
-    theme: Theme
-
     def __init__(
         self,
         dom: HTML,
@@ -2929,14 +2927,24 @@ class Node:
         self.contents: list[Node] = contents or []
         self.closed = False
         self.marker: Node | None = None
-        self.theme = Theme(self, parent_theme=parent.theme if parent else None)
+
+    @cached_property
+    def theme(self) -> Theme:
+        """Lazily compute the element's theme.
+
+        This delays style computation until the element is actually rendered,
+        avoiding unnecessary work for elements that may never be displayed
+        (e.g., content inside collapsed <details> elements).
+        """
+        parent = self.parent
+        return Theme(self, parent_theme=parent.theme if parent else None)
 
     def reset(self) -> None:
         """Reset the node and all its children."""
+        # Clear all cached properties (including theme) - they'll be recomputed on access
         for attr in list(self.__dict__.keys()):
             if isinstance(Node.__dict__.get(attr), cached_property):
                 delattr(self, attr)
-        self.theme.reset()
         for child in self.contents:
             child.reset()
         self.marker = None
