@@ -70,6 +70,20 @@ from euporie.apptk.formatted_text.utils import (
     valign,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Callable, Generator, Iterator
+    from pathlib import Path
+    from typing import Any
+
+    from euporie.apptk.filters.base import Filter, FilterOrBool
+    from euporie.apptk.formatted_text.base import StyleAndTextTuples
+    from fsspec.spec import AbstractFileSystem
+
+    from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
+    from euporie.apptk.mouse_events import MouseEvent
+
+log = logging.getLogger(__name__)
+
 always = to_filter(True)
 never = to_filter(False)
 
@@ -102,48 +116,34 @@ class CssSelector(NamedTuple):
 
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator, Iterator
-    from pathlib import Path
-    from typing import Any
-
-    from euporie.apptk.filters.base import Filter, FilterOrBool
-    from euporie.apptk.formatted_text.base import StyleAndTextTuples
-    from fsspec.spec import AbstractFileSystem
-
-    from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
-    from euporie.apptk.mouse_events import MouseEvent
-
-    CssSelectors = dict[
-        Filter, dict[tuple[tuple[CssSelector, ...], ...], dict[str, str]]
-    ]
-
     # Type for indexed CSS rule entry: (selector_parts, rule)
     CssRuleEntry = tuple[tuple[CssSelector, ...], dict[str, str]]
 
-log = logging.getLogger(__name__)
 
+class CssRuleSet(dict[tuple[tuple[CssSelector, ...], ...], dict[str, str]]):
+    """A dict subclass that automatically indexes CSS rules for fast lookup.
 
-class CssIndex:
-    """An index for fast CSS selector lookup.
+    This class extends dict to store CSS rules (selector -> style mappings)
+    while maintaining indexes for efficient selector matching. Rules are
+    automatically indexed by tag, ID, class, and attributes when added.
 
-    Instead of iterating through all CSS rules for each element, this index
-    allows elements to quickly look up potentially matching rules based on
-    their tag name, ID, class names, and attributes.
+    Can be used as a drop-in replacement for plain dicts in CSS definitions,
+    with the added benefit of fast indexed lookups.
     """
 
-    __slots__ = (
-        "by_attr",
-        "by_attr_value",
-        "by_class",
-        "by_id",
-        "by_tag",
-        "condition",
-        "universal",
-    )
+    def __init__(
+        self,
+        data: dict[tuple[tuple[CssSelector, ...], ...], dict[str, str]] | None = None,
+    ) -> None:
+        """Initialize a CSS rule set for a specific condition.
 
-    def __init__(self, condition: Filter) -> None:
-        """Initialize the CSS index for a specific condition."""
-        self.condition = condition
+        Args:
+            condition: Filter that determines when these rules apply
+            data: Optional initial rules to populate the set
+        """
+        super().__init__()
+
+        ## Index structures for fast lookup
         # Maps tag names to list of (selector_parts, rule) tuples
         self.by_tag: dict[str, list[CssRuleEntry]] = {}
         # Maps IDs to list of (selector_parts, rule) tuples
@@ -159,10 +159,30 @@ class CssIndex:
         # Rules that can't be indexed (universal selectors, etc.)
         self.universal: list[CssRuleEntry] = []
 
-    def add_rule(
+        # Initialize with data if provided
+        if data:
+            for selectors, style in data.items():
+                self[selectors] = style
+
+    def __setitem__(
+        self,
+        selectors: tuple[tuple[CssSelector, ...], ...],
+        style: dict[str, str],
+    ) -> None:
+        """Set a rule, automatically updating indexes."""
+        if selectors in self:
+            # Update existing rule - indexes already point to the same dict
+            super().__getitem__(selectors).update(style)
+        else:
+            # New rule - store and index it
+            super().__setitem__(selectors, style)
+            for selector_parts in selectors:
+                self._index_selector(selector_parts, style)
+
+    def _index_selector(
         self, selector_parts: tuple[CssSelector, ...], rule: dict[str, str]
     ) -> None:
-        """Add a rule to the index based on its final selector."""
+        """Index a single selector chain for fast lookup."""
         if not selector_parts:
             return
 
@@ -256,9 +276,8 @@ class CssIndex:
     ) -> list[CssRuleEntry]:
         """Get all rules that could potentially match an element.
 
-        Returns rules that match the element's tag, ID, classes, or attributes,
-        plus universal rules. The returned list may contain duplicates which
-        should be handled by the caller.
+        Returns rules indexed by the element's tag, ID, classes, or attributes,
+        plus universal rules. May contain duplicates.
         """
         rules: list[CssRuleEntry] = []
 
@@ -292,22 +311,8 @@ class CssIndex:
         return rules
 
 
-def build_css_index(css: CssSelectors) -> list[CssIndex]:
-    """Build a CSS index from a CssSelectors dict.
-
-    Returns a list of CssIndex objects, one per condition block.
-    """
-    indexes: list[CssIndex] = []
-
-    for condition, css_block in css.items():
-        index = CssIndex(condition)
-        for selectors, rule in css_block.items():
-            # Each `selectors` is a tuple of selector alternatives (comma-separated)
-            for selector_parts in selectors:
-                index.add_rule(selector_parts, rule)
-        indexes.append(index)
-
-    return indexes
+if TYPE_CHECKING:
+    CssSelectors = dict[Filter, CssRuleSet]
 
 
 class Direction(NamedTuple):
@@ -830,7 +835,7 @@ def css_dimension(
 
 
 def parse_css_content(content: str) -> dict[str, str]:
-    """Convert CSS declarations into the internals style representation."""
+    """Convert CSS declarations into the internal style representation."""
     theme: dict[str, str] = {}
 
     if not content:
@@ -1241,7 +1246,7 @@ class Theme(Mapping):
         # cellpadding # TODO
         return theme
 
-    def _css_theme_indexed(self, indexes: list[CssIndex]) -> dict[str, str]:
+    def _css_theme(self, rulesets: dict[Filter, CssRuleSet]) -> dict[str, str]:
         """Calculate the theme defined in CSS using indexed lookup."""
         specificity_rules: list[tuple[tuple[int, int, int], dict[str, str]]] = []
         element = self.element
@@ -1262,12 +1267,12 @@ class Theme(Mapping):
         # to avoid checking the same rule multiple times
         seen_rules: set[int] = set()
 
-        for index in indexes:
-            if not index.condition():
+        for condition, ruleset in rulesets.items():
+            if not condition():
                 continue
 
-            # Get only potentially matching rules from the index
-            potential_rules = index.get_potential_rules(
+            # Get only potentially matching rules from the ruleset
+            potential_rules = ruleset.get_potential_rules(
                 element_name, element_id, element_classes, element_attrs
             )
 
@@ -1352,74 +1357,14 @@ class Theme(Mapping):
         }
 
     @cached_property
-    def _css_cache_key(self) -> tuple:
-        """Generate a cache key for CSS theme lookups.
-
-        The key captures all element characteristics that affect CSS matching:
-        - Tag name, ID, classes, attributes
-        - Position info (first-child, last-child, sibling index)
-        - Parent chain signature (for descendant/child selectors)
-        """
-        element = self.element
-        attrs = element.attrs
-
-        # Sort attributes for consistent hashing (exclude id/class handled separately)
-        attrs_tuple = tuple(
-            sorted((k, v) for k, v in attrs.items() if k not in ("id", "class"))
-        )
-
-        # Create parent chain signature: tuple of (tag, id, classes) for each ancestor
-        # This is needed because descendant selectors like "div p" depend on ancestors
-        parent_sig: list[tuple[str, str | None, tuple[str, ...]]] = []
-        for parent in element.parents:
-            if parent is not None:
-                p_attrs = parent.attrs
-                parent_sig.append(
-                    (
-                        parent.name,
-                        p_attrs.get("id"),
-                        tuple(sorted(p_attrs.get("class", "").split())),
-                    )
-                )
-
-        return (
-            element.name,
-            attrs.get("id"),
-            tuple(sorted(attrs.get("class", "").split())),
-            attrs_tuple,
-            element.is_first_child_element,
-            element.is_last_child_element,
-            element.sibling_element_index,
-            tuple(parent_sig),
-        )
-
-    @cached_property
     def browser_css_theme(self) -> dict[str, str]:
         """Calculate the theme defined in the browser CSS."""
-        dom = self.element.dom
-        cache = dom._browser_css_cache
-        key = self._css_cache_key
-
-        if key in cache:
-            return cache[key]
-
-        result = self._css_theme_indexed(indexes=dom.browser_css_index)
-        cache[key] = result
-        return result
+        return self._css_theme(rulesets=self.element.dom.browser_css)
 
     @cached_property
     def dom_css_theme(self) -> dict[str, str]:
         """Calculate the theme defined in CSS in the DOM."""
-        dom = self.element.dom
-        cache = dom._dom_css_cache
-        key = self._css_cache_key
-
-        if key in cache:
-            return cache[key]
-
-        result = self._css_theme_indexed(indexes=dom.css_index)
-        cache[key] = result
-        return result
+        return self._css_theme(rulesets=self.element.dom.css)
 
     # Computed properties
 
@@ -2339,461 +2284,625 @@ class Theme(Mapping):
         return self.theme.__len__()
 
 
-_BROWSER_CSS: CssSelectors = {
-    always: {
-        # Set body background to white
-        ((CssSelector(item="body"),),): {"background_color": "#FFFFFF"},
-        # Non-rendered elements
-        (
-            (CssSelector(item="head"),),
-            (CssSelector(item="base"),),
-            (CssSelector(item="command"),),
-            (CssSelector(item="link"),),
-            (CssSelector(item="meta"),),
-            (CssSelector(item="noscript"),),
-            (CssSelector(item="script"),),
-            (CssSelector(item="style"),),
-            (CssSelector(item="title"),),
-            (CssSelector(item="option"),),
-            (CssSelector(item="input", attr="[type=hidden]"),),
-        ): {"display": "none"},
-        # Inline elements
-        (
-            (CssSelector(item="::before"),),
-            (CssSelector(item="::after"),),
-            (CssSelector(item="::text"),),
-            (CssSelector(item="abbr"),),
-            (CssSelector(item="acronym"),),
-            (CssSelector(item="audio"),),
-            (CssSelector(item="bdi"),),
-            (CssSelector(item="bdo"),),
-            (CssSelector(item="big"),),
-            (CssSelector(item="br"),),
-            (CssSelector(item="canvas"),),
-            (CssSelector(item="data"),),
-            (CssSelector(item="datalist"),),
-            (CssSelector(item="embed"),),
-            (CssSelector(item="iframe"),),
-            (CssSelector(item="label"),),
-            (CssSelector(item="map"),),
-            (CssSelector(item="meter"),),
-            (CssSelector(item="object"),),
-            (CssSelector(item="output"),),
-            (CssSelector(item="picture"),),
-            (CssSelector(item="progress"),),
-            (CssSelector(item="q"),),
-            (CssSelector(item="ruby"),),
-            (CssSelector(item="select"),),
-            (CssSelector(item="slot"),),
-            (CssSelector(item="small"),),
-            (CssSelector(item="span"),),
-            (CssSelector(item="template"),),
-            (CssSelector(item="textarea"),),
-            (CssSelector(item="time"),),
-            (CssSelector(item="tt"),),
-            (CssSelector(item="video"),),
-            (CssSelector(item="wbr"),),
-        ): {"display": "inline"},
-        # Formatted inlines
-        ((CssSelector(item="a"),),): {
-            "display": "inline",
-            "text_decoration": "underline",
-            "color": "#0000FF",
-        },
-        ((CssSelector(item="b"),), (CssSelector(item="strong"),)): {
-            "display": "inline",
-            "font_weight": "bold",
-        },
-        ((CssSelector(item="blink"),),): {
-            "display": "inline",
-            "text_decoration": "blink",
-        },
-        (
-            (CssSelector(item="cite"),),
-            (CssSelector(item="dfn"),),
-            (CssSelector(item="em"),),
-            (CssSelector(item="i"),),
-            (CssSelector(item="var"),),
-        ): {"display": "inline", "font_style": "italic"},
-        ((CssSelector(item="code"),),): {
-            "display": "inline",
-        },
-        ((CssSelector(item="del"),), (CssSelector(item="s"),)): {
-            "display": "inline",
-            "text_decoration": "line-through",
-        },
-        (
-            (CssSelector(item="img", attr="[width=0]"),),
-            (CssSelector(item="img", attr="[height=0]"),),
-            (CssSelector(item="svg", attr="[width=0]"),),
-            (CssSelector(item="svg", attr="[height=0]"),),
-        ): {"display": "none"},
-        ((CssSelector(item="img"),), (CssSelector(item="svg"),)): {
-            "display": "inline-block",
-            "overflow_x": "hidden",
-            "overflow_y": "hidden",
-        },
-        ((CssSelector(item="ins"),), (CssSelector(item="u"),)): {
-            "display": "inline",
-            "text_decoration": "underline",
-        },
-        ((CssSelector(item="kbd"),),): {
-            "display": "inline",
-            "background_color": "#333344",
-            "color": "#FFFFFF",
-        },
-        ((CssSelector(item="mark"),),): {
-            "display": "inline",
-            "color": "black",
-            "background_color": "#FFFF00",
-        },
-        ((CssSelector(item="samp"),),): {
-            "display": "inline",
-            "background_color": "#334433",
-            "color": "#FFFFFF",
-        },
-        ((CssSelector(item="sub"),),): {"display": "inline", "vertical_align": "sub"},
-        ((CssSelector(item="sup"),),): {"display": "inline", "vertical_align": "super"},
-        (
+_BROWSER_CSS: dict[Filter, CssRuleSet] = {
+    always: CssRuleSet(
+        {
+            # Set body background to white
+            ((CssSelector(item="body"),),): {"background_color": "#FFFFFF"},
+            # Non-rendered elements
             (
-                CssSelector(item="q"),
-                CssSelector(item="::before"),
-            ),
-        ): {"content": "'“'"},
-        (
+                (CssSelector(item="head"),),
+                (CssSelector(item="base"),),
+                (CssSelector(item="command"),),
+                (CssSelector(item="link"),),
+                (CssSelector(item="meta"),),
+                (CssSelector(item="noscript"),),
+                (CssSelector(item="script"),),
+                (CssSelector(item="style"),),
+                (CssSelector(item="title"),),
+                (CssSelector(item="option"),),
+                (CssSelector(item="input", attr="[type=hidden]"),),
+            ): {"display": "none"},
+            # Inline elements
             (
-                CssSelector(item="q"),
-                CssSelector(item="::after"),
-            ),
-        ): {"content": "'”'"},
-        # Images
-        (
-            (CssSelector(item="img", attr="[_missing]"),),
-            (CssSelector(item="svg", attr="[_missing]"),),
-        ): {
-            "border_top_style": "solid",
-            "border_right_style": "solid",
-            "border_bottom_style": "solid",
-            "border_left_style": "solid",
-            "border_top_width": "1px",
-            "border_right_width": "1px",
-            "border_bottom_width": "1px",
-            "border_left_width": "1px",
-            "border_top_color": "#888888",
-            "border_right_color": "#888888",
-            "border_bottom_color": "#888888",
-            "border_left_color": "#888888",
-        },
-        # Alignment
-        ((CssSelector(item="center"),), (CssSelector(item="caption"),)): {
-            "text_align": "center",
-            "display": "block",
-        },
-        # Tables
-        ((CssSelector(item="table"),),): {
-            "display": "table",
-            "border_collapse": "collapse",
-        },
-        (
-            (CssSelector(item="td"),),
-            (CssSelector(item="th"),),
-        ): {
-            "border_top_width": "0px",
-            "border_right_width": "0px",
-            "border_bottom_width": "0px",
-            "border_left_width": "0px",
-        },
-        ((CssSelector(item="td"),),): {"display": "table-cell", "text_align": "unset"},
-        ((CssSelector(item="th"),),): {
-            "display": "table-cell",
-            "font_weight": "bold",
-            "text_align": "center",
-        },
-        # Forms
-        ((CssSelector(item="input"),),): {
-            "display": "inline-block",
-            "white_space": "pre",
-            "color": "#000000",
-            "border_top_style": "inset",
-            "border_right_style": "inset",
-            "border_bottom_style": "inset",
-            "border_left_style": "inset",
-            "border_top_width": "2px",
-            "border_right_width": "2px",
-            "border_bottom_width": "2px",
-            "border_left_width": "2px",
-            "vertical_align": "middle",
-        },
-        ((CssSelector(item="input", attr="[type=text]"),),): {
-            "background_color": "#FAFAFA",
-            "border_top_color": "#606060",
-            "border_right_color": "#E9E7E3",
-            "border_bottom_color": "#E9E7E3",
-            "border_left_color": "#606060",
-            "overflow_x": "hidden",
-        },
-        (
-            (CssSelector(item="input", attr="[type=button]"),),
-            (CssSelector(item="input", attr="[type=submit]"),),
-            (CssSelector(item="input", attr="[type=reset]"),),
-        ): {
-            "background_color": "#d4d0c8",
-            "border_right": "#606060",
-            "border_bottom": "#606060",
-            "border_left": "#ffffff",
-            "border_top": "#ffffff",
-        },
-        ((CssSelector(item="button"),),): {
-            "display": "inline-block",
-            "color": "#000000",
-            "border_top_style": "outset",
-            "border_right_style": "outset",
-            "border_bottom_style": "outset",
-            "border_left_style": "outset",
-            "border_top_width": "2px",
-            "border_right_width": "2px",
-            "border_bottom_width": "2px",
-            "border_left_width": "2px",
-            "background_color": "#d4d0c8",
-            "border_right": "#606060",
-            "border_bottom": "#606060",
-            "border_left": "#ffffff",
-            "border_top": "#ffffff",
-        },
-        # Headings
-        ((CssSelector(item="h1"),),): {
-            "font_weight": "bold",
-            "text_decoration": "underline",
-            "border_bottom_style": "solid",
-            "border_bottom_width": "thick",
-            "padding_bottom": "2rem",
-            "margin_top": "2rem",
-            "margin_bottom": "2em",
-        },
-        ((CssSelector(item="h2"),),): {
-            "font_weight": "bold",
-            "border_bottom_style": "double",
-            "border_bottom_width": "thick",
-            "padding_bottom": "1.5rem",
-            "margin_top": "1.5rem",
-            "margin_bottom": "1.5rem",
-        },
-        ((CssSelector(item="h3"),),): {
-            "font_weight": "bold",
-            "font_style": "italic",
-            "border_bottom_style": ":lower-left",
-            "border_bottom_width": "thin",
-            "padding_top": "1rem",
-            "padding_bottom": "1rem",
-            "margin_bottom": "1.5rem",
-        },
-        ((CssSelector(item="h4"),),): {
-            "text_decoration": "underline",
-            "border_bottom_style": "solid",
-            "border_bottom_width": "thin",
-            "padding_top": "1rem",
-            "padding_bottom": "1rem",
-            "margin_bottom": "1.5rem",
-        },
-        ((CssSelector(item="h5"),),): {
-            "border_bottom_style": "dashed",
-            "border_bottom_width": "thin",
-            "margin_bottom": "1.5rem",
-        },
-        ((CssSelector(item="h6"),),): {
-            "font_style": "italic",
-            "border_bottom_style": "dotted",
-            "border_bottom_width": "thin",
-            "margin_bottom": "1.5rem",
-        },
-        # Misc blocks
-        ((CssSelector(item="blockquote"),),): {
-            "margin_top": "1em",
-            "margin_bottom": "1em",
-            "margin_right": "2em",
-            "margin_left": "2em",
-        },
-        ((CssSelector(item="hr"),),): {
-            "margin_top": "1rem",
-            "margin_bottom": "1rem",
-            "border_top_width": "thin",
-            "border_top_style": "solid",
-            "border_top_color": "ansired",
-            "width": "100%",
-        },
-        ((CssSelector(item="p"),),): {"margin_top": "1em", "margin_bottom": "1em"},
-        ((CssSelector(item="pre"),),): {
-            "margin_top": "1em",
-            "margin_bottom": "1em",
-            "white_space": "pre",
-        },
-        # Lists
-        ((CssSelector(item="::marker"),),): {
-            "display": "inline-block",
-            "padding_right": "1em",
-            "text_align": "right",
-        },
-        ((CssSelector(item="ol"),),): {
-            "list_style_type": "decimal",
-            "list_style_position": "outside",
-            "padding_left": "4em",
-            "margin_top": "1em",
-            "margin_bottom": "1em",
-        },
-        (
-            (CssSelector(item="ul"),),
-            (CssSelector(item="menu"),),
-            (CssSelector(item="dir"),),
-        ): {
-            "list_style_type": "disc",
-            "list_style_position": "outside",
-            "padding_left": "3em",
-            "margin_top": "1em",
-            "margin_bottom": "1em",
-        },
-        (
-            (CssSelector(item="dir"), CssSelector(item="dir")),
-            (CssSelector(item="dir"), CssSelector(item="menu")),
-            (CssSelector(item="dir"), CssSelector(item="ul")),
-            (CssSelector(item="ol"), CssSelector(item="dir")),
-            (CssSelector(item="ol"), CssSelector(item="menu")),
-            (CssSelector(item="ol"), CssSelector(item="ul")),
-            (CssSelector(item="menu"), CssSelector(item="dir")),
-            (CssSelector(item="menu"), CssSelector(item="menu")),
-            (CssSelector(item="ul"), CssSelector(item="dir")),
-            (CssSelector(item="ul"), CssSelector(item="menu")),
-            (CssSelector(item="ul"), CssSelector(item="ul")),
-        ): {"margin_top": "0em", "margin_bottom": "0em", "list_style_type": "circle"},
-        (
-            (CssSelector(item="dir"), CssSelector(item="dl")),
-            (CssSelector(item="dir"), CssSelector(item="ol")),
-            (CssSelector(item="dl"), CssSelector(item="dir")),
-            (CssSelector(item="dl"), CssSelector(item="dl")),
-            (CssSelector(item="dl"), CssSelector(item="ol")),
-            (CssSelector(item="dl"), CssSelector(item="menu")),
-            (CssSelector(item="dl"), CssSelector(item="ul")),
-            (CssSelector(item="ol"), CssSelector(item="dl")),
-            (CssSelector(item="ol"), CssSelector(item="ol")),
-            (CssSelector(item="menu"), CssSelector(item="dl")),
-            (CssSelector(item="menu"), CssSelector(item="ol")),
-            (CssSelector(item="ul"), CssSelector(item="dl")),
-            (CssSelector(item="ul"), CssSelector(item="ol")),
-        ): {"margin_top": "0em", "margin_bottom": "0em"},
-        ((CssSelector(item="menu"), CssSelector(item="ul")),): {
-            "list_style_type": "circle",
-            "margin_top": "0em",
-            "margin_bottom": "0em",
-        },
-        (
-            (CssSelector(item="dir"), CssSelector(item="dir"), CssSelector(item="dir")),
+                (CssSelector(item="::before"),),
+                (CssSelector(item="::after"),),
+                (CssSelector(item="::text"),),
+                (CssSelector(item="abbr"),),
+                (CssSelector(item="acronym"),),
+                (CssSelector(item="audio"),),
+                (CssSelector(item="bdi"),),
+                (CssSelector(item="bdo"),),
+                (CssSelector(item="big"),),
+                (CssSelector(item="br"),),
+                (CssSelector(item="canvas"),),
+                (CssSelector(item="data"),),
+                (CssSelector(item="datalist"),),
+                (CssSelector(item="embed"),),
+                (CssSelector(item="iframe"),),
+                (CssSelector(item="label"),),
+                (CssSelector(item="map"),),
+                (CssSelector(item="meter"),),
+                (CssSelector(item="object"),),
+                (CssSelector(item="output"),),
+                (CssSelector(item="picture"),),
+                (CssSelector(item="progress"),),
+                (CssSelector(item="q"),),
+                (CssSelector(item="ruby"),),
+                (CssSelector(item="select"),),
+                (CssSelector(item="slot"),),
+                (CssSelector(item="small"),),
+                (CssSelector(item="span"),),
+                (CssSelector(item="template"),),
+                (CssSelector(item="textarea"),),
+                (CssSelector(item="time"),),
+                (CssSelector(item="tt"),),
+                (CssSelector(item="video"),),
+                (CssSelector(item="wbr"),),
+            ): {"display": "inline"},
+            # Formatted inlines
+            ((CssSelector(item="a"),),): {
+                "display": "inline",
+                "text_decoration": "underline",
+                "color": "#0000FF",
+            },
+            ((CssSelector(item="b"),), (CssSelector(item="strong"),)): {
+                "display": "inline",
+                "font_weight": "bold",
+            },
+            ((CssSelector(item="blink"),),): {
+                "display": "inline",
+                "text_decoration": "blink",
+            },
             (
-                CssSelector(item="dir"),
-                CssSelector(item="dir"),
-                CssSelector(item="menu"),
-            ),
-            (CssSelector(item="dir"), CssSelector(item="dir"), CssSelector(item="ul")),
+                (CssSelector(item="cite"),),
+                (CssSelector(item="dfn"),),
+                (CssSelector(item="em"),),
+                (CssSelector(item="i"),),
+                (CssSelector(item="var"),),
+            ): {"display": "inline", "font_style": "italic"},
+            ((CssSelector(item="code"),),): {
+                "display": "inline",
+            },
+            ((CssSelector(item="del"),), (CssSelector(item="s"),)): {
+                "display": "inline",
+                "text_decoration": "line-through",
+            },
             (
-                CssSelector(item="dir"),
-                CssSelector(item="menu"),
-                CssSelector(item="dir"),
-            ),
+                (CssSelector(item="img", attr="[width=0]"),),
+                (CssSelector(item="img", attr="[height=0]"),),
+                (CssSelector(item="svg", attr="[width=0]"),),
+                (CssSelector(item="svg", attr="[height=0]"),),
+            ): {"display": "none"},
+            ((CssSelector(item="img"),), (CssSelector(item="svg"),)): {
+                "display": "inline-block",
+                "overflow_x": "hidden",
+                "overflow_y": "hidden",
+            },
+            ((CssSelector(item="ins"),), (CssSelector(item="u"),)): {
+                "display": "inline",
+                "text_decoration": "underline",
+            },
+            ((CssSelector(item="kbd"),),): {
+                "display": "inline",
+                "background_color": "#333344",
+                "color": "#FFFFFF",
+            },
+            ((CssSelector(item="mark"),),): {
+                "display": "inline",
+                "color": "black",
+                "background_color": "#FFFF00",
+            },
+            ((CssSelector(item="samp"),),): {
+                "display": "inline",
+                "background_color": "#334433",
+                "color": "#FFFFFF",
+            },
+            ((CssSelector(item="sub"),),): {
+                "display": "inline",
+                "vertical_align": "sub",
+            },
+            ((CssSelector(item="sup"),),): {
+                "display": "inline",
+                "vertical_align": "super",
+            },
             (
-                CssSelector(item="dir"),
-                CssSelector(item="menu"),
-                CssSelector(item="menu"),
-            ),
-            (CssSelector(item="dir"), CssSelector(item="menu"), CssSelector(item="ul")),
-            (CssSelector(item="dir"), CssSelector(item="ol"), CssSelector(item="dir")),
-            (CssSelector(item="dir"), CssSelector(item="ol"), CssSelector(item="menu")),
-            (CssSelector(item="dir"), CssSelector(item="ol"), CssSelector(item="ul")),
-            (CssSelector(item="dir"), CssSelector(item="ul"), CssSelector(item="dir")),
-            (CssSelector(item="dir"), CssSelector(item="ul"), CssSelector(item="menu")),
-            (CssSelector(item="dir"), CssSelector(item="ul"), CssSelector(item="ul")),
+                (
+                    CssSelector(item="q"),
+                    CssSelector(item="::before"),
+                ),
+            ): {"content": "'“'"},
             (
-                CssSelector(item="menu"),
-                CssSelector(item="dir"),
-                CssSelector(item="dir"),
-            ),
+                (
+                    CssSelector(item="q"),
+                    CssSelector(item="::after"),
+                ),
+            ): {"content": "'”'"},
+            # Images
             (
-                CssSelector(item="menu"),
-                CssSelector(item="dir"),
-                CssSelector(item="menu"),
-            ),
-            (CssSelector(item="menu"), CssSelector(item="dir"), CssSelector(item="ul")),
+                (CssSelector(item="img", attr="[_missing]"),),
+                (CssSelector(item="svg", attr="[_missing]"),),
+            ): {
+                "border_top_style": "solid",
+                "border_right_style": "solid",
+                "border_bottom_style": "solid",
+                "border_left_style": "solid",
+                "border_top_width": "1px",
+                "border_right_width": "1px",
+                "border_bottom_width": "1px",
+                "border_left_width": "1px",
+                "border_top_color": "#888888",
+                "border_right_color": "#888888",
+                "border_bottom_color": "#888888",
+                "border_left_color": "#888888",
+            },
+            # Alignment
+            ((CssSelector(item="center"),), (CssSelector(item="caption"),)): {
+                "text_align": "center",
+                "display": "block",
+            },
+            # Tables
+            ((CssSelector(item="table"),),): {
+                "display": "table",
+                "border_collapse": "collapse",
+            },
             (
-                CssSelector(item="menu"),
-                CssSelector(item="menu"),
-                CssSelector(item="dir"),
-            ),
+                (CssSelector(item="td"),),
+                (CssSelector(item="th"),),
+            ): {
+                "border_top_width": "0px",
+                "border_right_width": "0px",
+                "border_bottom_width": "0px",
+                "border_left_width": "0px",
+            },
+            ((CssSelector(item="td"),),): {
+                "display": "table-cell",
+                "text_align": "unset",
+            },
+            ((CssSelector(item="th"),),): {
+                "display": "table-cell",
+                "font_weight": "bold",
+                "text_align": "center",
+            },
+            # Forms
+            ((CssSelector(item="input"),),): {
+                "display": "inline-block",
+                "white_space": "pre",
+                "color": "#000000",
+                "border_top_style": "inset",
+                "border_right_style": "inset",
+                "border_bottom_style": "inset",
+                "border_left_style": "inset",
+                "border_top_width": "2px",
+                "border_right_width": "2px",
+                "border_bottom_width": "2px",
+                "border_left_width": "2px",
+                "vertical_align": "middle",
+            },
+            ((CssSelector(item="input", attr="[type=text]"),),): {
+                "background_color": "#FAFAFA",
+                "border_top_color": "#606060",
+                "border_right_color": "#E9E7E3",
+                "border_bottom_color": "#E9E7E3",
+                "border_left_color": "#606060",
+                "overflow_x": "hidden",
+            },
             (
-                CssSelector(item="menu"),
-                CssSelector(item="menu"),
-                CssSelector(item="menu"),
-            ),
+                (CssSelector(item="input", attr="[type=button]"),),
+                (CssSelector(item="input", attr="[type=submit]"),),
+                (CssSelector(item="input", attr="[type=reset]"),),
+            ): {
+                "background_color": "#d4d0c8",
+                "border_right": "#606060",
+                "border_bottom": "#606060",
+                "border_left": "#ffffff",
+                "border_top": "#ffffff",
+            },
+            ((CssSelector(item="button"),),): {
+                "display": "inline-block",
+                "color": "#000000",
+                "border_top_style": "outset",
+                "border_right_style": "outset",
+                "border_bottom_style": "outset",
+                "border_left_style": "outset",
+                "border_top_width": "2px",
+                "border_right_width": "2px",
+                "border_bottom_width": "2px",
+                "border_left_width": "2px",
+                "background_color": "#d4d0c8",
+                "border_right": "#606060",
+                "border_bottom": "#606060",
+                "border_left": "#ffffff",
+                "border_top": "#ffffff",
+            },
+            # Headings
+            ((CssSelector(item="h1"),),): {
+                "font_weight": "bold",
+                "text_decoration": "underline",
+                "border_bottom_style": "solid",
+                "border_bottom_width": "thick",
+                "padding_bottom": "2rem",
+                "margin_top": "2rem",
+                "margin_bottom": "2em",
+            },
+            ((CssSelector(item="h2"),),): {
+                "font_weight": "bold",
+                "border_bottom_style": "double",
+                "border_bottom_width": "thick",
+                "padding_bottom": "1.5rem",
+                "margin_top": "1.5rem",
+                "margin_bottom": "1.5rem",
+            },
+            ((CssSelector(item="h3"),),): {
+                "font_weight": "bold",
+                "font_style": "italic",
+                "border_bottom_style": ":lower-left",
+                "border_bottom_width": "thin",
+                "padding_top": "1rem",
+                "padding_bottom": "1rem",
+                "margin_bottom": "1.5rem",
+            },
+            ((CssSelector(item="h4"),),): {
+                "text_decoration": "underline",
+                "border_bottom_style": "solid",
+                "border_bottom_width": "thin",
+                "padding_top": "1rem",
+                "padding_bottom": "1rem",
+                "margin_bottom": "1.5rem",
+            },
+            ((CssSelector(item="h5"),),): {
+                "border_bottom_style": "dashed",
+                "border_bottom_width": "thin",
+                "margin_bottom": "1.5rem",
+            },
+            ((CssSelector(item="h6"),),): {
+                "font_style": "italic",
+                "border_bottom_style": "dotted",
+                "border_bottom_width": "thin",
+                "margin_bottom": "1.5rem",
+            },
+            # Misc blocks
+            ((CssSelector(item="blockquote"),),): {
+                "margin_top": "1em",
+                "margin_bottom": "1em",
+                "margin_right": "2em",
+                "margin_left": "2em",
+            },
+            ((CssSelector(item="hr"),),): {
+                "margin_top": "1rem",
+                "margin_bottom": "1rem",
+                "border_top_width": "thin",
+                "border_top_style": "solid",
+                "border_top_color": "ansired",
+                "width": "100%",
+            },
+            ((CssSelector(item="p"),),): {"margin_top": "1em", "margin_bottom": "1em"},
+            ((CssSelector(item="pre"),),): {
+                "margin_top": "1em",
+                "margin_bottom": "1em",
+                "white_space": "pre",
+            },
+            # Lists
+            ((CssSelector(item="::marker"),),): {
+                "display": "inline-block",
+                "padding_right": "1em",
+                "text_align": "right",
+            },
+            ((CssSelector(item="ol"),),): {
+                "list_style_type": "decimal",
+                "list_style_position": "outside",
+                "padding_left": "4em",
+                "margin_top": "1em",
+                "margin_bottom": "1em",
+            },
             (
-                CssSelector(item="menu"),
-                CssSelector(item="menu"),
-                CssSelector(item="ul"),
-            ),
-            (CssSelector(item="menu"), CssSelector(item="ol"), CssSelector(item="dir")),
+                (CssSelector(item="ul"),),
+                (CssSelector(item="menu"),),
+                (CssSelector(item="dir"),),
+            ): {
+                "list_style_type": "disc",
+                "list_style_position": "outside",
+                "padding_left": "3em",
+                "margin_top": "1em",
+                "margin_bottom": "1em",
+            },
             (
-                CssSelector(item="menu"),
-                CssSelector(item="ol"),
-                CssSelector(item="menu"),
-            ),
-            (CssSelector(item="menu"), CssSelector(item="ol"), CssSelector(item="ul")),
-            (CssSelector(item="menu"), CssSelector(item="ul"), CssSelector(item="dir")),
+                (CssSelector(item="dir"), CssSelector(item="dir")),
+                (CssSelector(item="dir"), CssSelector(item="menu")),
+                (CssSelector(item="dir"), CssSelector(item="ul")),
+                (CssSelector(item="ol"), CssSelector(item="dir")),
+                (CssSelector(item="ol"), CssSelector(item="menu")),
+                (CssSelector(item="ol"), CssSelector(item="ul")),
+                (CssSelector(item="menu"), CssSelector(item="dir")),
+                (CssSelector(item="menu"), CssSelector(item="menu")),
+                (CssSelector(item="ul"), CssSelector(item="dir")),
+                (CssSelector(item="ul"), CssSelector(item="menu")),
+                (CssSelector(item="ul"), CssSelector(item="ul")),
+            ): {
+                "margin_top": "0em",
+                "margin_bottom": "0em",
+                "list_style_type": "circle",
+            },
             (
-                CssSelector(item="menu"),
-                CssSelector(item="ul"),
-                CssSelector(item="menu"),
-            ),
-            (CssSelector(item="menu"), CssSelector(item="ul"), CssSelector(item="ul")),
-            (CssSelector(item="ol"), CssSelector(item="dir"), CssSelector(item="dir")),
-            (CssSelector(item="ol"), CssSelector(item="dir"), CssSelector(item="menu")),
-            (CssSelector(item="ol"), CssSelector(item="dir"), CssSelector(item="ul")),
-            (CssSelector(item="ol"), CssSelector(item="menu"), CssSelector(item="dir")),
+                (CssSelector(item="dir"), CssSelector(item="dl")),
+                (CssSelector(item="dir"), CssSelector(item="ol")),
+                (CssSelector(item="dl"), CssSelector(item="dir")),
+                (CssSelector(item="dl"), CssSelector(item="dl")),
+                (CssSelector(item="dl"), CssSelector(item="ol")),
+                (CssSelector(item="dl"), CssSelector(item="menu")),
+                (CssSelector(item="dl"), CssSelector(item="ul")),
+                (CssSelector(item="ol"), CssSelector(item="dl")),
+                (CssSelector(item="ol"), CssSelector(item="ol")),
+                (CssSelector(item="menu"), CssSelector(item="dl")),
+                (CssSelector(item="menu"), CssSelector(item="ol")),
+                (CssSelector(item="ul"), CssSelector(item="dl")),
+                (CssSelector(item="ul"), CssSelector(item="ol")),
+            ): {"margin_top": "0em", "margin_bottom": "0em"},
+            ((CssSelector(item="menu"), CssSelector(item="ul")),): {
+                "list_style_type": "circle",
+                "margin_top": "0em",
+                "margin_bottom": "0em",
+            },
             (
-                CssSelector(item="ol"),
-                CssSelector(item="menu"),
-                CssSelector(item="menu"),
-            ),
-            (CssSelector(item="ol"), CssSelector(item="menu"), CssSelector(item="ul")),
-            (CssSelector(item="ol"), CssSelector(item="ol"), CssSelector(item="dir")),
-            (CssSelector(item="ol"), CssSelector(item="ol"), CssSelector(item="menu")),
-            (CssSelector(item="ol"), CssSelector(item="ol"), CssSelector(item="ul")),
-            (CssSelector(item="ol"), CssSelector(item="ul"), CssSelector(item="dir")),
-            (CssSelector(item="ol"), CssSelector(item="ul"), CssSelector(item="menu")),
-            (CssSelector(item="ol"), CssSelector(item="ul"), CssSelector(item="ul")),
-            (CssSelector(item="ul"), CssSelector(item="dir"), CssSelector(item="dir")),
-            (CssSelector(item="ul"), CssSelector(item="dir"), CssSelector(item="menu")),
-            (CssSelector(item="ul"), CssSelector(item="dir"), CssSelector(item="ul")),
-            (CssSelector(item="ul"), CssSelector(item="menu"), CssSelector(item="dir")),
+                (
+                    CssSelector(item="dir"),
+                    CssSelector(item="dir"),
+                    CssSelector(item="dir"),
+                ),
+                (
+                    CssSelector(item="dir"),
+                    CssSelector(item="dir"),
+                    CssSelector(item="menu"),
+                ),
+                (
+                    CssSelector(item="dir"),
+                    CssSelector(item="dir"),
+                    CssSelector(item="ul"),
+                ),
+                (
+                    CssSelector(item="dir"),
+                    CssSelector(item="menu"),
+                    CssSelector(item="dir"),
+                ),
+                (
+                    CssSelector(item="dir"),
+                    CssSelector(item="menu"),
+                    CssSelector(item="menu"),
+                ),
+                (
+                    CssSelector(item="dir"),
+                    CssSelector(item="menu"),
+                    CssSelector(item="ul"),
+                ),
+                (
+                    CssSelector(item="dir"),
+                    CssSelector(item="ol"),
+                    CssSelector(item="dir"),
+                ),
+                (
+                    CssSelector(item="dir"),
+                    CssSelector(item="ol"),
+                    CssSelector(item="menu"),
+                ),
+                (
+                    CssSelector(item="dir"),
+                    CssSelector(item="ol"),
+                    CssSelector(item="ul"),
+                ),
+                (
+                    CssSelector(item="dir"),
+                    CssSelector(item="ul"),
+                    CssSelector(item="dir"),
+                ),
+                (
+                    CssSelector(item="dir"),
+                    CssSelector(item="ul"),
+                    CssSelector(item="menu"),
+                ),
+                (
+                    CssSelector(item="dir"),
+                    CssSelector(item="ul"),
+                    CssSelector(item="ul"),
+                ),
+                (
+                    CssSelector(item="menu"),
+                    CssSelector(item="dir"),
+                    CssSelector(item="dir"),
+                ),
+                (
+                    CssSelector(item="menu"),
+                    CssSelector(item="dir"),
+                    CssSelector(item="menu"),
+                ),
+                (
+                    CssSelector(item="menu"),
+                    CssSelector(item="dir"),
+                    CssSelector(item="ul"),
+                ),
+                (
+                    CssSelector(item="menu"),
+                    CssSelector(item="menu"),
+                    CssSelector(item="dir"),
+                ),
+                (
+                    CssSelector(item="menu"),
+                    CssSelector(item="menu"),
+                    CssSelector(item="menu"),
+                ),
+                (
+                    CssSelector(item="menu"),
+                    CssSelector(item="menu"),
+                    CssSelector(item="ul"),
+                ),
+                (
+                    CssSelector(item="menu"),
+                    CssSelector(item="ol"),
+                    CssSelector(item="dir"),
+                ),
+                (
+                    CssSelector(item="menu"),
+                    CssSelector(item="ol"),
+                    CssSelector(item="menu"),
+                ),
+                (
+                    CssSelector(item="menu"),
+                    CssSelector(item="ol"),
+                    CssSelector(item="ul"),
+                ),
+                (
+                    CssSelector(item="menu"),
+                    CssSelector(item="ul"),
+                    CssSelector(item="dir"),
+                ),
+                (
+                    CssSelector(item="menu"),
+                    CssSelector(item="ul"),
+                    CssSelector(item="menu"),
+                ),
+                (
+                    CssSelector(item="menu"),
+                    CssSelector(item="ul"),
+                    CssSelector(item="ul"),
+                ),
+                (
+                    CssSelector(item="ol"),
+                    CssSelector(item="dir"),
+                    CssSelector(item="dir"),
+                ),
+                (
+                    CssSelector(item="ol"),
+                    CssSelector(item="dir"),
+                    CssSelector(item="menu"),
+                ),
+                (
+                    CssSelector(item="ol"),
+                    CssSelector(item="dir"),
+                    CssSelector(item="ul"),
+                ),
+                (
+                    CssSelector(item="ol"),
+                    CssSelector(item="menu"),
+                    CssSelector(item="dir"),
+                ),
+                (
+                    CssSelector(item="ol"),
+                    CssSelector(item="menu"),
+                    CssSelector(item="menu"),
+                ),
+                (
+                    CssSelector(item="ol"),
+                    CssSelector(item="menu"),
+                    CssSelector(item="ul"),
+                ),
+                (
+                    CssSelector(item="ol"),
+                    CssSelector(item="ol"),
+                    CssSelector(item="dir"),
+                ),
+                (
+                    CssSelector(item="ol"),
+                    CssSelector(item="ol"),
+                    CssSelector(item="menu"),
+                ),
+                (
+                    CssSelector(item="ol"),
+                    CssSelector(item="ol"),
+                    CssSelector(item="ul"),
+                ),
+                (
+                    CssSelector(item="ol"),
+                    CssSelector(item="ul"),
+                    CssSelector(item="dir"),
+                ),
+                (
+                    CssSelector(item="ol"),
+                    CssSelector(item="ul"),
+                    CssSelector(item="menu"),
+                ),
+                (
+                    CssSelector(item="ol"),
+                    CssSelector(item="ul"),
+                    CssSelector(item="ul"),
+                ),
+                (
+                    CssSelector(item="ul"),
+                    CssSelector(item="dir"),
+                    CssSelector(item="dir"),
+                ),
+                (
+                    CssSelector(item="ul"),
+                    CssSelector(item="dir"),
+                    CssSelector(item="menu"),
+                ),
+                (
+                    CssSelector(item="ul"),
+                    CssSelector(item="dir"),
+                    CssSelector(item="ul"),
+                ),
+                (
+                    CssSelector(item="ul"),
+                    CssSelector(item="menu"),
+                    CssSelector(item="dir"),
+                ),
+                (
+                    CssSelector(item="ul"),
+                    CssSelector(item="menu"),
+                    CssSelector(item="menu"),
+                ),
+                (
+                    CssSelector(item="ul"),
+                    CssSelector(item="menu"),
+                    CssSelector(item="ul"),
+                ),
+                (
+                    CssSelector(item="ul"),
+                    CssSelector(item="ol"),
+                    CssSelector(item="dir"),
+                ),
+                (
+                    CssSelector(item="ul"),
+                    CssSelector(item="ol"),
+                    CssSelector(item="menu"),
+                ),
+                (
+                    CssSelector(item="ul"),
+                    CssSelector(item="ol"),
+                    CssSelector(item="ul"),
+                ),
+                (
+                    CssSelector(item="ul"),
+                    CssSelector(item="ul"),
+                    CssSelector(item="dir"),
+                ),
+                (
+                    CssSelector(item="ul"),
+                    CssSelector(item="ul"),
+                    CssSelector(item="menu"),
+                ),
+                (
+                    CssSelector(item="ul"),
+                    CssSelector(item="ul"),
+                    CssSelector(item="ul"),
+                ),
+            ): {"list_style_type": "square"},
+            ((CssSelector(item="li"),),): {"display": "list-item"},
+            # Details & summary
+            ((CssSelector(item="details"), CssSelector(item="summary")),): {
+                "display": "list-item",
+                "list_style_type": "disclosure-closed",
+                "list_style_position": "inside",
+            },
             (
-                CssSelector(item="ul"),
-                CssSelector(item="menu"),
-                CssSelector(item="menu"),
-            ),
-            (CssSelector(item="ul"), CssSelector(item="menu"), CssSelector(item="ul")),
-            (CssSelector(item="ul"), CssSelector(item="ol"), CssSelector(item="dir")),
-            (CssSelector(item="ul"), CssSelector(item="ol"), CssSelector(item="menu")),
-            (CssSelector(item="ul"), CssSelector(item="ol"), CssSelector(item="ul")),
-            (CssSelector(item="ul"), CssSelector(item="ul"), CssSelector(item="dir")),
-            (CssSelector(item="ul"), CssSelector(item="ul"), CssSelector(item="menu")),
-            (CssSelector(item="ul"), CssSelector(item="ul"), CssSelector(item="ul")),
-        ): {"list_style_type": "square"},
-        ((CssSelector(item="li"),),): {"display": "list-item"},
-        # Details & summary
-        ((CssSelector(item="details"), CssSelector(item="summary")),): {
-            "display": "list-item",
-            "list_style_type": "disclosure-closed",
-            "list_style_position": "inside",
+                (
+                    CssSelector(item="details", attr="[open]"),
+                    CssSelector(item="summary"),
+                ),
+            ): {
+                "list_style_type": "disclosure-open",
+                "display": "list-item",
+            },
         },
-        ((CssSelector(item="details", attr="[open]"), CssSelector(item="summary")),): {
-            "list_style_type": "disclosure-open",
-            "display": "list-item",
-        },
-    }
+    )
 }
 
 
@@ -3220,8 +3329,8 @@ class HTML(PtkHTML):
         height: int | None = None,
         collapse_root_margin: bool = False,
         fill: bool = True,
-        css: CssSelectors | None = None,
-        browser_css: CssSelectors | None = None,
+        css: dict[Filter, CssRuleSet] | None = None,
+        browser_css: dict[Filter, CssRuleSet] | None = None,
         mathjax: FilterOrBool = True,
         mouse_handler: Callable[[Node, MouseEvent], NotImplementedOrNone] | None = None,
         paste_fixed: bool = True,
@@ -3255,8 +3364,14 @@ class HTML(PtkHTML):
         self.base = UPath(base or ".")
         self.title = ""
 
-        self.browser_css = browser_css or _BROWSER_CSS
-        self.css: CssSelectors = css or {}
+        self.browser_css = (
+            {filter: CssRuleSet(rules) for filter, rules in browser_css.items()}
+            if browser_css
+            else _BROWSER_CSS
+        )
+        self.css: dict[Filter, CssRuleSet] = (
+            {filter: CssRuleSet(rules) for filter, rules in css.items()} if css else {}
+        )
         self.mathjax = to_filter(mathjax)
         self.defer_assets = defer_assets
 
@@ -3283,12 +3398,6 @@ class HTML(PtkHTML):
         self._assets_loaded = False
         self._url_cbs: dict[Path, Callable[[Any], None]] = {}
         self._url_fs_map: dict[Path, AbstractFileSystem] = {}
-        self._css_index: list[CssIndex] | None = None
-
-        # Caches for computed CSS themes to avoid redundant selector matching
-        # Key: (tag, id, classes, attrs, is_first, is_last, sibling_idx, parent_sig)
-        self._browser_css_cache: dict[tuple, dict[str, str]] = {}
-        self._dom_css_cache: dict[tuple, dict[str, str]] = {}
 
     # Lazily load attributes
 
@@ -3301,21 +3410,6 @@ class HTML(PtkHTML):
     def soup(self) -> Node:
         """Parse the markup."""
         return self.parser.parse(self.value)
-
-    @cached_property
-    def browser_css_index(self) -> list[CssIndex]:
-        """Get the indexed browser CSS for fast selector lookup."""
-        return build_css_index(self.browser_css)
-
-    @property
-    def css_index(self) -> list[CssIndex]:
-        """Get the indexed CSS for fast selector lookup.
-
-        The index is rebuilt when CSS changes (invalidated by parse_style_sheet).
-        """
-        if self._css_index is None:
-            self._css_index = build_css_index(self.css)
-        return self._css_index
 
     def parse_media_condition(self, condition: str) -> Filter:
         """Convert media rules to conditions."""
@@ -3430,9 +3524,6 @@ class HTML(PtkHTML):
     def parse_style_sheet(self, css_str: str, condition: Filter = always) -> None:
         """Collect all CSS styles from style tags."""
         dom_css = self.css
-        # Invalidate the CSS index and cache since we're about to modify the CSS
-        self._css_index = None
-        self._dom_css_cache.clear()
         # Remove whitespace and newlines
         css_str = re.sub(r"\s*\n\s*", " ", css_str)
         # Remove comments
@@ -3458,11 +3549,13 @@ class HTML(PtkHTML):
                                 )
                                 for selector in map(str.strip, selectors.split(","))
                             )
-                            rules = dom_css.setdefault(part_condition, {})
-                            if parsed_selectors in rules:
-                                rules[parsed_selectors].update(rule_content)
-                            else:
-                                rules[parsed_selectors] = rule_content
+                            # Get or create the rule set for this condition
+                            ruleset = dom_css.get(part_condition)
+                            if ruleset is None:
+                                ruleset = CssRuleSet()
+                                dom_css[part_condition] = ruleset
+                            # Use dict interface - __setitem__ handles indexing
+                            ruleset[parsed_selectors] = rule_content
 
         # Split out nested at-rules - we need to process them separately
         for part in _AT_RULE_RE.split(css_str):
