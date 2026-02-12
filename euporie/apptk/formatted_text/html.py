@@ -5116,12 +5116,11 @@ class HTML(PtkHTML):
             elif d_inline_block:
                 pad_width = max_line_width(ft) if theme.width is None else content_width
             if pad_width is not None:
-                style = theme.style
                 ft = pad(
                     ft,
                     width=round(pad_width),
                     char=" ",
-                    style=style,
+                    style=theme.style,
                 )
 
         # Use the rendered content width from now on for inline elements
