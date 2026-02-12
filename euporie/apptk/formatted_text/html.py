@@ -4808,7 +4808,7 @@ class HTML(PtkHTML):
             elif theme.floated == "left":
                 lines = []
                 for ft_left, ft_right in zip_longest(
-                    lines,  # TODO - should be float_lines_left,
+                    float_lines_left,
                     split_lines(pad(rendering, style=theme.style)),
                     fillvalue=empty,
                 ):
