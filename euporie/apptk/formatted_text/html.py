@@ -1100,6 +1100,8 @@ class Theme(Mapping):
         self.parent_theme = parent_theme
         self.available_width = available_width
         self.available_height = available_height
+        self.rendered_width = 0
+        self.rendered_height = 0
 
     def reset(self) -> None:
         """Reset all cached properties."""
@@ -1131,11 +1133,7 @@ class Theme(Mapping):
         }
         return theme
 
-    def update_space(
-        self,
-        available_width: int,
-        available_height: int,
-    ) -> None:
+    def update_space(self, available_width: int, available_height: int) -> None:
         """Set the space available to the element for rendering."""
         if self.theme["position"] in {"fixed"}:
             # Space is given by position
@@ -1149,6 +1147,11 @@ class Theme(Mapping):
         else:
             self.available_width = available_width
             self.available_height = available_height
+
+    def update_size(self, rendered_width: int, rendered_height: int) -> None:
+        """Set the space used by the element for rendering."""
+        self.rendered_width = rendered_width
+        self.rendered_height = rendered_height
 
     # Theme calculation methods
 
@@ -1489,7 +1492,7 @@ class Theme(Mapping):
 
     @property
     def width(self) -> int | None:
-        """The pescribed width."""
+        """The prescribed width."""
         value = self.theme.get("width")
 
         theme_width: int | float | None
@@ -1520,6 +1523,24 @@ class Theme(Mapping):
 
         elif element.name == "::text":
             return len(element.text)
+
+        # Only absolute positioning calculates width from left/right
+        elif self.theme["position"] == "absolute":
+            # Calculate width from containing block minus left and right offsets
+            container_width = self.container_theme.rendered_width
+            left = self.theme["left"]
+            right = self.theme["right"]
+            left_offset = (
+                css_dimension(left, vertical=True, available=container_width)
+                if left not in {"auto", "unset"}
+                else 0
+            )
+            right_offset = (
+                css_dimension(right, vertical=True, available=container_width)
+                if right not in {"auto", "unset"}
+                else 0
+            )
+            return round(container_width - left_offset - right_offset)
 
         return None
 
@@ -1612,12 +1633,33 @@ class Theme(Mapping):
     def height(self) -> int | None:
         """The prescribed height."""
         # TODO - process min-/max-height
+
+        # Check for explicit height value, which takes precedence
         if value := self.get("height"):
             theme_height = css_dimension(
                 value, vertical=True, available=self.available_height
             )
             if theme_height is not None:
                 return round(theme_height)
+
+        # Only absolute positioning calculates height from top/bottom
+        if self.theme["position"] == "absolute":
+            # Calculate height from containing block minus top and bottom offsets
+            container_height = self.container_theme.rendered_height
+            top = self.theme["top"]
+            bottom = self.theme["bottom"]
+            top_offset = (
+                css_dimension(top, vertical=True, available=container_height)
+                if top not in {"auto", "unset"}
+                else 0
+            )
+            bottom_offset = (
+                css_dimension(bottom, vertical=True, available=container_height)
+                if bottom not in {"auto", "unset"}
+                else 0
+            )
+            return round(container_height - top_offset - bottom_offset)
+
         return None
 
     @property
@@ -2093,7 +2135,7 @@ class Theme(Mapping):
     @cached_property
     def position(self) -> DiInt:
         """The position of an element with a relative, absolute or fixed position."""
-        # TODO - calculate position based on top, left, bottom,right, width, height
+        # TODO - calculate position based on top, left, bottom, right, width, height
         soup_theme = self.element.dom.soup.theme
         position = DiInt(0, 0, 0, 0)
         # if self.parent_theme is not None:
@@ -2174,6 +2216,29 @@ class Theme(Mapping):
             and self.element.name != "html"
             and self.floated is None
         )
+
+    @cached_property
+    def container_theme(self) -> Theme:
+        """Find the theme of the containing block for positioned elements.
+
+        For absolutely positioned elements, this is the nearest ancestor with
+        position != static. For fixed elements, this is the viewport (None).
+        For other elements, this is the parent.
+        """
+        position = self.theme["position"]
+        if position == "fixed":
+            return self.element.dom.soup.theme
+        elif position == "absolute":
+            # Find nearest positioned ancestor
+            parent_theme = self.parent_theme
+            while parent_theme is not None:
+                if parent_theme.theme["position"] != "static":
+                    return parent_theme
+                parent_theme = parent_theme.parent_theme
+            # No positioned ancestor, use viewport
+            return self.element.dom.soup.theme
+        # For static/relative, containing block is the parent
+        return self.parent_theme
 
     @cached_property
     def gap(self) -> tuple[int, int]:
@@ -4667,24 +4732,35 @@ class HTML(PtkHTML):
         available_width = parent_theme.content_width
         available_height = parent_theme.content_height
 
-        coros = {}
+        children_static = []
+        children_absolute = []
+
         for child in element.renderable_descendents:
             theme = child.theme
             if theme.skip:
                 continue
-            # Render the element
-            coros[child] = self.render_element(
-                child,
-                available_width=available_width,
-                available_height=available_height,
-                left=0,
-                fill=fill,
-                align_content=align_content,
+            elif theme["position"] == "absolute":
+                children_absolute.append(child)
+            else:
+                children_static.append(child)
+
+        # Render static elements
+        renderings = await asyncio.gather(
+            *(
+                self.render_element(
+                    child,
+                    available_width=available_width,
+                    available_height=available_height,
+                    left=0,
+                    fill=fill,
+                    align_content=align_content,
+                )
+                for child in children_static
             )
-        renderings = await asyncio.gather(*coros.values())
+        )
 
         # Render each child node
-        for child, rendering in zip(coros, renderings):
+        for child, rendering in zip(children_static, renderings):
             # Start a new line if we just passed a <br> element
             if child.name == "br":
                 flush()
@@ -4914,16 +4990,35 @@ class HTML(PtkHTML):
         # Flush any current lines
         flush()
 
-        # Draw flex elements
-        # if parent_theme.get("flex") and parent_theme.get("flex-direction") == "column":
-        # table = Table(border=Invisible, collapse_empty_borders=True)
-        # row = table.new_row()
-        # for output in outputs:
-        # row.new_cell(output)
-        # ft = table.render(available_width)
-        #
-        # else:
-        # ft = sum(outputs, start=ft)
+        rendered_width = max_line_width(ft) if ft else 0
+        rendered_height = sum(1 for _ in split_lines(ft)) if ft else 0
+        parent_theme.update_size(rendered_width, rendered_height)
+
+        # Render absolute elements
+        renderings = await asyncio.gather(
+            *(
+                self.render_element(
+                    child,
+                    available_width=rendered_width or available_width,
+                    available_height=rendered_height or available_height,
+                    left=0,
+                    fill=fill,
+                    align_content=align_content,
+                )
+                for child in children_absolute
+            )
+        )
+
+        # Paste any absolute elements onto the current output
+        for child, rendering in sorted(
+            zip(children_absolute, renderings),
+            key=lambda x: x[0].theme.z_index,
+        ):
+            theme = child.theme
+            position = theme.position
+            row = position.top
+            col = position.left
+            ft = paste(rendering, ft, row, col, expand=True)
 
         return ft
 
@@ -4968,7 +5063,8 @@ class HTML(PtkHTML):
 
         # Truncate or expand the height
         overflow_y = theme.get("overflow_y") in {"hidden", "auto"}
-        pad_height = d_blocky and theme.height is not None
+        pad_height = (d_blocky or d_inline_block) and theme.height is not None
+        # print(element, theme.height)
         if overflow_y or pad_height:
             target_height = None
             if (min_height := theme.min_height) and min_height > content_height:
@@ -5008,7 +5104,7 @@ class HTML(PtkHTML):
                 )
 
         # Fill space around block elements so they fill the content width
-        if ft and ((fill and d_blocky and not theme.d_table) or d_inline_block):
+        if (fill and d_blocky and not theme.d_table) or d_inline_block:
             pad_width = None
             if d_blocky:
                 pad_width = content_width

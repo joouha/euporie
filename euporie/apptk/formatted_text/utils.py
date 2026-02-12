@@ -454,38 +454,76 @@ def paste(
     row: int = 0,
     col: int = 0,
     transparent: bool = False,
+    expand: bool = False,
 ) -> StyleAndTextTuples:
-    """Pate formatted text on top of other formatted text."""
-    ft: StyleAndTextTuples = []
-    top_lines = dict(enumerate(split_lines(ft_top), start=row))
-    for y, line_b in enumerate(split_lines(ft_bottom)):
-        if y in top_lines:
-            line_t = top_lines[y]
-            line_t_width = fragment_list_width(line_t)
-            ft += substring(line_b, 0, col)
+    """Paste formatted text on top of other formatted text.
+
+    Args:
+        ft_top: The formatted text to paste on top
+        ft_bottom: The formatted text to paste onto
+        row: The row position to paste at
+        col: The column position to paste at
+        transparent: If True, spaces in ft_top will show ft_bottom through
+        expand: If True, expand ft_bottom to accommodate ft_top
+
+    Returns:
+        The combined formatted text
+    """
+    top_lines = list(split_lines(ft_top))
+    bottom_lines = list(split_lines(ft_bottom))
+
+    # Calculate total rows needed
+    rows_needed = row + len(top_lines)
+    total_rows = max(len(bottom_lines), rows_needed) if expand else len(bottom_lines)
+
+    result: StyleAndTextTuples = []
+
+    for y in range(total_rows):
+        # Get the bottom line (or empty if beyond bounds)
+        bottom_line = bottom_lines[y] if y < len(bottom_lines) else []
+
+        # Check if we need to overlay a top line at this row
+        top_index = y - row
+        if 0 <= top_index < len(top_lines):
+            top_line = top_lines[top_index]
+            top_width = fragment_list_width(top_line)
+
+            # Expand bottom line if needed
+            if expand:
+                bottom_width = fragment_list_width(bottom_line)
+                if bottom_width < col + top_width:
+                    bottom_line = [
+                        *bottom_line,
+                        ("", " " * (col + top_width - bottom_width)),
+                    ]
+
+            # Build the line: left part + overlay + right part
+            result += substring(bottom_line, 0, col)
+
             if transparent:
                 from euporie.apptk.layout.utils import explode_text_fragments
 
-                chars_t = explode_text_fragments(line_t)
-                chars_b = explode_text_fragments(
-                    substring(line_b, col, col + line_t_width)
+                top_chars = explode_text_fragments(top_line)
+                bottom_chars = explode_text_fragments(
+                    substring(bottom_line, col, col + top_width)
                 )
-                for char_t, char_b in zip(chars_t, chars_b):
-                    if char_t[0] == "" and char_t[1] == " ":
-                        ft.append(char_b)
+                for top_char, bottom_char in zip(top_chars, bottom_chars):
+                    if top_char[0] == "" and top_char[1] == " ":
+                        result.append(bottom_char)
                     else:
-                        ft.append(char_t)
+                        result.append(top_char)
             else:
-                ft += line_t
-            ft += substring(line_b, col + line_t_width)
+                result += top_line
+
+            result += substring(bottom_line, col + top_width)
         else:
-            ft += line_b
-        ft.append(("", "\n"))
+            result += bottom_line
 
-    if ft:
-        ft.pop()
+        # Add newline between lines
+        if y < total_rows - 1:
+            result.append(("", "\n"))
 
-    return ft
+    return result
 
 
 def concat(
