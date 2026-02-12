@@ -5043,7 +5043,7 @@ class HTML(PtkHTML):
         content_height = theme.content_height
         max_width = theme.max_width
 
-        # If an element should not overflow it's width / height, truncate it
+        # If an element should not overflow its width / height, truncate it
         if not d_inline and (not preformatted or max_width is not None):
             if theme.get("overflow_x") == "hidden":
                 ft = truncate(
