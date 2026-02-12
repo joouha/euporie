@@ -4990,6 +4990,19 @@ class HTML(PtkHTML):
         # Flush any current lines
         flush()
 
+        # Align block content (must happen before absolute elements are pasted)
+        if align_content and parent_theme.d_blocky:
+            alignment = parent_theme.text_align
+            if alignment != HorizontalAlign.LEFT:
+                ft = align(
+                    ft,
+                    alignment,
+                    width=available_width,
+                    style=parent_theme.style,
+                    ignore_whitespace=True,
+                    placeholder="",
+                )
+
         rendered_width = max_line_width(ft) if ft else 0
         rendered_height = sum(1 for _ in split_lines(ft)) if ft else 0
         parent_theme.update_size(rendered_width, rendered_height)
@@ -5090,19 +5103,6 @@ class HTML(PtkHTML):
 
                 ft = join_lines(lines)
 
-        # Align content
-        if align_content and d_blocky:
-            alignment = theme.text_align
-            if alignment != HorizontalAlign.LEFT:
-                ft = align(
-                    ft,
-                    alignment,
-                    width=None if d_inline_block else content_width,
-                    style=theme.style,
-                    ignore_whitespace=True,
-                    placeholder="",
-                )
-
         # Fill space around block elements so they fill the content width
         if (fill and d_blocky and not theme.d_table) or d_inline_block:
             pad_width = None
@@ -5122,6 +5122,19 @@ class HTML(PtkHTML):
         # Use the rendered content width from now on for inline elements
         if d_inline_block or d_inline:
             content_width = max_line_width(ft)
+
+        # Align inline-block content
+        if align_content and d_inline_block:
+            alignment = theme.text_align
+            if alignment != HorizontalAlign.LEFT:
+                ft = align(
+                    ft,
+                    alignment,
+                    width=content_width,
+                    style=theme.style,
+                    ignore_whitespace=True,
+                    placeholder="",
+                )
 
         # Add padding & border
         if d_blocky or d_inline_block:
