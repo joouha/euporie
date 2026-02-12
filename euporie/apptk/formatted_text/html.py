@@ -1736,8 +1736,8 @@ class Theme(Mapping):
             )
             output[direction] = round(value or 0)
 
-        # Do not render top and bottom padding for inline elements
-        if self.d_inline or self.d_inline_block:
+        # Do not render top and bottom padding for inline elements (but not floats)
+        if (self.d_inline or self.d_inline_block) and self.floated is None:
             output["top"] = 0
             output["bottom"] = 0
 
