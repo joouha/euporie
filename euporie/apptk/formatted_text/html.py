@@ -386,6 +386,8 @@ _GRID_TEMPLATE_REPEAT_RE = re.compile(
     r"repeat\(\s*(?P<count>\d+)\s*,\s*(?P<value>[^)]+?)\s*\)"
 )
 
+_CSS_COMMENT_RE = re.compile(r"/\*[^*]*\*+(?:[^/*][^*]*\*+)*/")
+
 _MATHJAX_TAG_RE = re.compile(
     r"""
         ^(?P<beginning>.*?)
@@ -837,6 +839,9 @@ def css_dimension(
 def parse_css_content(content: str) -> dict[str, str]:
     """Convert CSS declarations into the internal style representation."""
     theme: dict[str, str] = {}
+
+    # Remove CSS comments
+    content = _CSS_COMMENT_RE.sub("", content).strip()
 
     if not content:
         return theme
