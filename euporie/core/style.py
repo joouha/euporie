@@ -243,17 +243,19 @@ def menu_styles(cp: ColorPalette) -> dict[str, str]:
     """Generate menu and menu bar styles."""
     return {
         "menu": f"fg:{cp.fg.more(0.05)} bg:{cp.bg.more(0.05)}",
-        "menu bar": f"bg:{cp.bg.less(0.15)}",
+        "menu-bar": f"bg:{cp.bg.less(0.15)}",
         "menu disabled": f"fg:{cp.fg.more(0.05).towards(cp.bg, 0.75)}",
         "menu shortcut": f"fg:{cp.fg.more(0.4)}",
         "menu shortcut disabled": f"fg:{cp.fg.more(0.4).towards(cp.bg, 0.5)}",
         "menu prefix": f"fg:{cp.fg.more(0.2)}",
         "menu prefix disabled": f"fg:{cp.fg.more(0.2).towards(cp.bg, 0.5)}",
         "menu selection": f"bg:{cp.hl.more(1)} fg:{cp.hl} reverse",
-        "menu selection shortcut": f"bg:{cp.hl.more(1).more(0.05)} fg:{cp.hl} reverse",
-        "menu selection prefix": f"bg:{cp.hl.more(1).more(0.05)} fg:{cp.hl} reverse",
-        "menu border": f"fg:{cp.bg.more(0.15)} bg:{cp.bg.more(0.05)}",
-        "menu border selection": f"fg:{cp.bg.more(0.15)} bg:{cp.hl} noreverse",
+        "menu menu-bar.selected-item": f"bg:{cp.hl.more(1)} fg:{cp.hl} reverse",
+        "menu menu-bar.selected-item shortcut": f"bg:{cp.hl.more(1).more(0.05)} fg:{cp.hl} reverse",
+        "menu menu-bar.selected-item prefix": f"bg:{cp.hl.more(1).more(0.05)} fg:{cp.hl} reverse",
+        "menu-border": f"fg:{cp.bg.more(0.15)} bg:{cp.bg.more(0.05)}",
+        "menu-border disabled": f"fg:{cp.bg.more(0.15)} bg:{cp.bg.more(0.05)}",
+        "menu-border menu-bar.selected-item": f"fg:{cp.bg.more(0.15)} bg:{cp.hl} noreverse",
     }
 
 

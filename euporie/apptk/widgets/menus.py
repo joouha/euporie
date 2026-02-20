@@ -30,11 +30,10 @@ from euporie.apptk.utils import get_cwidth
 from prompt_toolkit.widgets.menus import MenuContainer as PtkMenuContainer
 from prompt_toolkit.widgets.menus import MenuItem as PtkMenuItem
 
-from euporie.apptk.border import OuterHalfGrid, ThinGrid
+from euporie.apptk.border import ThinGrid
 from euporie.apptk.commands import get_cmd
 from euporie.apptk.filters import Condition, has_focus
 from euporie.apptk.formatted_text.utils import (
-    fragment_list_to_text,
     fragment_list_width,
     to_plain_text,
 )
@@ -43,6 +42,7 @@ from euporie.apptk.layout.containers import (
     ConditionalContainer,
     Container,
     Float,
+    FloatContainer,
     HSplit,
     ScrollOffsets,
     VSplit,
@@ -74,12 +74,10 @@ if TYPE_CHECKING:
 
     from euporie.apptk.border import GridStyle
     from euporie.apptk.commands import Command
-    from euporie.core.app.app import BaseApp
     from euporie.core.bars.status import StatusBarFields
 
 
 __all__ = [
-    "MenuBar",
     "MenuContainer",
     "MenuItem",
 ]
@@ -231,7 +229,7 @@ class MenuItem(PtkMenuItem):
         """Prefix text (e.g., checkmark for toggled items)."""
         prefix: StyleAndTextTuples = []
         if self.toggled is not None:
-            prefix.append(("class:menu,prefix", "✓ " if self.toggled() else "  "))
+            prefix.append(("class:prefix", "✓ " if self.toggled() else "  "))
         return prefix
 
     @property
@@ -257,8 +255,8 @@ class MenuItem(PtkMenuItem):
         elif self._shortcut:
             shortcut_text = self.shortcut
             if shortcut_text:
-                suffix += [("class:menu", "  ")]
-                suffix += to_formatted_text(shortcut_text, style="class:menu,shortcut")
+                suffix += [("", "  ")]
+                suffix += to_formatted_text(shortcut_text, style="class:shortcut")
         return suffix
 
     @property
@@ -309,11 +307,12 @@ class MenuContainer(PtkMenuContainer):
 
     def __init__(
         self,
-        body: AnyContainer,
-        menu_items: list[MenuItem],
+        body: AnyContainer | None = None,
+        menu_items: list[MenuItem] | None = None,
         floats: list[Float] | None = None,
         key_bindings: KeyBindingsBase | None = None,
         grid: type[GridStyle] = ThinGrid,
+        padding: int = 1,
     ) -> None:
         """Initialize the menu container.
 
@@ -324,71 +323,10 @@ class MenuContainer(PtkMenuContainer):
             key_bindings: Additional key bindings
             grid: Grid style class for menu borders
         """
-        from prompt_toolkit.layout.containers import FloatContainer
-
         self.body = body
-        self.menu_items = menu_items
-
-        # Create the enhanced menu bar
-        self._menu_bar = MenuBar(
-            menu_items=menu_items,
-            grid=grid,
-        )
-
-        # Build the main container with menu bar and body
-        self.container = FloatContainer(
-            content=HSplit(
-                [
-                    self._menu_bar,
-                    body,
-                ]
-            ),
-            floats=[*self._menu_bar.floats, *floats],
-            key_bindings=key_bindings,
-        )
-
-    @property
-    def selected_menu(self) -> list[int]:
-        """Get the selected menu indices."""
-        return self._menu_bar.selected_menu
-
-    @selected_menu.setter
-    def selected_menu(self, value: list[int]) -> None:
-        """Set the selected menu indices."""
-        self._menu_bar.selected_menu = value
-
-    def _get_menu(self, level: int) -> MenuItem:
-        """Get the menu at the specified nesting level."""
-        return self._menu_bar._get_menu(level)
-
-    @property
-    def floats(self) -> list[Float] | None:
-        """Return the float containers."""
-        return self.container.floats
-
-    def __pt_container__(self) -> Container:
-        """Return the menu container."""
-        return self.container
-
-
-class MenuBar:
-    """A container to hold the menubar and main application body."""
-
-    def __init__(
-        self,
-        menu_items: Sequence[MenuItem],
-        grid: GridStyle = OuterHalfGrid,
-    ) -> None:
-        """Initiate the menu bar.
-
-        Args:
-            app: The application the menubar is attached to
-            menu_items: The menu items to show in the menubar
-            grid: The grid style to use for the menu's borders
-
-        """
-        self.menu_items = menu_items
+        self.menu_items = menu_items or []
         self.grid = grid
+        self.padding = padding
         self.selected_menu: list[int] = []
         self.last_focused: UIControl | None = None
 
@@ -565,9 +503,7 @@ class MenuBar:
             focusable=True,
             show_cursor=False,
         )
-        self.window: Window = Window(
-            height=1, content=self.control, style="class:menu,bar"
-        )
+        self.window: Window = Window(height=1, content=self.control, style="class:menu")
 
         submenu = self._submenu(0)
         submenu2 = self._submenu(1)
@@ -581,42 +517,45 @@ class MenuBar:
             | has_focus(submenu3)
         )
 
-        self.floats = [
-            Float(
-                attach_to_window=self.window,
-                xcursor=True,
-                ycursor=True,
-                content=ConditionalContainer(
-                    content=Shadow(body=submenu),
-                    filter=Condition(lambda: len(self.selected_menu) > 0),
+        self.container = FloatContainer(
+            content=HSplit([self.window, body]) if body else self.window,
+            floats=[
+                Float(
+                    attach_to_window=self.window,
+                    xcursor=True,
+                    ycursor=True,
+                    content=ConditionalContainer(
+                        content=Shadow(body=submenu),
+                        filter=Condition(lambda: len(self.selected_menu) > 0),
+                    ),
+                    z_index=100_000,
                 ),
-                z_index=100_000,
-            ),
-            Float(
-                attach_to_window=to_container(submenu).get_children()[1],
-                xcursor=True,
-                ycursor=True,
-                allow_cover_cursor=True,
-                content=ConditionalContainer(
-                    content=Shadow(body=submenu2),
-                    filter=Condition(lambda: len(self.selected_menu) > 1)
-                    & Condition(lambda: bool(self._get_menu(1).children)),
+                Float(
+                    attach_to_window=to_container(submenu).get_children()[1],
+                    xcursor=True,
+                    ycursor=True,
+                    allow_cover_cursor=True,
+                    content=ConditionalContainer(
+                        content=Shadow(body=submenu2),
+                        filter=Condition(lambda: len(self.selected_menu) > 1)
+                        & Condition(lambda: bool(self._get_menu(1).children)),
+                    ),
+                    z_index=100_001,
                 ),
-                z_index=100_001,
-            ),
-            Float(
-                attach_to_window=to_container(submenu2).get_children()[1],
-                xcursor=True,
-                ycursor=True,
-                allow_cover_cursor=True,
-                content=ConditionalContainer(
-                    content=Shadow(body=submenu3),
-                    filter=Condition(lambda: len(self.selected_menu) > 2)
-                    & Condition(lambda: bool(self._get_menu(2).children)),
+                Float(
+                    attach_to_window=to_container(submenu2).get_children()[1],
+                    xcursor=True,
+                    ycursor=True,
+                    allow_cover_cursor=True,
+                    content=ConditionalContainer(
+                        content=Shadow(body=submenu3),
+                        filter=Condition(lambda: len(self.selected_menu) > 2)
+                        & Condition(lambda: bool(self._get_menu(2).children)),
+                    ),
+                    z_index=100_002,
                 ),
-                z_index=100_002,
-            ),
-        ]
+            ],
+        )
 
     def refocus(self) -> None:
         """Focus the currently selected menu."""
@@ -692,7 +631,7 @@ class MenuBar:
 
             mh = partial(mouse_handler, i)
             selected = i == selected_index
-            style = "class:selection" if selected else ""
+            style = "class:menu-bar.selected-item" if selected else ""
             first_style = style
             if selected:
                 first_style += " [SetMenuPosition]"
@@ -746,7 +685,7 @@ class MenuBar:
                                 if not hover and item.handler:
                                     self.selected_menu = []
                                     self.refocus()
-                                    item.handler()
+                                    return item.handler()
                                 else:
                                     new_selection = [
                                         *self.selected_menu[: level + 1],
@@ -803,9 +742,9 @@ class MenuBar:
                         if item.separator:
                             # Show a connected line with no mouse handler
                             yield (
-                                "class:menu,border",
+                                "class:menu-border",
                                 grid.SPLIT_LEFT
-                                + (grid.SPLIT_MID * menu.width)
+                                + (grid.SPLIT_MID * (menu.width + self.padding * 2))
                                 + grid.SPLIT_RIGHT,
                             )
 
@@ -814,11 +753,11 @@ class MenuBar:
                             style = ""
                             # Set the style if disabled
                             if item.disabled:
-                                style += "class:menu,disabled"
+                                style += "class:disabled"
                             # Set the style and cursor if selected
                             if i == selected_item:
-                                style += "class:menu,selection"
-                            yield (f"{style} class:menu,border", grid.MID_LEFT)
+                                style += "class:menu-bar.selected-item"
+                            yield (f"{style} class:menu-border", grid.MID_LEFT)
                             if i == selected_item:
                                 yield ("[SetCursorPosition]", "")
                             # Construct the menu item contents
@@ -846,15 +785,18 @@ class MenuBar:
                                 - fragment_list_width(item.formatted_text)
                                 - fragment_list_width(item.suffix)
                                 - len(suffix_padding)
+                                - self.padding * 2
                             )
                             menu_formatted_text: StyleAndTextTuples = to_formatted_text(
                                 [
+                                    ("", " " * self.padding),
                                     *item.prefix,
                                     ("", prefix_padding),
                                     *item.formatted_text,
                                     ("", text_padding),
                                     ("", suffix_padding),
                                     *item.suffix,
+                                    ("", " " * self.padding),
                                 ],
                                 style=style,
                             )
@@ -869,7 +811,7 @@ class MenuBar:
                             if i == selected_item:
                                 yield ("[SetMenuPosition]", "")
                             # Show the right edge
-                            yield (f"{style} class:menu,border", grid.MID_RIGHT)
+                            yield (f"{style} class:menu-border", grid.MID_RIGHT)
 
                     visible_children = [x for x in menu.children if not x.hidden()]
                     for i, item in enumerate(visible_children):
@@ -888,7 +830,7 @@ class MenuBar:
                             Window(char=grid.TOP_MID, height=1),
                             Window(char=grid.TOP_RIGHT, width=1, height=1),
                         ],
-                        style="class:border",
+                        style="class:menu-border",
                     ),
                     Window(
                         FormattedTextControl(
@@ -905,7 +847,7 @@ class MenuBar:
                             Window(char=grid.BOTTOM_MID, height=1),
                             Window(char=grid.BOTTOM_RIGHT, width=1, height=1),
                         ],
-                        style="class:border",
+                        style="class:menu-border",
                     ),
                 ],
                 style="class:menu",
@@ -915,7 +857,7 @@ class MenuBar:
 
     def __pt_container__(self) -> Container:
         """Return the menu bar container's content."""
-        return self.window
+        return self.container
 
     def __pt_status__(self) -> StatusBarFields:
         """Return the description of the currently selected menu item."""

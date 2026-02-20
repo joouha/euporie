@@ -11,6 +11,7 @@ from weakref import WeakKeyDictionary
 from euporie.apptk.formatted_text.base import to_formatted_text
 from euporie.apptk.layout.dimension import Dimension
 
+from euporie.apptk.border import OuterHalfGrid
 from euporie.apptk.filters import Condition
 from euporie.apptk.formatted_text.utils import truncate
 from euporie.apptk.layout.containers import (
@@ -24,6 +25,7 @@ from euporie.apptk.layout.containers import (
     WindowAlign,
 )
 from euporie.apptk.layout.controls import FormattedTextControl
+from euporie.apptk.widgets.menus import MenuContainer, MenuItem
 from euporie.core.app.app import BaseApp
 from euporie.core.bars.command import CommandBar
 from euporie.core.bars.menu import ToolbarCompletionsMenu
@@ -45,7 +47,6 @@ from euporie.core.widgets.dialog import (
 from euporie.core.widgets.file_browser import FileBrowser
 from euporie.core.widgets.layout import TabBarControl, TabBarTab
 from euporie.core.widgets.logo import logo_micro
-from euporie.apptk.widgets.menus import MenuBar, MenuItem
 from euporie.core.widgets.minimap import MiniMap
 from euporie.core.widgets.pager import Pager
 from euporie.core.widgets.palette import CommandPalette
@@ -198,9 +199,9 @@ class NotebookApp(BaseApp):
                         ),
                         filter=Condition(
                             lambda: (
-                                len(self.tabs) > 1 or self.config.always_show_tab_bar
+                                (len(self.tabs) > 1 or self.config.always_show_tab_bar)
+                                and TabMode(self.config.tab_mode) == TabMode.STACK
                             )
-                            and TabMode(self.config.tab_mode) == TabMode.STACK
                         ),
                     ),
                     DynamicContainer(lambda: self.tabs[self._tab_idx]),
@@ -238,7 +239,7 @@ class NotebookApp(BaseApp):
             "msgbox": MsgBoxDialog,
         }
 
-        menu_bar = MenuBar(menu_items=self.load_menu_items())
+        menu_bar = MenuContainer(menu_items=self.load_menu_items(), grid=OuterHalfGrid)
         for i, menu in enumerate(menu_bar.floats):
             self.menus[f"menu-{i}"] = menu
         top_bar = ConditionalContainer(
