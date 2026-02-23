@@ -239,9 +239,9 @@ class NotebookApp(BaseApp):
             "msgbox": MsgBoxDialog,
         }
 
-        menu_bar = MenuContainer(menu_items=self.load_menu_items(), grid=OuterHalfGrid)
-        for i, menu in enumerate(menu_bar.floats):
-            self.menus[f"menu-{i}"] = menu
+        menu_bar = MenuContainer(
+            menu_items=self.load_menu_items(), grid=OuterHalfGrid, padding=0
+        )
         top_bar = ConditionalContainer(
             content=VSplit([logo_micro, menu_bar, title_bar]),
             filter=self.config.filters.show_top_bar,

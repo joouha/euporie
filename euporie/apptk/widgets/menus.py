@@ -578,6 +578,7 @@ class MenuContainer(PtkMenuContainer):
                         & Condition(lambda d=depth: bool(self._get_menu(d).children)),
                     ),
                     z_index=100_000 + depth,
+                    allow_overflow=True,
                 )
             )
 
