@@ -279,14 +279,19 @@ class CommandPalette(Dialog):
     # ################################### Commands ####################################
 
     @staticmethod
-    @add_cmd(is_global=True, keys=["c-@"])
+    @add_cmd(is_global=True)
     def _toggle_command_palette() -> None:
         """Show the command palette."""
         if command_palette := get_app().get_dialog("command-palette"):
             command_palette.toggle()
 
     @staticmethod
-    @add_cmd(icon="", style="class:teal", menu_title="Command palette")
+    @add_cmd(
+        icon="",
+        style="class:teal",
+        menu_title="Command palette",
+        keys=["c-space", "c-@"],
+    )
     def _show_command_palette() -> None:
         """Show the command palette."""
         if command_palette := get_app().get_dialog("command-palette"):
