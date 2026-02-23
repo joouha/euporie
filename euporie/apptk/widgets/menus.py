@@ -27,8 +27,13 @@ from euporie.apptk.filters.utils import to_filter
 from euporie.apptk.formatted_text.base import to_formatted_text
 from euporie.apptk.layout.utils import explode_text_fragments
 from euporie.apptk.utils import get_cwidth
-from prompt_toolkit.widgets.menus import MenuContainer as PtkMenuContainer
-from prompt_toolkit.widgets.menus import MenuItem as PtkMenuItem
+from prompt_toolkit.keys import Keys
+from prompt_toolkit.widgets.menus import (
+    MenuContainer as PtkMenuContainer,
+)
+from prompt_toolkit.widgets.menus import (
+    MenuItem as PtkMenuItem,
+)
 
 from euporie.apptk.border import ThinGrid
 from euporie.apptk.commands import get_cmd
@@ -96,8 +101,7 @@ class MenuItem(PtkMenuItem):
     - Prefix/suffix alignment control
     - Command integration via from_cmd() class method
     - Description field for status bar display
-
-    Maintains backwards compatibility with prompt_toolkit's MenuItem.
+    - Icon support
     """
 
     def __init__(
@@ -114,6 +118,7 @@ class MenuItem(PtkMenuItem):
         toggled: Filter | None = None,
         collapse_prefix: bool = False,
         collapse_suffix: bool = True,
+        icon: AnyFormattedText = "",
     ) -> None:
         """Initialize enhanced menu item.
 
@@ -123,16 +128,17 @@ class MenuItem(PtkMenuItem):
             children: Submenu items
             shortcut: Keyboard shortcut sequence (for backwards compatibility)
             disabled: Whether item is disabled (bool or Filter)
-            formatted_text: Formatted text to display (can be callable), overrides text
             description: Description for status bar
             separator: If True, render as separator line
             hidden: Filter to hide this item
             toggled: Filter for toggle state (shows checkmark when True)
             collapse_prefix: If True, don't pad prefixes to equal width
             collapse_suffix: If True, don't pad suffixes to equal width
+            icon: Icon to display before the menu item text
         """
         # Store the formatted text, falling back to plain text
         self._formatted_text = text
+        self._icon = icon
 
         self.description = description
 
@@ -148,6 +154,7 @@ class MenuItem(PtkMenuItem):
         self.collapse_prefix = collapse_prefix
         self.collapse_suffix = collapse_suffix
         self._prefix_width: int | None = None
+        self._suffix_width: int | None = None
 
         self.handler = handler
         self.children = children or []
@@ -222,14 +229,18 @@ class MenuItem(PtkMenuItem):
             hidden=cmd.hidden,
             toggled=cmd.toggled,
             description=cmd.description,
+            icon=cmd.icon,
         )
 
     @property
     def prefix(self) -> StyleAndTextTuples:
-        """Prefix text (e.g., checkmark for toggled items)."""
+        """Prefix text (icon and/or checkmark for toggled items)."""
         prefix: StyleAndTextTuples = []
         if self.toggled is not None:
             prefix.append(("class:prefix", "✓ " if self.toggled() else "  "))
+        elif self._icon:
+            prefix.extend(to_formatted_text(self._icon))
+            prefix.append(("", " "))
         return prefix
 
     @property
@@ -262,14 +273,16 @@ class MenuItem(PtkMenuItem):
     @property
     def suffix_width(self) -> int:
         """Maximum width of children's suffixes."""
-        return max(
-            [
-                fragment_list_width(c.suffix)
-                for c in self.children
-                if isinstance(c, MenuItem)
-            ]
-            + [0]
-        )
+        if self._suffix_width is None:
+            self._suffix_width = max(
+                [
+                    fragment_list_width(c.suffix)
+                    for c in self.children
+                    if isinstance(c, MenuItem)
+                ]
+                + [0]
+            )
+        return self._suffix_width or 0
 
     @property
     def width(self) -> int:
@@ -305,14 +318,17 @@ class MenuContainer(PtkMenuContainer):
     prompt_toolkit's MenuContainer interface.
     """
 
+    grid: type[GridStyle] = ThinGrid  # Class attribute default
+
     def __init__(
         self,
         body: AnyContainer | None = None,
         menu_items: list[MenuItem] | None = None,
         floats: list[Float] | None = None,
         key_bindings: KeyBindingsBase | None = None,
-        grid: type[GridStyle] = ThinGrid,
+        grid: type[GridStyle] | None = None,
         padding: int = 1,
+        max_depth: int = 4,
     ) -> None:
         """Initialize the menu container.
 
@@ -322,11 +338,14 @@ class MenuContainer(PtkMenuContainer):
             floats: Additional Float objects to display
             key_bindings: Additional key bindings
             grid: Grid style class for menu borders
+            padding: Padding around menu items
+            max_depth: Maximum depth of nested submenus
         """
         self.body = body
         self.menu_items = menu_items or []
-        self.grid = grid
+        self.grid = grid or self.__class__.grid
         self.padding = padding
+        self.max_depth = max_depth
         self.selected_menu: list[int] = []
         self.last_focused: UIControl | None = None
 
@@ -422,21 +441,7 @@ class MenuContainer(PtkMenuContainer):
         @kb.add("up", filter=in_sub_menu)
         def _up_in_submenu(event: KeyPressEvent) -> None:
             """Select previous (enabled) menu item or return to main menu."""
-            # Look for previous enabled items in this sub menu.
-            menu = self._get_menu(len(self.selected_menu) - 2)
-            index = self.selected_menu[-1]
-
-            previous_index = next(
-                (
-                    i
-                    for i, item in reversed(list(enumerate(menu.children)))
-                    if i < index and not item.disabled and not item.hidden()
-                ),
-                None,
-            )
-            if previous_index is not None:
-                self.selected_menu[-1] = previous_index
-            elif len(self.selected_menu) == 2:
+            if not self._select_previous_item() and len(self.selected_menu) == 2:
                 # Return to main menu.
                 self.selected_menu.pop()
             self.refocus()
@@ -444,21 +449,64 @@ class MenuContainer(PtkMenuContainer):
         @kb.add("down", filter=in_sub_menu)
         def _down_in_submenu(event: KeyPressEvent) -> None:
             """Select next (enabled) menu item."""
-            menu = self._get_menu(len(self.selected_menu) - 2)
-            index = self.selected_menu[-1]
+            if self._select_next_item():
+                self.refocus()
 
-            next_index = next(
+        @kb.add("home", filter=in_sub_menu)
+        def _home_in_submenu(event: KeyPressEvent) -> None:
+            """Select first enabled menu item."""
+            menu = self._get_menu(len(self.selected_menu) - 2)
+            first_index = next(
                 (
                     i
                     for i, item in enumerate(menu.children)
-                    if i > index and not item.disabled and not item.hidden()
+                    if not item.disabled and not item.hidden()
                 ),
                 None,
             )
-
-            if next_index is not None:
-                self.selected_menu[-1] = next_index
+            if first_index is not None:
+                self.selected_menu[-1] = first_index
                 self.refocus()
+
+        @kb.add("end", filter=in_sub_menu)
+        def _end_in_submenu(event: KeyPressEvent) -> None:
+            """Select last enabled menu item."""
+            menu = self._get_menu(len(self.selected_menu) - 2)
+            last_index = next(
+                (
+                    i
+                    for i, item in reversed(list(enumerate(menu.children)))
+                    if not item.disabled and not item.hidden()
+                ),
+                None,
+            )
+            if last_index is not None:
+                self.selected_menu[-1] = last_index
+                self.refocus()
+
+        @kb.add(Keys.Any, filter=in_sub_menu)
+        def _type_ahead(event: KeyPressEvent) -> None:
+            """Jump to menu item starting with typed character."""
+            char = event.data.lower()
+            if not char.isalnum():
+                return
+            menu = self._get_menu(len(self.selected_menu) - 2)
+            current = self.selected_menu[-1]
+
+            # Search from current position, wrapping around
+            indices = list(range(current + 1, len(menu.children))) + list(
+                range(current + 1)
+            )
+            for i in indices:
+                item = menu.children[i]
+                if (
+                    not item.disabled
+                    and not item.hidden()
+                    and item.text.lower().startswith(char)
+                ):
+                    self.selected_menu[-1] = i
+                    self.refocus()
+                    break
 
         @kb.add("enter")
         def _click(event: KeyPressEvent) -> None:
@@ -505,65 +553,56 @@ class MenuContainer(PtkMenuContainer):
         )
         self.window: Window = Window(height=1, content=self.control, style="class:menu")
 
-        submenu = self._submenu(0)
-        submenu2 = self._submenu(1)
-        submenu3 = self._submenu(2)
+        # Build submenus and floats dynamically based on max_depth
+        self.menu_containers: list[AnyContainer] = [self.window]
+        menu_floats: list[Float] = []
 
-        self.menu_containers = [self.window, submenu, submenu2, submenu3]
-        self.focused = (
-            has_focus(self.window)
-            | has_focus(submenu)
-            | has_focus(submenu2)
-            | has_focus(submenu3)
-        )
+        for depth in range(max_depth):
+            submenu = self._submenu(depth)
+            self.menu_containers.append(submenu)
+
+            if depth == 0:
+                attach_to = self.window
+            else:
+                attach_to = to_container(self.menu_containers[depth]).get_children()[1]
+
+            menu_floats.append(
+                Float(
+                    attach_to_window=attach_to,
+                    xcursor=True,
+                    ycursor=True,
+                    allow_cover_cursor=depth > 0,
+                    content=ConditionalContainer(
+                        content=Shadow(body=submenu),
+                        filter=Condition(lambda d=depth: len(self.selected_menu) > d)
+                        & Condition(lambda d=depth: bool(self._get_menu(d).children)),
+                    ),
+                    z_index=100_000 + depth,
+                )
+            )
+
+        # Build focused filter from all menu containers
+        self.focused = has_focus(self.window)
+        for container in self.menu_containers[1:]:
+            self.focused = self.focused | has_focus(container)
 
         self.container = FloatContainer(
             content=HSplit([self.window, body]) if body else self.window,
-            floats=[
-                Float(
-                    attach_to_window=self.window,
-                    xcursor=True,
-                    ycursor=True,
-                    content=ConditionalContainer(
-                        content=Shadow(body=submenu),
-                        filter=Condition(lambda: len(self.selected_menu) > 0),
-                    ),
-                    z_index=100_000,
-                ),
-                Float(
-                    attach_to_window=to_container(submenu).get_children()[1],
-                    xcursor=True,
-                    ycursor=True,
-                    allow_cover_cursor=True,
-                    content=ConditionalContainer(
-                        content=Shadow(body=submenu2),
-                        filter=Condition(lambda: len(self.selected_menu) > 1)
-                        & Condition(lambda: bool(self._get_menu(1).children)),
-                    ),
-                    z_index=100_001,
-                ),
-                Float(
-                    attach_to_window=to_container(submenu2).get_children()[1],
-                    xcursor=True,
-                    ycursor=True,
-                    allow_cover_cursor=True,
-                    content=ConditionalContainer(
-                        content=Shadow(body=submenu3),
-                        filter=Condition(lambda: len(self.selected_menu) > 2)
-                        & Condition(lambda: bool(self._get_menu(2).children)),
-                    ),
-                    z_index=100_002,
-                ),
-            ],
+            floats=menu_floats + (floats or []),
         )
 
     def refocus(self) -> None:
-        """Focus the currently selected menu."""
+        """Focus the appropriate container based on menu selection state.
+
+        Focuses the submenu at the current selection depth, or restores
+        focus to the previously focused control if the menu is closed.
+        """
         layout = get_app().layout
         if self.last_focused is None:
             self.last_focused = layout.current_control
         if self.selected_menu:
-            layout.focus(self.menu_containers[len(self.selected_menu) - 1])
+            depth = min(len(self.selected_menu) - 1, len(self.menu_containers) - 1)
+            layout.focus(self.menu_containers[depth])
         elif self.last_focused:
             try:
                 layout.focus(self.last_focused)
@@ -571,7 +610,61 @@ class MenuContainer(PtkMenuContainer):
                 layout.focus_previous()
             self.last_focused = None
 
+    def _select_previous_item(self) -> bool:
+        """Select previous enabled, visible menu item.
+
+        Returns:
+            True if selection changed, False otherwise.
+        """
+        menu = self._get_menu(len(self.selected_menu) - 2)
+        index = self.selected_menu[-1]
+
+        previous_index = next(
+            (
+                i
+                for i, item in reversed(list(enumerate(menu.children)))
+                if i < index and not item.disabled and not item.hidden()
+            ),
+            None,
+        )
+        if previous_index is not None:
+            self.selected_menu[-1] = previous_index
+            return True
+        return False
+
+    def _select_next_item(self) -> bool:
+        """Select next enabled, visible menu item.
+
+        Returns:
+            True if selection changed, False otherwise.
+        """
+        menu = self._get_menu(len(self.selected_menu) - 2)
+        index = self.selected_menu[-1]
+
+        next_index = next(
+            (
+                i
+                for i, item in enumerate(menu.children)
+                if i > index and not item.disabled and not item.hidden()
+            ),
+            None,
+        )
+        if next_index is not None:
+            self.selected_menu[-1] = next_index
+            return True
+        return False
+
     def _get_menu(self, level: int) -> MenuItem:
+        """Get the menu item at the specified nesting level.
+
+        Args:
+            level: The nesting level (0 = top-level menu item)
+
+        Returns:
+            The MenuItem at the specified level, or a debug MenuItem if not found.
+        """
+        if not self.menu_items:
+            return MenuItem("empty")
         index = self.selected_menu[0] if self.selected_menu else 0
         menu = self.menu_items[index]
         for i, index in enumerate(self.selected_menu[1:]):
@@ -685,7 +778,8 @@ class MenuContainer(PtkMenuContainer):
                                 if not hover and item.handler:
                                     self.selected_menu = []
                                     self.refocus()
-                                    return item.handler()
+                                    item.handler()
+                                    return None
                                 else:
                                     new_selection = [
                                         *self.selected_menu[: level + 1],
@@ -700,41 +794,11 @@ class MenuContainer(PtkMenuContainer):
                                         )
                                         return None
                             elif mouse_event.event_type == MouseEventType.SCROLL_UP:
-                                menu = self._get_menu(len(self.selected_menu) - 2)
-                                index = self.selected_menu[-1]
-
-                                previous_index = next(
-                                    (
-                                        i
-                                        for i, item in reversed(
-                                            list(enumerate(menu.children))
-                                        )
-                                        if i < index
-                                        and not item.disabled
-                                        and not item.hidden()
-                                    ),
-                                    None,
-                                )
-                                if previous_index is not None:
-                                    self.selected_menu[-1] = previous_index
+                                if self._select_previous_item():
                                     return None
 
                             elif mouse_event.event_type == MouseEventType.SCROLL_DOWN:
-                                menu = self._get_menu(len(self.selected_menu) - 2)
-                                index = self.selected_menu[-1]
-
-                                next_index = next(
-                                    (
-                                        i
-                                        for i, item in enumerate(menu.children)
-                                        if i > index
-                                        and not item.disabled
-                                        and not item.hidden()
-                                    ),
-                                    None,
-                                )
-                                if next_index is not None:
-                                    self.selected_menu[-1] = next_index
+                                if self._select_next_item():
                                     return None
 
                             return NotImplemented
