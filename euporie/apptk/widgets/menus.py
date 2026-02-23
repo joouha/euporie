@@ -287,20 +287,26 @@ class MenuItem(PtkMenuItem):
     @property
     def width(self) -> int:
         """Maximum width needed for children."""
-        widths = [0]
+        # Start with base width (max text width of children)
+        base_width = super().width
+        if not self.children:
+            return base_width
+
+        # Calculate additional width from prefix/suffix
+        max_extra = 0
         for child in self.children:
-            width = 0
+            extra = 0
             if self.collapse_prefix:
-                width += fragment_list_width(child.prefix)
+                extra += fragment_list_width(child.prefix)
             else:
-                width += self.prefix_width
-            width += get_cwidth(child.text)
+                extra += self.prefix_width
             if self.collapse_suffix:
-                width += fragment_list_width(child.suffix)
+                extra += fragment_list_width(child.suffix)
             else:
-                width += self.suffix_width
-            widths.append(width)
-        return max(widths)
+                extra += self.suffix_width
+            max_extra = max(max_extra, extra)
+
+        return base_width + max_extra
 
     @property
     def has_toggles(self) -> bool:
