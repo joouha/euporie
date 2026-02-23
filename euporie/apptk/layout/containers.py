@@ -47,14 +47,14 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
     from typing import Any, Protocol
 
-    from euporie.apptk.key_binding.key_bindings import (
-        KeyBindingsBase,
-        NotImplementedOrNone,
-    )
     from euporie.apptk.layout.mouse_handlers import MouseHandlers
 
     from euporie.apptk.data_structures import Size
     from euporie.apptk.formatted_text import AnyFormattedText, StyleAndTextTuples
+    from euporie.apptk.key_binding.key_bindings import (
+        KeyBindingsBase,
+        NotImplementedOrNone,
+    )
     from euporie.apptk.layout.containers import (
         AnyContainer,
         AnyDimension,
@@ -63,6 +63,7 @@ if TYPE_CHECKING:
     from euporie.apptk.layout.graphics import GraphicControl
     from euporie.apptk.layout.margins import Margin
     from euporie.apptk.layout.screen import Screen
+    from euporie.apptk.output.base import Size as OutputSize
 
     class ScrollableContainer(Protocol):
         """Protocol for a scrollable container."""
@@ -1481,6 +1482,16 @@ class FloatContainer(ptk_containers.FloatContainer):
         z_index: int | None,
     ) -> None:
         """Draw a single Float."""
+        # Use full screen dimensions if overflow is allowed
+        if fl.allow_overflow:
+            size: OutputSize = get_app().output.get_size()
+            write_position = WritePosition(
+                xpos=0,
+                ypos=0,
+                width=size.columns,
+                height=size.rows,
+            )
+
         # When a menu_position was given, use this instead of the cursor
         # position. (These cursor positions are absolute, translate again
         # relative to the write_position.)
@@ -1831,6 +1842,9 @@ class Float(ptk_containers.Float):
             handler=float_.drag_handler,
         )
         ```
+
+    The ``allow_overflow`` parameter allows the float to render outside its
+    parent container's bounds, using the full screen dimensions instead.
     """
 
     def __init__(
@@ -1849,8 +1863,9 @@ class Float(ptk_containers.Float):
         allow_cover_cursor: bool = False,
         z_index: int = 1,
         transparent: bool = False,
+        allow_overflow: bool = False,
     ) -> None:
-        """Initialize the Float with drag state."""
+        """Initialize the Float with drag state and overflow support."""
         super().__init__(
             content=content,
             top=top,
@@ -1869,6 +1884,7 @@ class Float(ptk_containers.Float):
         )
         self._drag_start: Point | None = None
         self.write_position: WritePosition | None = None
+        self.allow_overflow = allow_overflow
 
     def drag_handler(self, mouse_event: MouseEvent) -> NotImplementedOrNone:
         """Handle mouse events to drag this Float.
