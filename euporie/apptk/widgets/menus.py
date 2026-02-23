@@ -661,27 +661,6 @@ class MenuContainer(PtkMenuContainer):
             return True
         return False
 
-    def _get_menu(self, level: int) -> MenuItem:
-        """Get the menu item at the specified nesting level.
-
-        Args:
-            level: The nesting level (0 = top-level menu item)
-
-        Returns:
-            The MenuItem at the specified level, or a debug MenuItem if not found.
-        """
-        if not self.menu_items:
-            return MenuItem("empty")
-        index = self.selected_menu[0] if self.selected_menu else 0
-        menu = self.menu_items[index]
-        for i, index in enumerate(self.selected_menu[1:]):
-            if i < level:
-                try:
-                    menu = menu.children[index]
-                except IndexError:
-                    return MenuItem("debug")
-        return menu
-
     def _get_menu_fragments(self) -> StyleAndTextTuples:
         focused = self.focused()
 
