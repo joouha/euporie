@@ -9,12 +9,11 @@ import sys
 from functools import partial
 from typing import TYPE_CHECKING, cast
 
-from euporie.apptk.application.current import get_app
-from euporie.apptk.output.defaults import create_output
-
-from euporie.apptk.io import PseudoTTY
-from euporie.apptk.layout.containers import DynamicContainer, FloatContainer, Window
-from euporie.apptk.output.vt100 import Vt100_Output
+from apptk.application.current import get_app
+from apptk.io import PseudoTTY
+from apptk.layout.containers import DynamicContainer, FloatContainer, Window
+from apptk.output.defaults import create_output
+from apptk.output.vt100 import Vt100_Output
 from euporie.core.app.app import BaseApp
 from euporie.preview.tabs.notebook import PreviewNotebook
 
@@ -22,9 +21,9 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any, TextIO
 
-    from euporie.apptk.application.application import _AppResult
-    from euporie.apptk.layout.containers import Float
-    from euporie.apptk.output import Output
+    from apptk.application.application import _AppResult
+    from apptk.layout.containers import Float
+    from apptk.output import Output
     from euporie.core.tabs.base import Tab
 
 log = logging.getLogger(__name__)

@@ -12,20 +12,18 @@ from subprocess import PIPE, STDOUT  # S404 - Security implications considered
 from typing import TYPE_CHECKING, cast
 from uuid import uuid4
 
-from upath import UPath
-
 from euporie.core.kernel.base import BaseKernel, KernelInfo, MsgCallbacks
 from euporie.core.nbformat import new_output, output_from_msg
+from upath import UPath
 
 if TYPE_CHECKING:
     from collections.abc import Callable
     from pathlib import Path
     from typing import Any, Unpack
 
+    from euporie.core.tabs.kernel import KernelTab
     from jupyter_client import KernelClient
     from jupyter_client.kernelspec import KernelSpecManager
-
-    from euporie.core.tabs.kernel import KernelTab
 
 
 log = logging.getLogger(__name__)

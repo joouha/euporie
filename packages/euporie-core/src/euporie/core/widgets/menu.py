@@ -5,42 +5,40 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from euporie.apptk.application.current import get_app
-from euporie.apptk.formatted_text.base import to_formatted_text
-from euporie.apptk.layout.dimension import Dimension
-from euporie.apptk.layout.menus import (
-    CompletionsMenuControl as PtkCompletionsMenuControl,
-)
-
-from euporie.apptk.border import OuterHalfGrid
-from euporie.apptk.data_structures import Point
-from euporie.apptk.filters import (
+from apptk.application.current import get_app
+from apptk.border import OuterHalfGrid
+from apptk.data_structures import Point
+from apptk.filters import (
     has_completions,
     is_done,
     to_filter,
 )
-from euporie.apptk.formatted_text.utils import (
+from apptk.formatted_text.base import to_formatted_text
+from apptk.formatted_text.utils import (
     fragment_list_width,
 )
-from euporie.apptk.layout.containers import (
+from apptk.layout.containers import (
     ConditionalContainer,
     HSplit,
     ScrollOffsets,
     VSplit,
     Window,
 )
-from euporie.apptk.layout.controls import UIContent
-from euporie.apptk.mouse_events import MouseEvent, MouseEventType
+from apptk.layout.controls import UIContent
+from apptk.layout.dimension import Dimension
+from apptk.layout.menus import (
+    CompletionsMenuControl as PtkCompletionsMenuControl,
+)
+from apptk.mouse_events import MouseEvent, MouseEventType
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from euporie.apptk.formatted_text.base import (
+    from apptk.filters import FilterOrBool
+    from apptk.formatted_text.base import (
         StyleAndTextTuples,
     )
-
-    from euporie.apptk.filters import FilterOrBool
-    from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
+    from apptk.key_binding.key_bindings import NotImplementedOrNone
 
 
 log = logging.getLogger(__name__)

@@ -6,26 +6,25 @@ import asyncio
 import logging
 from typing import TYPE_CHECKING
 
-from euporie.apptk.application.current import get_app
-from euporie.apptk.layout.dimension import Dimension
-from upath import UPath
-
-from euporie.apptk.convert.mime import get_mime
-from euporie.apptk.data_structures import DiBool
-from euporie.apptk.filters import Condition
-from euporie.apptk.layout.containers import HSplit, MarginContainer, VSplit, Window
-from euporie.apptk.layout.decor import FocusedStyle
-from euporie.apptk.layout.margins import ScrollbarMargin
+from apptk.application.current import get_app
+from apptk.convert.mime import get_mime
+from apptk.data_structures import DiBool
+from apptk.filters import Condition
+from apptk.layout.containers import HSplit, MarginContainer, VSplit, Window
+from apptk.layout.decor import FocusedStyle
+from apptk.layout.dimension import Dimension
+from apptk.layout.margins import ScrollbarMargin
 from euporie.core.tabs.base import Tab
 from euporie.core.widgets.forms import Button, Text
 from euporie.web.widgets.webview import WebViewControl
+from upath import UPath
 
 if TYPE_CHECKING:
     from collections.abc import Callable
     from pathlib import Path
     from typing import Any, ClassVar
 
-    from euporie.apptk.layout.containers import AnyContainer
+    from apptk.layout.containers import AnyContainer
     from euporie.core.app.app import BaseApp
     from euporie.core.bars.status import StatusBarFields
 
@@ -123,7 +122,7 @@ class WebTab(Tab):
 
         def _select_url() -> None:
             """Select all in url bar when it gains focus."""
-            from euporie.apptk.selection import SelectionState
+            from apptk.selection import SelectionState
 
             buffer = self.url_bar.buffer
             buffer.selection_state = SelectionState(0)
@@ -139,8 +138,9 @@ class WebTab(Tab):
         button_go = Button(
             "➜",
             show_borders=DiBool(top=True, right=True, bottom=True, left=False),
-            on_click=lambda x: (self.load_url(self.url_bar.text) and None)
-            or None,  # Magical typing magic
+            on_click=lambda x: (
+                (self.load_url(self.url_bar.text) and None) or None
+            ),  # Magical typing magic
         )
 
         return HSplit(

@@ -7,19 +7,17 @@ from typing import TYPE_CHECKING, cast
 from unittest.mock import Mock
 
 import pytest
-from euporie.apptk.application.current import set_app
-from euporie.apptk.formatted_text.base import to_formatted_text
-from euporie.apptk.key_binding.key_bindings import Binding
-
-from euporie.apptk.application.application import Application
-from euporie.apptk.commands import Command, add_cmd, COMMANDS, get_cmd
-from euporie.apptk.key_binding.key_processor import KeyPressEvent, KeyProcessor
-from euporie.apptk.keys import Keys
+from apptk.application.application import Application
+from apptk.application.current import set_app
+from apptk.commands import COMMANDS, Command, add_cmd, get_cmd
+from apptk.formatted_text.base import to_formatted_text
+from apptk.key_binding.key_bindings import Binding
+from apptk.key_binding.key_processor import KeyPressEvent, KeyProcessor
+from apptk.keys import Keys
 
 if TYPE_CHECKING:
-    from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
-
-    from euporie.apptk.commands import CommandHandler
+    from apptk.commands import CommandHandler
+    from apptk.key_binding.key_bindings import NotImplementedOrNone
 
 
 @pytest.fixture

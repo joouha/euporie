@@ -14,13 +14,12 @@ except ModuleNotFoundError as err:
         'Install euporie hub with: "pip install euporie[hub]"'
     ) from err
 
-from euporie.apptk.contrib.ssh import PromptToolkitSSHSession
-from upath import UPath
-
+from apptk.contrib.ssh import PromptToolkitSSHSession
 from euporie.core.__main__ import available_apps
 from euporie.core.app import APP_ALIASES
 from euporie.core.app.base import ConfigurableApp
 from euporie.core.config import add_setting
+from upath import UPath
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable

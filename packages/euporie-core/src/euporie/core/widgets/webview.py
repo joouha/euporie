@@ -5,24 +5,23 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, cast
 
-from euporie.apptk.application.current import get_app
-from euporie.apptk.utils import Event
+from apptk.application.current import get_app
+from apptk.cache import FastDictCache
+from apptk.commands import add_cmd
+from apptk.convert.datum import Datum
+from apptk.convert.mime import get_format
+from apptk.data_structures import Point
+from apptk.eventloop.utils import get_or_create_loop, run_coro_async
+from apptk.filters import Condition
+from apptk.formatted_text.html import HTML, Node
+from apptk.formatted_text.utils import fragment_list_width, paste, split_lines
+from apptk.key_binding.key_bindings import KeyBindings
+from apptk.layout.containers import Window
+from apptk.layout.controls import UIContent, UIControl
+from apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
+from apptk.path import parse_path
+from apptk.utils import Event
 from upath import UPath
-
-from euporie.apptk.cache import FastDictCache
-from euporie.apptk.commands import add_cmd
-from euporie.apptk.convert.datum import Datum
-from euporie.apptk.convert.mime import get_format
-from euporie.apptk.data_structures import Point
-from euporie.apptk.eventloop.utils import get_or_create_loop, run_coro_async
-from euporie.apptk.filters import Condition
-from euporie.apptk.formatted_text.html import HTML, Node
-from euporie.apptk.formatted_text.utils import fragment_list_width, paste, split_lines
-from euporie.apptk.key_binding.key_bindings import KeyBindings
-from euporie.apptk.layout.containers import Window
-from euporie.apptk.layout.controls import UIContent, UIControl
-from euporie.apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
-from euporie.apptk.path import parse_path
 
 if TYPE_CHECKING:
     import asyncio
@@ -30,14 +29,13 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any
 
-    from euporie.apptk.formatted_text.base import AnyFormattedText, StyleAndTextTuples
-    from euporie.apptk.layout.mouse_handlers import MouseHandler
-
-    from euporie.apptk.key_binding.key_bindings import (
+    from apptk.formatted_text.base import AnyFormattedText, StyleAndTextTuples
+    from apptk.key_binding.key_bindings import (
         KeyBindingsBase,
         NotImplementedOrNone,
     )
-    from euporie.apptk.layout.controls import GetLinePrefixCallable
+    from apptk.layout.controls import GetLinePrefixCallable
+    from apptk.layout.mouse_handlers import MouseHandler
 
 
 log = logging.getLogger(__name__)
@@ -147,7 +145,7 @@ class WebViewControl(UIControl):
 
         css = {}
         if format_ == "markdown":
-            from euporie.apptk.css import MARKDOWN_CSS
+            from apptk.css import MARKDOWN_CSS
 
             css = {**MARKDOWN_CSS, **css}
 
@@ -559,11 +557,10 @@ class WebViewControl(UIControl):
 if __name__ == "__main__":
     import sys
 
-    from euporie.apptk.layout.layout import Layout
-    from euporie.apptk.output.color_depth import ColorDepth
-
-    from euporie.apptk.application.application import Application
-    from euporie.apptk.key_binding.key_bindings import KeyBindings
+    from apptk.application.application import Application
+    from apptk.key_binding.key_bindings import KeyBindings
+    from apptk.layout.layout import Layout
+    from apptk.output.color_depth import ColorDepth
     from euporie.web.widgets.webview import WebViewControl
 
     kb = KeyBindings()

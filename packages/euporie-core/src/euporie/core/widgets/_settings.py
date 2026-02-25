@@ -1,8 +1,7 @@
 """Defines widget settings."""
 
-from euporie.apptk.application.current import get_app
-
-from euporie.apptk.filters.app import buffer_has_focus, is_read_only
+from apptk.application.current import get_app
+from apptk.filters.app import buffer_has_focus, is_read_only
 from euporie.core.config import add_setting
 from euporie.core.filters import tab_type_has_focus
 

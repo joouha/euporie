@@ -2,18 +2,16 @@
 
 from __future__ import annotations
 
-import json, argparse
+import json
 from pkgutil import resolve_name
-from typing import TYPE_CHECKING
 
-from euporie.apptk.enums import EditingMode
-from euporie.apptk.filters.environment import in_mplex
-from euporie.apptk.output.color_depth import ColorDepth
-from euporie.core.config import add_setting
+from apptk.enums import EditingMode
+from apptk.filters.environment import in_mplex
+from apptk.output.color_depth import ColorDepth
 from euporie.core.app.current import available_apps
+from euporie.core.config import add_setting
 from pygments.styles import STYLE_MAP as pygments_styles
 from upath import UPath
-
 
 # euporie.core.app.launch
 #
@@ -334,11 +332,11 @@ add_setting(
     flags=["--graphics"],
     choices={
         "auto": None,
-        "sixel": "euporie.apptk.layout.graphics:SixelGraphicControl",
-        "kitty": "euporie.apptk.layout.graphics:KittyGraphicControl",
-        "kitty-unicode": "euporie.apptk.layout.graphics:KittyUnicodeGraphicControl",
-        "iterm": "euporie.apptk.layout.graphics:ItermGraphicControl",
-        "none": "euporie.apptk.layout.graphics:DisabledGraphicControl",
+        "sixel": "apptk.layout.graphics:SixelGraphicControl",
+        "kitty": "apptk.layout.graphics:KittyGraphicControl",
+        "kitty-unicode": "apptk.layout.graphics:KittyUnicodeGraphicControl",
+        "iterm": "apptk.layout.graphics:ItermGraphicControl",
+        "none": "apptk.layout.graphics:DisabledGraphicControl",
     },
     type_=str,
     validate=resolve_name,

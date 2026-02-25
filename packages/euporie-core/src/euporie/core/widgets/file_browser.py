@@ -6,43 +6,41 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from euporie.apptk.application.current import get_app
-from euporie.apptk.filters.utils import to_filter
-from euporie.apptk.utils import Event
-
-from euporie.apptk.border import InsetGrid
-from euporie.apptk.cache import FastDictCache
-from euporie.apptk.completion import PathCompleter
-from euporie.apptk.data_structures import DiBool, Point
-from euporie.apptk.filters import FilterOrBool
-from euporie.apptk.formatted_text.utils import pad, truncate
-from euporie.apptk.key_binding.key_bindings import KeyBindings, KeyBindingsBase
-from euporie.apptk.layout.containers import (
+from apptk.application.current import get_app
+from apptk.border import InsetGrid
+from apptk.cache import FastDictCache
+from apptk.completion import PathCompleter
+from apptk.data_structures import DiBool, Point
+from apptk.filters import FilterOrBool
+from apptk.filters.utils import to_filter
+from apptk.formatted_text.utils import pad, truncate
+from apptk.key_binding.key_bindings import KeyBindings, KeyBindingsBase
+from apptk.layout.containers import (
     ConditionalContainer,
     HSplit,
     MarginContainer,
     VSplit,
     Window,
 )
-from euporie.apptk.layout.controls import UIContent, UIControl
-from euporie.apptk.layout.decor import FocusedStyle
-from euporie.apptk.layout.margins import ScrollbarMargin
-from euporie.apptk.layout.screen import WritePosition
-from euporie.apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
-from euporie.apptk.widgets.base import Frame
+from apptk.layout.controls import UIContent, UIControl
+from apptk.layout.decor import FocusedStyle
+from apptk.layout.margins import ScrollbarMargin
+from apptk.layout.screen import WritePosition
+from apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
+from apptk.utils import Event
+from apptk.widgets.base import Frame
 from euporie.core.widgets.forms import Button, Text
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
-    from euporie.apptk.buffer import Buffer
-    from euporie.apptk.filters.base import FilterOrBool
-    from euporie.apptk.layout.dimension import AnyDimension
-
-    from euporie.apptk.formatted_text import StyleAndTextTuples
-    from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
-    from euporie.apptk.key_binding.key_processor import KeyPressEvent
-    from euporie.apptk.layout.containers import AnyContainer
+    from apptk.buffer import Buffer
+    from apptk.filters.base import FilterOrBool
+    from apptk.formatted_text import StyleAndTextTuples
+    from apptk.key_binding.key_bindings import NotImplementedOrNone
+    from apptk.key_binding.key_processor import KeyPressEvent
+    from apptk.layout.containers import AnyContainer
+    from apptk.layout.dimension import AnyDimension
     from euporie.core.bars.status import StatusBarFields
 
 log = logging.getLogger(__name__)

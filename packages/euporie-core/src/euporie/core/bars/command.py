@@ -7,32 +7,30 @@ import re
 from functools import lru_cache
 from typing import TYPE_CHECKING
 
-from euporie.apptk.application.current import get_app
-from euporie.apptk.buffer import Buffer
-from euporie.apptk.completion.base import Completer, Completion
-from euporie.apptk.validation import Validator
-
-from euporie.apptk.commands import COMMANDS, add_cmd, get_cmd
-from euporie.apptk.filters import buffer_has_focus, has_focus, vi_navigation_mode
-from euporie.apptk.key_binding.key_bindings import KeyBindings
-from euporie.apptk.key_binding.vi_state import InputMode
-from euporie.apptk.layout.containers import ConditionalContainer, Container, Window
-from euporie.apptk.layout.controls import (
+from apptk.application.current import get_app
+from apptk.buffer import Buffer
+from apptk.commands import COMMANDS, add_cmd, get_cmd
+from apptk.completion.base import Completer, Completion
+from apptk.filters import buffer_has_focus, has_focus, vi_navigation_mode
+from apptk.key_binding.key_bindings import KeyBindings
+from apptk.key_binding.vi_state import InputMode
+from apptk.layout.containers import ConditionalContainer, Container, Window
+from apptk.layout.controls import (
     BufferControl,
 )
-from euporie.apptk.layout.processors import BeforeInput, HighlightSelectionProcessor
-from euporie.apptk.lexers import SimpleLexer
+from apptk.layout.processors import BeforeInput, HighlightSelectionProcessor
+from apptk.lexers import SimpleLexer
+from apptk.validation import Validator
 from euporie.core.bars import COMMAND_BAR_BUFFER
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
     from typing import Unpack
 
-    from euporie.apptk.completion.base import CompleteEvent
-    from euporie.apptk.document import Document
-
-    from euporie.apptk.commands import Command
-    from euporie.apptk.key_binding.key_processor import KeyPressEvent
+    from apptk.commands import Command
+    from apptk.completion.base import CompleteEvent
+    from apptk.document import Document
+    from apptk.key_binding.key_processor import KeyPressEvent
 
 log = logging.getLogger(__name__)
 

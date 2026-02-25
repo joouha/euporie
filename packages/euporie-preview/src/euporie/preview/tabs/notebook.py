@@ -5,15 +5,14 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from euporie.apptk.layout.dimension import Dimension
-
-from euporie.apptk.layout.containers import (
+from apptk.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
     VSplit,
     Window,
 )
-from euporie.apptk.layout.print import PrintingContainer
+from apptk.layout.dimension import Dimension
+from apptk.layout.print import PrintingContainer
 from euporie.core.tabs.notebook import BaseNotebook
 from euporie.core.widgets.cell import Cell
 from euporie.core.widgets.layout import Box
@@ -23,10 +22,9 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any
 
-    from euporie.apptk.formatted_text.base import StyleAndTextTuples
-
-    from euporie.apptk.application.application import Application
-    from euporie.apptk.layout.containers import AnyContainer
+    from apptk.application.application import Application
+    from apptk.formatted_text.base import StyleAndTextTuples
+    from apptk.layout.containers import AnyContainer
     from euporie.core.app.app import BaseApp
     from euporie.core.comm.base import Comm
     from euporie.core.kernel.base import BaseKernel
@@ -95,9 +93,9 @@ class PreviewNotebook(BaseNotebook):
 
     def print_title(self) -> None:
         """Print a notebook's filename."""
-        from euporie.apptk.border import DoubleLine
-        from euporie.apptk.enums import HorizontalAlign
-        from euporie.apptk.formatted_text.utils import add_border, align, wrap
+        from apptk.border import DoubleLine
+        from apptk.enums import HorizontalAlign
+        from apptk.formatted_text.utils import add_border, align, wrap
 
         width = self.app.output.get_size().columns
         ft: StyleAndTextTuples = [("bold", str(self.path))]

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from euporie.apptk.convert.utils import call_subproc
+from apptk.convert.utils import call_subproc
 
 
 async def test_call_subproc() -> None:

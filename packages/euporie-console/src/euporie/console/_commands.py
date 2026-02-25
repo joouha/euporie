@@ -4,24 +4,21 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from euporie.apptk.commands import add_cmd
-from euporie.apptk.filters.app import (
+from apptk.commands import add_cmd
+from apptk.filters.app import (
     buffer_has_focus,
     has_selection,
 )
-from euporie.apptk.filters.buffer import buffer_is_code, buffer_is_empty
-from euporie.core.filters import kernel_tab_has_focus
-from euporie.core.tabs.kernel import KernelTab
+from apptk.filters.buffer import buffer_is_code, buffer_is_empty
 
 if TYPE_CHECKING:
-    from euporie.apptk.key_binding.key_processor import KeyPressEvent
+    from apptk.key_binding.key_processor import KeyPressEvent
 
 
 @add_cmd()
 async def _convert_to_notebook() -> None:
     """Convert the current console session to a notebook."""
-    from euporie.apptk.application.run_in_terminal import in_terminal
-
+    from apptk.application.run_in_terminal import in_terminal
     from euporie.console.app import get_app
     from euporie.console.tabs.console import Console
     from euporie.notebook.app import NotebookApp

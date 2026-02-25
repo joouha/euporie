@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from upath import UPath
-
 from euporie.core.config import add_setting
+from upath import UPath
 
 if TYPE_CHECKING:
     from typing import TypeVar

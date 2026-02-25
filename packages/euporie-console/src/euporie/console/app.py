@@ -5,16 +5,14 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, cast
 
-from euporie.apptk.application.current import get_app as ptk_get_app
-from euporie.apptk.filters.app import (
+from apptk.application.current import get_app as ptk_get_app
+from apptk.filters.app import (
     has_completions,
     is_done,
     is_searching,
     renderer_height_is_known,
 )
-from euporie.apptk.layout.dimension import Dimension
-
-from euporie.apptk.layout.containers import (
+from apptk.layout.containers import (
     ConditionalContainer,
     Float,
     FloatContainer,
@@ -22,7 +20,8 @@ from euporie.apptk.layout.containers import (
     VSplit,
     Window,
 )
-from euporie.apptk.layout.mouse import DisableMouseOnScroll
+from apptk.layout.dimension import Dimension
+from apptk.layout.mouse import DisableMouseOnScroll
 from euporie.console.tabs.console import Console
 from euporie.core.app.app import BaseApp
 from euporie.core.bars.command import CommandBar
@@ -45,7 +44,7 @@ from euporie.core.widgets.palette import CommandPalette
 if TYPE_CHECKING:
     from typing import Any, TypeVar
 
-    from euporie.apptk.application.application import Application
+    from apptk.application.application import Application
 
     _AppResult = TypeVar("_AppResult")
 

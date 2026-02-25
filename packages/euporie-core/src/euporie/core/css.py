@@ -4,14 +4,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from euporie.apptk.application.current import get_app
-from euporie.apptk.filters.base import Condition
-from euporie.apptk.filters.utils import to_filter
-
-from euporie.apptk.formatted_text.html import CssSelector
+from apptk.application.current import get_app
+from apptk.filters.base import Condition
+from apptk.filters.utils import to_filter
+from apptk.formatted_text.html import CssSelector
 
 if TYPE_CHECKING:
-    from euporie.apptk.formatted_text.html import CssSelectors
+    from apptk.formatted_text.html import CssSelectors
 
 Always = to_filter(True)
 

@@ -6,14 +6,14 @@ from __future__ import annotations  # noqa: I001
 import sys
 from typing import TYPE_CHECKING
 
-from euporie.apptk.key_binding import key_processor  # noqa: F401
-from euporie.apptk.input.vt100 import raw_mode
-from euporie.apptk.keys import Keys
+from apptk.key_binding import key_processor  # noqa: F401
+from apptk.input.vt100 import raw_mode
+from apptk.keys import Keys
 
-from euporie.apptk.io import Vt100Parser
+from apptk.io import Vt100Parser
 
 if TYPE_CHECKING:
-    from euporie.apptk.key_binding import KeyPress
+    from apptk.key_binding import KeyPress
 
 
 def callback(key_press: KeyPress) -> None:

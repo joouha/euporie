@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from euporie.apptk.convert.datum import Datum
-from euporie.apptk.convert.formats.markdown import html_to_markdown_py_html2text
+from apptk.convert.datum import Datum
+from apptk.convert.formats.markdown import html_to_markdown_py_html2text
 
 
 async def test_html_to_markdown_py_html2text_table_empty_cells() -> None:

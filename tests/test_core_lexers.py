@@ -4,10 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from apptk.lexers.utils import detect_lexer
 from pygments.lexers.python import PythonLexer
 from pygments.lexers.special import TextLexer
-
-from euporie.apptk.lexers.utils import detect_lexer
 
 
 def test_detect_lexer_with_path() -> None:

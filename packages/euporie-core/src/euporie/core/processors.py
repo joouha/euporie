@@ -5,20 +5,18 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, cast
 
-from euporie.apptk.layout.utils import explode_text_fragments
-
-from euporie.apptk.layout.processors import (
+from apptk.layout.processors import (
     Processor,
     Transformation,
 )
+from apptk.layout.utils import explode_text_fragments
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from apptk.formatted_text.base import StyleAndTextTuples
+    from apptk.layout.processors import TransformationInput
     from euporie.core.diagnostics import Report
-    from euporie.apptk.formatted_text.base import StyleAndTextTuples
-
-    from euporie.apptk.layout.processors import TransformationInput
 
 
 log = logging.getLogger(__name__)

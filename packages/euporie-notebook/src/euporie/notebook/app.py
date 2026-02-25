@@ -8,13 +8,11 @@ from functools import partial
 from typing import TYPE_CHECKING, cast
 from weakref import WeakKeyDictionary
 
-from euporie.apptk.formatted_text.base import to_formatted_text
-from euporie.apptk.layout.dimension import Dimension
-
-from euporie.apptk.border import OuterHalfGrid
-from euporie.apptk.filters import Condition
-from euporie.apptk.formatted_text.utils import truncate
-from euporie.apptk.layout.containers import (
+from apptk.border import OuterHalfGrid
+from apptk.filters import Condition
+from apptk.formatted_text.base import to_formatted_text
+from apptk.formatted_text.utils import truncate
+from apptk.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
     Float,
@@ -24,8 +22,9 @@ from euporie.apptk.layout.containers import (
     Window,
     WindowAlign,
 )
-from euporie.apptk.layout.controls import FormattedTextControl
-from euporie.apptk.widgets.menus import MenuContainer, MenuItem
+from apptk.layout.controls import FormattedTextControl
+from apptk.layout.dimension import Dimension
+from apptk.widgets.menus import MenuContainer, MenuItem
 from euporie.core.app.app import BaseApp
 from euporie.core.bars.command import CommandBar
 from euporie.core.bars.menu import ToolbarCompletionsMenu
@@ -59,9 +58,9 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
     from typing import Any
 
-    from euporie.apptk.application.application import Application
-    from euporie.apptk.formatted_text import StyleAndTextTuples
-    from euporie.apptk.layout.containers import AnyContainer
+    from apptk.application.application import Application
+    from apptk.formatted_text import StyleAndTextTuples
+    from apptk.layout.containers import AnyContainer
     from euporie.core.tabs import TabRegistryEntry
     from euporie.core.tabs.base import Tab
     from euporie.core.widgets.cell import Cell

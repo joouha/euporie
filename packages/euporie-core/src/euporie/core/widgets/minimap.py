@@ -6,43 +6,41 @@ import logging
 from textwrap import wrap
 from typing import TYPE_CHECKING
 
-from code_minimap import render as render_minimap
-from euporie.apptk.application.current import get_app
-from euporie.apptk.utils import Event
-from euporie.apptk.widgets.base import Label
-
-from euporie.apptk.cache import FastDictCache, SimpleCache
-from euporie.apptk.data_structures import DiBool, Point
-from euporie.apptk.formatted_text import (
+from apptk.application.current import get_app
+from apptk.cache import FastDictCache, SimpleCache
+from apptk.data_structures import DiBool, Point
+from apptk.formatted_text import (
     StyleAndTextTuples,
 )
-from euporie.apptk.layout.containers import (
+from apptk.layout.containers import (
     HSplit,
     MarginContainer,
     VSplit,
     Window,
     WindowAlign,
 )
-from euporie.apptk.layout.controls import BufferControl, UIContent, UIControl
-from euporie.apptk.layout.decor import FocusedStyle
-from euporie.apptk.layout.margins import ScrollbarMargin
-from euporie.apptk.mouse_events import MouseButton, MouseEventType
+from apptk.layout.controls import BufferControl, UIContent, UIControl
+from apptk.layout.decor import FocusedStyle
+from apptk.layout.margins import ScrollbarMargin
+from apptk.mouse_events import MouseButton, MouseEventType
+from apptk.utils import Event
+from apptk.widgets.base import Label
+from code_minimap import render as render_minimap
 from euporie.core.widgets.forms import Button
 from euporie.core.widgets.layout import Box
 
 if TYPE_CHECKING:
     from collections.abc import Hashable, Iterable
 
-    from euporie.apptk.buffer import Buffer
-    from euporie.apptk.key_binding.key_bindings import (
+    from apptk.buffer import Buffer
+    from apptk.formatted_text import StyleAndTextTuples
+    from apptk.key_binding.key_bindings import (
         KeyBindingsBase,
         NotImplementedOrNone,
     )
-
-    from euporie.apptk.formatted_text import StyleAndTextTuples
-    from euporie.apptk.layout.containers import AnyContainer
-    from euporie.apptk.layout.controls import GetLinePrefixCallable
-    from euporie.apptk.mouse_events import MouseEvent
+    from apptk.layout.containers import AnyContainer
+    from apptk.layout.controls import GetLinePrefixCallable
+    from apptk.mouse_events import MouseEvent
     from euporie.core.tabs.base import Tab
 
 

@@ -4,14 +4,13 @@ from __future__ import annotations
 
 import logging
 
-from euporie.apptk.application.current import get_app
-
-from euporie.apptk.commands import add_cmd
-from euporie.apptk.filters import (
+from apptk.application.current import get_app
+from apptk.commands import add_cmd
+from apptk.filters import (
     buffer_has_focus,
 )
-from euporie.apptk.filters.app import display_has_focus
-from euporie.apptk.filters.buffer import buffer_is_code, buffer_is_empty
+from apptk.filters.app import display_has_focus
+from apptk.filters.buffer import buffer_is_code, buffer_is_empty
 from euporie.core.filters import (
     kernel_tab_has_focus,
     tab_can_save,

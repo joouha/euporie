@@ -4,14 +4,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from euporie.apptk.application.current import get_app
-
-from euporie.apptk.commands import add_cmd
-from euporie.apptk.filters import buffer_has_focus
+from apptk.application.current import get_app
+from apptk.commands import add_cmd
+from apptk.filters import buffer_has_focus
 from euporie.core.filters import tab_has_focus, tab_type_has_focus
 
 if TYPE_CHECKING:
-    from euporie.apptk.key_binding.key_processor import KeyPressEvent
+    from apptk.key_binding.key_processor import KeyPressEvent
 
 
 @add_cmd(keys=["c-q", "<sigint>"], aliases=["q"])
@@ -23,7 +22,7 @@ def _quit() -> None:
 @add_cmd(aliases=["q!"])
 def _force_quit() -> None:
     """Quit euporie without saving any changes."""
-    from euporie.apptk.application.application import Application
+    from apptk.application.application import Application
 
     Application.exit(get_app())
 

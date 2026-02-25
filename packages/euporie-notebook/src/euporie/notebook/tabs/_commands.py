@@ -4,17 +4,16 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from euporie.apptk.application.current import get_app
-
-from euporie.apptk.commands import add_cmd
-from euporie.apptk.filters import (
+from apptk.application.current import get_app
+from apptk.commands import add_cmd
+from apptk.filters import (
     buffer_has_focus,
     has_completions,
     vi_mode,
     vi_navigation_mode,
 )
-from euporie.apptk.filters.app import display_has_focus
-from euporie.apptk.filters.buffer import (
+from apptk.filters.app import display_has_focus
+from apptk.filters.buffer import (
     cursor_on_first_line,
     cursor_on_last_line,
 )
@@ -30,7 +29,7 @@ from euporie.notebook.filters import (
 )
 
 if TYPE_CHECKING:
-    from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
+    from apptk.key_binding.key_bindings import NotImplementedOrNone
 
 # euporie.notebook.tabs.log
 

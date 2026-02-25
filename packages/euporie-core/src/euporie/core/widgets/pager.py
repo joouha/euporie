@@ -6,16 +6,15 @@ import logging
 from pathlib import PurePath
 from typing import TYPE_CHECKING, NamedTuple
 
-from euporie.apptk.application.current import get_app
-from euporie.apptk.layout.dimension import Dimension
-
-from euporie.apptk.commands import add_cmd
-from euporie.apptk.convert.registry import find_route
-from euporie.apptk.filters import Condition
-from euporie.apptk.key_binding.key_bindings import KeyBindings
-from euporie.apptk.layout.containers import DummyContainer, DynamicContainer, HSplit
-from euporie.apptk.layout.decor import Line
-from euporie.apptk.layout.display import Display
+from apptk.application.current import get_app
+from apptk.commands import add_cmd
+from apptk.convert.registry import find_route
+from apptk.filters import Condition
+from apptk.key_binding.key_bindings import KeyBindings
+from apptk.layout.containers import DummyContainer, DynamicContainer, HSplit
+from apptk.layout.decor import Line
+from apptk.layout.dimension import Dimension
+from apptk.layout.display import Display
 from euporie.core.filters import pager_has_focus
 from euporie.core.widgets.cell_outputs import CellOutput, CellOutputDataElement
 from euporie.core.widgets.layout import Box
@@ -23,9 +22,8 @@ from euporie.core.widgets.layout import Box
 if TYPE_CHECKING:
     from typing import Any
 
-    from euporie.apptk.layout.dimension import AnyDimension
-
-    from euporie.apptk.layout.containers import AnyContainer
+    from apptk.layout.containers import AnyContainer
+    from apptk.layout.dimension import AnyDimension
     from euporie.core.widgets.cell_outputs import CellOutputElement, OutputParent
 
 log = logging.getLogger(__name__)
@@ -57,9 +55,9 @@ class PagerOutputDataElement(CellOutputDataElement):
             metadata: Any metadata relating to the data
             parent: The parent container the output-element is attached to
         """
-        from euporie.apptk.convert.datum import Datum
-        from euporie.apptk.convert.formats import BASE64_FORMATS
-        from euporie.apptk.convert.mime import MIME_FORMATS
+        from apptk.convert.datum import Datum
+        from apptk.convert.formats import BASE64_FORMATS
+        from apptk.convert.mime import MIME_FORMATS
 
         # Get internal format
         format_ = "ansi"

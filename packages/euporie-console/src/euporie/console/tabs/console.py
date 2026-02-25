@@ -6,23 +6,22 @@ import logging
 from functools import partial
 from typing import TYPE_CHECKING, cast
 
-from euporie.apptk.filters.base import Condition
-from euporie.apptk.layout.layout import Layout
-
-from euporie.apptk.commands import get_cmd
-from euporie.apptk.filters.app import (
+from apptk.commands import get_cmd
+from apptk.filters.app import (
     renderer_height_is_known,
 )
-from euporie.apptk.key_binding.key_bindings import KeyBindings
-from euporie.apptk.layout.containers import (
+from apptk.filters.base import Condition
+from apptk.key_binding.key_bindings import KeyBindings
+from apptk.layout.containers import (
     ConditionalContainer,
     FloatContainer,
     HSplit,
     VSplit,
     Window,
 )
-from euporie.apptk.layout.controls import FormattedTextControl
-from euporie.apptk.layout.print import PrintingContainer
+from apptk.layout.controls import FormattedTextControl
+from apptk.layout.layout import Layout
+from apptk.layout.print import PrintingContainer
 from euporie.core.format import LspFormatter
 from euporie.core.nbformat import new_code_cell, new_output
 from euporie.core.tabs.console import BaseConsole
@@ -34,11 +33,10 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any
 
-    from euporie.apptk.buffer import Buffer
-
-    from euporie.apptk.application.application import Application
-    from euporie.apptk.formatted_text import AnyFormattedText
-    from euporie.apptk.layout.containers import Container, Float
+    from apptk.application.application import Application
+    from apptk.buffer import Buffer
+    from apptk.formatted_text import AnyFormattedText
+    from apptk.layout.containers import Container, Float
     from euporie.core.app.app import BaseApp
     from euporie.core.lsp import LspClient
     from euporie.core.nbformat import NotebookNode

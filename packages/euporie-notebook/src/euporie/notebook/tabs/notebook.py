@@ -8,24 +8,23 @@ from copy import deepcopy
 from typing import TYPE_CHECKING, ClassVar
 from uuid import uuid4
 
-from euporie.apptk.clipboard.base import ClipboardData
-from euporie.apptk.layout.dimension import Dimension
-
-from euporie.apptk.commands import get_cmd
-from euporie.apptk.filters import Condition
-from euporie.apptk.filters.modes import insert_mode, replace_mode
-from euporie.apptk.key_binding.key_bindings import KeyBindings
-from euporie.apptk.layout.cache import CachedContainer
-from euporie.apptk.layout.containers import (
+from apptk.clipboard.base import ClipboardData
+from apptk.commands import get_cmd
+from apptk.filters import Condition
+from apptk.filters.modes import insert_mode, replace_mode
+from apptk.key_binding.key_bindings import KeyBindings
+from apptk.layout.cache import CachedContainer
+from apptk.layout.containers import (
     ConditionalContainer,
     MarginContainer,
     VSplit,
 )
-from euporie.apptk.layout.decor import Line, Pattern
-from euporie.apptk.layout.margins import ScrollbarMargin
-from euporie.apptk.layout.mouse import MouseHandlerWrapper
-from euporie.apptk.layout.scroll import ScrollingContainer
-from euporie.apptk.mouse_events import MouseEventType
+from apptk.layout.decor import Line, Pattern
+from apptk.layout.dimension import Dimension
+from apptk.layout.margins import ScrollbarMargin
+from apptk.layout.mouse import MouseHandlerWrapper
+from apptk.layout.scroll import ScrollingContainer
+from apptk.mouse_events import MouseEventType
 from euporie.core.filters import (
     multiple_cells_selected,
 )
@@ -39,11 +38,10 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any
 
-    from euporie.apptk.formatted_text.base import AnyFormattedText
-
-    from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
-    from euporie.apptk.layout.containers import AnyContainer
-    from euporie.apptk.mouse_events import MouseEvent
+    from apptk.formatted_text.base import AnyFormattedText
+    from apptk.key_binding.key_bindings import NotImplementedOrNone
+    from apptk.layout.containers import AnyContainer
+    from apptk.mouse_events import MouseEvent
     from euporie.core.app.app import BaseApp
     from euporie.core.bars.status import StatusBarFields
     from euporie.core.comm.base import Comm

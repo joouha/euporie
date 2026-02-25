@@ -8,7 +8,7 @@ import logging
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, NamedTuple, TypedDict, overload
 
-from euporie.apptk.eventloop.utils import (
+from apptk.eventloop.utils import (
     get_or_create_loop,
     run_coro_async,
     run_coro_sync,

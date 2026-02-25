@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
+from euporie.core.pygments import ArgparseLexer, EuporiePygmentsStyle
 from pygments import highlight
 from pygments.formatters.terminal256 import TerminalTrueColorFormatter
 from pygments.lexers import PythonLexer
-
-from euporie.core.pygments import ArgparseLexer, EuporiePygmentsStyle
 
 
 def test_argparse_lexer() -> None:

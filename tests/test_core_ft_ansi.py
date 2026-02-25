@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from euporie.apptk.formatted_text import to_formatted_text
-from euporie.apptk.formatted_text.ansi import ANSI
+from apptk.formatted_text import to_formatted_text
+from apptk.formatted_text.ansi import ANSI
 
 
 def test_ansi_tabs() -> None:

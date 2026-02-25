@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, cast
 from unittest.mock import Mock, call, patch
 
 import pytest
-
+from apptk.layout.display import Display
 from euporie.core.comm.ipywidgets import (
     WIDGET_MODELS,
     IpyWidgetComm,
@@ -15,7 +15,6 @@ from euporie.core.comm.ipywidgets import (
 )
 from euporie.core.kernel.jupyter import JupyterKernel
 from euporie.core.tabs.kernel import KernelTab
-from euporie.apptk.layout.display import Display
 
 if TYPE_CHECKING:
     from collections.abc import Generator

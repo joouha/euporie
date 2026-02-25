@@ -6,32 +6,30 @@ import logging
 from typing import TYPE_CHECKING
 from weakref import WeakKeyDictionary
 
-from euporie.apptk.application.current import get_app
-from euporie.apptk.filters.utils import to_filter
-
-from euporie.apptk.cache import FastDictCache
-from euporie.apptk.formatted_text import to_formatted_text
-from euporie.apptk.layout import containers
-from euporie.apptk.layout.containers import (
+from apptk.application.current import get_app
+from apptk.cache import FastDictCache
+from apptk.filters.utils import to_filter
+from apptk.formatted_text import to_formatted_text
+from apptk.layout import containers
+from apptk.layout.containers import (
     ConditionalContainer,
     VSplit,
     Window,
     WindowAlign,
 )
-from euporie.apptk.layout.containers import (
+from apptk.layout.containers import (
     to_container as ptk_to_container,
 )
-from euporie.apptk.layout.controls import FormattedTextControl
+from apptk.layout.controls import FormattedTextControl
 from euporie.core.filters import has_toolbar
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
-    from euporie.apptk.filters.base import FilterOrBool
-    from euporie.apptk.formatted_text.base import AnyFormattedText
-
-    from euporie.apptk.formatted_text import StyleAndTextTuples
-    from euporie.apptk.layout.containers import AnyContainer, Container
+    from apptk.filters.base import FilterOrBool
+    from apptk.formatted_text import StyleAndTextTuples
+    from apptk.formatted_text.base import AnyFormattedText
+    from apptk.layout.containers import AnyContainer, Container
 
     StatusBarFields = tuple[Sequence[AnyFormattedText], Sequence[AnyFormattedText]]
 

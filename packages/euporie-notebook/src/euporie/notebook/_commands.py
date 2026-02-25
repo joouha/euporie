@@ -1,7 +1,7 @@
 """Commands for the notebook app."""
 
-from euporie.apptk.commands import add_cmd
-from euporie.apptk.filters.environment import have_modules
+from apptk.commands import add_cmd
+from apptk.filters.environment import have_modules
 
 
 @add_cmd(aliases=["n"], icon="", style="class:orange", keys=["c-n"])
@@ -60,7 +60,7 @@ def _new_terminal() -> None:
 @add_cmd(menu_title="Documentation", icon="", style="class:success")
 def _view_documentation() -> None:
     """Open the documentation in a web-view tab."""
-    from euporie.apptk.application.current import get_app
+    from apptk.application.current import get_app
     from upath import UPath
 
     get_app().open_file(UPath("https://euporie.readthedocs.io/"))

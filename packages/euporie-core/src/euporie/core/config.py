@@ -20,13 +20,13 @@ from typing import (
 )
 
 import fastjsonschema
-from euporie.apptk.filters.base import Condition
-from euporie.apptk.filters.utils import to_filter
-from euporie.apptk.utils import Event
+from apptk.commands import add_cmd, get_cmd
+from apptk.filters.base import Condition
+from apptk.filters.utils import to_filter
+from apptk.utils import Event
 from platformdirs import user_config_dir
 from upath import UPath
 
-from euporie.apptk.commands import add_cmd, get_cmd
 from euporie.core import __app_name__, __copyright__
 
 if TYPE_CHECKING:
@@ -34,9 +34,8 @@ if TYPE_CHECKING:
     from typing import Any, ClassVar
 
     from _typeshed import SupportsWrite
-    from euporie.apptk.filters.base import FilterOrBool
-
-    from euporie.apptk.widgets.menus import MenuItem
+    from apptk.filters.base import FilterOrBool
+    from apptk.widgets.menus import MenuItem
 
 
 log = logging.getLogger(__name__)
@@ -74,11 +73,10 @@ class ArgumentParser(argparse.ArgumentParser):
     def _print_message(
         self, message: str, file: SupportsWrite[str] | None = None
     ) -> None:
-        from euporie.apptk.formatted_text.base import FormattedText
-        from euporie.apptk.lexers.pygments import _token_cache
-        from euporie.apptk.shortcuts.utils import print_formatted_text
-        from euporie.apptk.styles.pygments import style_from_pygments_cls
-
+        from apptk.formatted_text.base import FormattedText
+        from apptk.lexers.pygments import _token_cache
+        from apptk.shortcuts.utils import print_formatted_text
+        from apptk.styles.pygments import style_from_pygments_cls
         from euporie.core.pygments import ArgparseLexer
         from euporie.core.style import get_style_by_name
 
@@ -233,7 +231,7 @@ class Setting:
     @property
     def menu(self) -> MenuItem:
         """Return a menu item for the setting."""
-        from euporie.apptk.widgets.menus import MenuItem
+        from apptk.widgets.menus import MenuItem
 
         choices = (self.choices or self.schema.get("enum", [])) or []
         if choices:

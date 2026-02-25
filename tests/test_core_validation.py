@@ -6,9 +6,8 @@ from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, Mock, NonCallableMock
 
 import pytest
-from euporie.apptk.document import Document
-from euporie.apptk.validation import ValidationError
-
+from apptk.document import Document
+from apptk.validation import ValidationError
 from euporie.core.validation import KernelValidator
 
 if TYPE_CHECKING:

@@ -13,16 +13,15 @@ from decimal import Decimal
 from functools import partial
 from typing import TYPE_CHECKING
 
-from euporie.apptk.filters.base import Condition
-
-from euporie.apptk.border import InsetGrid
-from euporie.apptk.data_structures import DiBool
-from euporie.apptk.layout.containers import HSplit, VSplit
-from euporie.apptk.layout.decor import FocusedStyle
-from euporie.apptk.layout.processors import BeforeInput
+from apptk.border import InsetGrid
+from apptk.data_structures import DiBool
+from apptk.filters.base import Condition
+from apptk.layout.containers import HSplit, VSplit
+from apptk.layout.decor import FocusedStyle
+from apptk.layout.processors import BeforeInput
+from apptk.widgets.base import Frame
 from euporie.core.comm.base import Comm, CommView
 from euporie.core.kernel.jupyter import MsgCallbacks
-from euporie.apptk.widgets.base import Frame
 from euporie.core.widgets.forms import (
     BaseButton,
     Button,
@@ -49,10 +48,9 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, MutableSequence, Sequence
     from typing import Any
 
-    from euporie.apptk.buffer import Buffer
-    from euporie.apptk.formatted_text.base import AnyFormattedText
-
-    from euporie.apptk.layout.containers import AnyContainer, _Split
+    from apptk.buffer import Buffer
+    from apptk.formatted_text.base import AnyFormattedText
+    from apptk.layout.containers import AnyContainer, _Split
     from euporie.core.tabs.kernel import KernelTab
     from euporie.core.widgets.cell_outputs import OutputParent
     from euporie.core.widgets.forms import SelectableWidget, ToggleableWidget
@@ -216,8 +214,8 @@ class UnimplementedModel(IpyWidgetComm):
 
     def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view."""
-        from euporie.apptk.convert.datum import Datum
-        from euporie.apptk.layout.display import Display
+        from apptk.convert.datum import Datum
+        from apptk.layout.display import Display
 
         return CommView(Display(Datum("[Widget not implemented]", format="ansi")))
 
@@ -321,7 +319,7 @@ class LayoutIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
         ]
 
     def box_style(self) -> str:
-        """Convert the ipywidget box_style to a euporie.apptk style string."""
+        """Convert the ipywidget box_style to a apptk style string."""
         if style := self.data["state"].get("box_style", ""):
             return f"class:{style}"
         return "class:default"
@@ -463,13 +461,13 @@ class ButtonModel(IpyWidgetComm):
         """Generate the button text, optionally including an icon if specified."""
         text = self.data["state"].get("description", "")
         if icon := self.data["state"].get("icon", ""):
-            from euporie.apptk.styles.icons import FA_ICONS
+            from apptk.styles.icons import FA_ICONS
 
             text = f"{FA_ICONS.get(icon, '#')} {text}"
         return text
 
     def button_style(self) -> str:
-        """Convert the ipywidget button_style to a euporie.apptk style string."""
+        """Convert the ipywidget button_style to a apptk style string."""
         if style := self.data["state"].get("button_style", ""):
             return f"class:ipywidget,{style}"
         return "class:ipywidget"
@@ -684,8 +682,9 @@ class SliderIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
             ),
             show_arrows=True,
             vertical=Condition(
-                lambda: self.data["state"].get("orientation", "horizontal")
-                == "vertical"
+                lambda: (
+                    self.data["state"].get("orientation", "horizontal") == "vertical"
+                )
             ),
             disabled=Condition(lambda: self.data["state"].get("disabled", False)),
         )
@@ -695,8 +694,9 @@ class SliderIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
             label=lambda: self.data["state"].get("description", ""),
             style="class:ipywidget",
             vertical=Condition(
-                lambda: self.data["state"].get("orientation", "horizontal")
-                == "vertical"
+                lambda: (
+                    self.data["state"].get("orientation", "horizontal") == "vertical"
+                )
             ),
         )
         return CommView(
@@ -895,7 +895,7 @@ class ProgressIpyWidgetComm(IpyWidgetComm, metaclass=ABCMeta):
         )
 
     def bar_style(self) -> str:
-        """Convert the ipywidget ``bar_style`` to a euporie.apptk style string."""
+        """Convert the ipywidget ``bar_style`` to a apptk style string."""
         if style := self.data["state"].get("bar_style", ""):
             return f"class:{style}"
         return ""
@@ -950,13 +950,13 @@ class ToggleButtonModel(ToggleableIpyWidgetComm):
         """Generate the button text, optionally including an icon if specified."""
         text = self.data["state"].get("description", "")
         if icon := self.data["state"].get("icon", ""):
-            from euporie.apptk.styles.icons import FA_ICONS
+            from apptk.styles.icons import FA_ICONS
 
             text = f"{FA_ICONS.get(icon, '#')} {text}"
         return text
 
     def button_style(self) -> str:
-        """Convert the ipywidget button_style to a euporie.apptk style string."""
+        """Convert the ipywidget button_style to a apptk style string."""
         if style := self.data["state"].get("button_style", ""):
             return f"class:ipywidget,{style}"
         return "class:ipywidget"
@@ -1192,7 +1192,7 @@ class ToggleButtonsModel(IpyWidgetComm):
         if index < len(self.data["state"].get("icons", [])) and (
             icon := self.data["state"]["icons"][index]
         ):
-            from euporie.apptk.styles.icons import FA_ICONS
+            from apptk.styles.icons import FA_ICONS
 
             label = f"{FA_ICONS.get(icon, '#')} {label}"
         return label
@@ -1231,7 +1231,7 @@ class ToggleButtonsModel(IpyWidgetComm):
         buttons.labels = [partial(self.get_label, i) for i in range(len(options))]
 
     def button_style(self) -> str:
-        """Convert the ipywidget button_style to a euporie.apptk style string."""
+        """Convert the ipywidget button_style to a apptk style string."""
         if style := self.data["state"].get("button_style", ""):
             return f"class:ipywidget,{style}"
         return "class:ipywidget"
@@ -1268,8 +1268,8 @@ class HTMLModel(IpyWidgetComm):
 
     def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view of the HTML widget."""
-        from euporie.apptk.convert.datum import Datum
-        from euporie.apptk.layout.display import Display
+        from apptk.convert.datum import Datum
+        from apptk.layout.display import Display
 
         html = Display(
             Datum(data=self.data["state"].get("value", ""), format="html"),
@@ -1298,8 +1298,8 @@ class ImageModel(IpyWidgetComm):
 
     def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view of the image widget."""
-        from euporie.apptk.convert.datum import Datum
-        from euporie.apptk.layout.display import Display
+        from apptk.convert.datum import Datum
+        from apptk.layout.display import Display
 
         display = Display(
             Datum(
@@ -1422,7 +1422,7 @@ class ColorPickerModel(TextBoxIpyWidgetComm):
 
     def format_color(self) -> str:
         """Format a color as a hex code for display."""
-        from euporie.apptk.styles.named_colors import NAMED_COLORS
+        from apptk.styles.named_colors import NAMED_COLORS
 
         # TODO - blend alpha colors with the terminal background
         value = self.value()
@@ -1436,7 +1436,7 @@ class ColorPickerModel(TextBoxIpyWidgetComm):
 
     def normalize(self, x: str) -> str | None:
         """Return the color string if it is recognised as an allowed color."""
-        from euporie.apptk.styles.named_colors import NAMED_COLORS
+        from apptk.styles.named_colors import NAMED_COLORS
 
         if x in NAMED_COLORS or self._hex_pattern.match(x) is not None:
             return x

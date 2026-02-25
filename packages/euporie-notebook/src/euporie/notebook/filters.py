@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from euporie.apptk.application.current import get_app
-
-from euporie.apptk.filters import Condition
+from apptk.application.current import get_app
+from apptk.filters import Condition
 
 
 @Condition

@@ -8,11 +8,10 @@ from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 import magic
+from apptk.convert.mime import get_format, get_mime
 from fsspec.implementations.http import HTTPFileSystem
 from upath import UPath
 from upath.implementations.http import HTTPPath
-
-from euporie.apptk.convert.mime import get_format, get_mime
 
 if TYPE_CHECKING:
     from types import TracebackType

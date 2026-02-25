@@ -4,14 +4,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from euporie.apptk.formatted_text.base import FormattedText as Ft
+from apptk.data_structures import DiBool
+from apptk.formatted_text.base import FormattedText as Ft
+from apptk.formatted_text.utils import to_plain_text
 from euporie.core.ft import utils
 
-from euporie.apptk.data_structures import DiBool
-from euporie.apptk.formatted_text.utils import to_plain_text
-
 if TYPE_CHECKING:
-    from euporie.apptk.formatted_text.base import StyleAndTextTuples
+    from apptk.formatted_text.base import StyleAndTextTuples
 
 
 def test_fragment_list_width() -> None:

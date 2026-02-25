@@ -1,8 +1,7 @@
 """Tests for color manipulation."""
 
 import pytest
-
-from euporie.apptk.color import Color, ColorPalette
+from apptk.color import Color, ColorPalette
 
 # Define some test data
 test_colors = {

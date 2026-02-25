@@ -6,39 +6,37 @@ import logging
 from functools import partial
 from typing import TYPE_CHECKING
 
-from euporie.apptk.application.current import get_app
-from euporie.apptk.formatted_text.base import to_formatted_text
-from euporie.apptk.key_binding.key_bindings import (
+from apptk.application.current import get_app
+from apptk.filters import Condition
+from apptk.formatted_text.base import to_formatted_text
+from apptk.key_binding.key_bindings import (
     KeyBindings,
 )
-from euporie.apptk.layout.dimension import Dimension
-from euporie.apptk.utils import Event
-
-from euporie.apptk.filters import Condition
-from euporie.apptk.layout.containers import (
+from apptk.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
     HSplit,
     VSplit,
     Window,
 )
-from euporie.apptk.layout.decor import FocusedStyle, Line
-from euporie.apptk.layout.mouse import MouseHandlerWrapper
-from euporie.apptk.layout.screen import WritePosition
-from euporie.apptk.mouse_events import MouseButton, MouseEventType
+from apptk.layout.decor import FocusedStyle, Line
+from apptk.layout.dimension import Dimension
+from apptk.layout.mouse import MouseHandlerWrapper
+from apptk.layout.screen import WritePosition
+from apptk.mouse_events import MouseButton, MouseEventType
+from apptk.utils import Event
 from euporie.core.widgets.forms import ToggleButton, ToggleButtons
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
-    from euporie.apptk.key_binding.key_bindings import (
+    from apptk.key_binding.key_bindings import (
         KeyBindingsBase,
         NotImplementedOrNone,
     )
-
-    from euporie.apptk.key_binding.key_processor import KeyPressEvent
-    from euporie.apptk.layout.containers import AnyContainer
-    from euporie.apptk.mouse_events import MouseEvent
+    from apptk.key_binding.key_processor import KeyPressEvent
+    from apptk.layout.containers import AnyContainer
+    from apptk.mouse_events import MouseEvent
 
 log = logging.getLogger(__name__)
 
@@ -149,7 +147,7 @@ class SideBar:
             on_resize: Optional callback called when the sidebar is resized.
             on_change: Optional callback called when the active panel changes.
         """
-        from euporie.apptk.application.current import get_app
+        from apptk.application.current import get_app
 
         self._width = width
         self.on_resize: Event[SideBar] = Event(self, on_resize)
@@ -201,9 +199,9 @@ class SideBar:
                                             ]
                                         ),
                                     ],
-                                    width=lambda: Dimension(
-                                        preferred=self._width
-                                    ).preferred,
+                                    width=lambda: (
+                                        Dimension(preferred=self._width).preferred
+                                    ),
                                 ),
                                 # Create the resize handle for the sidebar border
                                 MouseHandlerWrapper(

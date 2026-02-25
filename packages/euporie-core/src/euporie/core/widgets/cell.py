@@ -11,29 +11,28 @@ from pathlib import Path
 from typing import TYPE_CHECKING, cast
 from weakref import WeakKeyDictionary
 
-from euporie.apptk.application.current import get_app
-from euporie.apptk.completion.base import (
+from apptk.application.current import get_app
+from apptk.border import NoLine, ThickLine, ThinLine
+from apptk.completion.base import (
     DynamicCompleter,
     _MergedCompleter,
 )
-from euporie.apptk.document import Document
-from euporie.apptk.filters.app import is_searching
-from euporie.apptk.filters.base import Condition
-from euporie.apptk.layout.dimension import Dimension
-from euporie.apptk.utils import Event
-
-from euporie.apptk.border import NoLine, ThickLine, ThinLine
-from euporie.apptk.completion.deduplicate import DeduplicateCompleter
-from euporie.core.diagnostics import Report
-from euporie.apptk.layout.containers import (
+from apptk.completion.deduplicate import DeduplicateCompleter
+from apptk.document import Document
+from apptk.filters.app import is_searching
+from apptk.filters.base import Condition
+from apptk.layout.containers import (
     ConditionalContainer,
     Container,
     HSplit,
     VSplit,
     Window,
 )
-from euporie.apptk.layout.controls import FormattedTextControl
+from apptk.layout.controls import FormattedTextControl
+from apptk.layout.dimension import Dimension
+from apptk.utils import Event
 from euporie.core.completion import LspCompleter
+from euporie.core.diagnostics import Report
 from euporie.core.filters import multiple_cells_selected
 from euporie.core.format import LspFormatter
 from euporie.core.inspection import (
@@ -49,11 +48,10 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from typing import Any, Literal
 
-    from euporie.apptk.buffer import Buffer
-    from euporie.apptk.completion.base import Completer
-    from euporie.apptk.formatted_text.base import StyleAndTextTuples
-
-    from euporie.apptk.border import GridStyle
+    from apptk.border import GridStyle
+    from apptk.buffer import Buffer
+    from apptk.completion.base import Completer
+    from apptk.formatted_text.base import StyleAndTextTuples
     from euporie.core.format import Formatter
     from euporie.core.inspection import Inspector
     from euporie.core.lsp import LspClient
@@ -147,16 +145,20 @@ class Cell:
         # Conditions
         # Determine if the cell currently has focus
         focused = Condition(
-            lambda: weak_self.kernel_tab.app.layout.has_focus(weak_self)
-            if self.container is not None
-            else False
+            lambda: (
+                weak_self.kernel_tab.app.layout.has_focus(weak_self)
+                if self.container is not None
+                else False
+            )
         )
         # Determine if the cell currently is selected.
         in_edit_mode = Condition(lambda: self.kernel_tab.edit_mode)
         selected = Condition(
-            lambda: self.index in self.kernel_tab.selected_indices
-            if self.container is not None
-            else False
+            lambda: (
+                self.index in self.kernel_tab.selected_indices
+                if self.container is not None
+                else False
+            )
         )
         is_markdown = Condition(lambda: weak_self.json.get("cell_type") == "markdown")
         is_rendered = Condition(lambda: weak_self.rendered)
@@ -193,9 +195,11 @@ class Cell:
         # Now we generate the main container used to represent a kernel_tab cell
 
         source_hidden = Condition(
-            lambda: weak_self.json.get("metadata", {})
-            .get("jupyter", {})
-            .get("source_hidden", False)
+            lambda: (
+                weak_self.json.get("metadata", {})
+                .get("jupyter", {})
+                .get("source_hidden", False)
+            )
         )
 
         self.input_box = KernelInput(
@@ -310,10 +314,12 @@ class Cell:
         )
 
         outputs_hidden = Condition(
-            lambda: weak_self.json["metadata"]
-            .get("jupyter", {})
-            .get("outputs_hidden", False)
-            or weak_self.json["metadata"].get("collapsed", False)
+            lambda: (
+                weak_self.json["metadata"]
+                .get("jupyter", {})
+                .get("outputs_hidden", False)
+                or weak_self.json["metadata"].get("collapsed", False)
+            )
         )
 
         output_row = ConditionalContainer(

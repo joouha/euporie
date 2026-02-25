@@ -124,10 +124,10 @@ print('''"""Register additional key escape sequences."""
 from enum import Enum
 from typing import TYPE_CHECKING, cast
 
-from euporie.apptk.input.ansi_escape_sequences import ANSI_SEQUENCES
+from apptk.input.ansi_escape_sequences import ANSI_SEQUENCES
 
 if TYPE_CHECKING:
-    from euporie.apptk.keys import Keys
+    from apptk.keys import Keys
 
 
 class MoreKeys(str, Enum):

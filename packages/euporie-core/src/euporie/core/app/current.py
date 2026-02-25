@@ -6,12 +6,12 @@ from functools import cache
 from importlib.metadata import entry_points
 from typing import TYPE_CHECKING
 
-from euporie.apptk.application.current import _current_app_session
+from apptk.application.current import _current_app_session
 
 if TYPE_CHECKING:
-    from euporie.core.app.app import BaseApp
-
     from importlib.metadata import EntryPoint, EntryPoints
+
+    from euporie.core.app.app import BaseApp
 
 APP_ALIASES: dict[str, str] = {"edit": "notebook"}
 
@@ -19,7 +19,6 @@ APP_ALIASES: dict[str, str] = {"edit": "notebook"}
 @cache
 def available_apps() -> dict[str, str]:
     """Return a list of loadable euporie apps from console_scripts."""
-
     eps: dict | EntryPoints
     try:
         eps = entry_points(group="console_scripts")

@@ -4,14 +4,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from euporie.apptk.cursor_shapes import CursorShape, CursorShapeConfig
-
-from euporie.apptk.filters.modes import insert_mode, replace_mode
+from apptk.cursor_shapes import CursorShape, CursorShapeConfig
+from apptk.filters.modes import insert_mode, replace_mode
 
 if TYPE_CHECKING:
     from typing import Any
 
-    from euporie.apptk.application.application import Application
+    from apptk.application.application import Application
 
 
 class CursorConfig(CursorShapeConfig):

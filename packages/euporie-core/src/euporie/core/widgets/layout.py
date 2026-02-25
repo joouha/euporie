@@ -7,20 +7,15 @@ from abc import ABCMeta, abstractmethod
 from functools import lru_cache, partial
 from typing import TYPE_CHECKING, ClassVar, NamedTuple, cast
 
-from euporie.apptk.application.current import get_app
-from euporie.apptk.formatted_text.base import to_formatted_text
-from euporie.apptk.key_binding.key_bindings import KeyBindings
-from euporie.apptk.layout.dimension import Dimension as D
-from euporie.apptk.layout.dimension import to_dimension
-from euporie.apptk.layout.utils import explode_text_fragments
-from euporie.apptk.utils import Event
-
-from euporie.apptk.border import OutsetGrid
-from euporie.apptk.cache import SimpleCache
-from euporie.apptk.data_structures import DiBool
-from euporie.apptk.filters import Condition, to_filter
-from euporie.apptk.formatted_text.utils import fragment_list_width, truncate
-from euporie.apptk.layout.containers import (
+from apptk.application.current import get_app
+from apptk.border import OutsetGrid
+from apptk.cache import SimpleCache
+from apptk.data_structures import DiBool
+from apptk.filters import Condition, to_filter
+from apptk.formatted_text.base import to_formatted_text
+from apptk.formatted_text.utils import fragment_list_width, truncate
+from apptk.key_binding.key_bindings import KeyBindings
+from apptk.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
     HSplit,
@@ -28,35 +23,38 @@ from euporie.apptk.layout.containers import (
     Window,
     to_container,
 )
-from euporie.apptk.layout.controls import (
+from apptk.layout.controls import (
     FormattedTextControl,
     GetLinePrefixCallable,
     UIContent,
     UIControl,
 )
-from euporie.apptk.mouse_events import MouseButton, MouseEventType
-from euporie.apptk.widgets.base import Frame
+from apptk.layout.dimension import Dimension as D
+from apptk.layout.dimension import to_dimension
+from apptk.layout.utils import explode_text_fragments
+from apptk.mouse_events import MouseButton, MouseEventType
+from apptk.utils import Event
+from apptk.widgets.base import Frame
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
     from typing import Any
 
-    from euporie.apptk.formatted_text.base import (
+    from apptk.border import GridStyle
+    from apptk.filters import FilterOrBool
+    from apptk.formatted_text.base import (
         AnyFormattedText,
         OneStyleAndTextTuple,
         StyleAndTextTuples,
     )
-    from euporie.apptk.key_binding.key_bindings import (
+    from apptk.key_binding.key_bindings import (
         KeyBindingsBase,
         NotImplementedOrNone,
     )
-    from euporie.apptk.layout.dimension import AnyDimension
-
-    from euporie.apptk.border import GridStyle
-    from euporie.apptk.filters import FilterOrBool
-    from euporie.apptk.key_binding.key_processor import KeyPressEvent
-    from euporie.apptk.layout.containers import AnyContainer, Container, _Split
-    from euporie.apptk.mouse_events import MouseEvent
+    from apptk.key_binding.key_processor import KeyPressEvent
+    from apptk.layout.containers import AnyContainer, Container, _Split
+    from apptk.layout.dimension import AnyDimension
+    from apptk.mouse_events import MouseEvent
 
 log = logging.getLogger(__name__)
 

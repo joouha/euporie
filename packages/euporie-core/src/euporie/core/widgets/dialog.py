@@ -8,29 +8,26 @@ from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from euporie.apptk.application.current import get_app
-from euporie.apptk.key_binding.bindings.focus import focus_next, focus_previous
-from euporie.apptk.layout.dimension import Dimension
-from euporie.apptk.widgets.base import Label
-
-from euporie.apptk.border import (
+from apptk.application.current import get_app
+from apptk.border import (
     FullLine,
     LowerLeftHalfLine,
     UpperRightHalfLine,
 )
-from euporie.apptk.clipboard import ClipboardData
-from euporie.apptk.commands import add_cmd
-from euporie.apptk.completion import PathCompleter
-from euporie.apptk.filters import (
+from apptk.clipboard import ClipboardData
+from apptk.commands import add_cmd
+from apptk.completion import PathCompleter
+from apptk.filters import (
     Condition,
     buffer_has_focus,
     has_completions,
     has_focus,
     vi_insert_mode,
 )
-from euporie.apptk.formatted_text.utils import lex
-from euporie.apptk.key_binding.key_bindings import DynamicKeyBindings, KeyBindings
-from euporie.apptk.layout.containers import (
+from apptk.formatted_text.utils import lex
+from apptk.key_binding.bindings.focus import focus_next, focus_previous
+from apptk.key_binding.key_bindings import DynamicKeyBindings, KeyBindings
+from apptk.layout.containers import (
     ConditionalContainer,
     DynamicContainer,
     Float,
@@ -40,10 +37,11 @@ from euporie.apptk.layout.containers import (
     WindowAlign,
     to_container,
 )
-from euporie.apptk.layout.controls import FormattedTextControl
-from euporie.apptk.layout.decor import FocusedStyle
-from euporie.apptk.layout.mouse import MouseHandlerWrapper
-from euporie.apptk.widgets.base import Frame, Shadow
+from apptk.layout.controls import FormattedTextControl
+from apptk.layout.decor import FocusedStyle
+from apptk.layout.dimension import Dimension
+from apptk.layout.mouse import MouseHandlerWrapper
+from apptk.widgets.base import Frame, Label, Shadow
 from euporie.core.widgets.file_browser import FileBrowser
 from euporie.core.widgets.forms import Button, LabelledWidget, Select, Text
 from euporie.core.widgets.layout import Box
@@ -52,14 +50,13 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from typing import Any
 
-    from euporie.apptk.buffer import Buffer
-    from euporie.apptk.formatted_text.base import StyleAndTextTuples
-    from euporie.apptk.layout.layout import FocusableElement
-
-    from euporie.apptk.formatted_text import AnyFormattedText
-    from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
-    from euporie.apptk.key_binding.key_processor import KeyPressEvent
-    from euporie.apptk.layout.containers import AnyContainer
+    from apptk.buffer import Buffer
+    from apptk.formatted_text import AnyFormattedText
+    from apptk.formatted_text.base import StyleAndTextTuples
+    from apptk.key_binding.key_bindings import NotImplementedOrNone
+    from apptk.key_binding.key_processor import KeyPressEvent
+    from apptk.layout.containers import AnyContainer
+    from apptk.layout.layout import FocusableElement
     from euporie.core.app.app import BaseApp
     from euporie.core.kernel.base import KernelInfo
     from euporie.core.tabs.base import Tab
@@ -304,8 +301,9 @@ class AboutDialog(Dialog):
 
     def load(self) -> None:
         """Load the dialog's body."""
-        from euporie.core import __copyright__, __strapline__
         from euporie.core.widgets.logo import logo_medium
+
+        from euporie.core import __copyright__, __strapline__
 
         self.body = HSplit(
             [
@@ -454,9 +452,8 @@ class OpenFileDialog(FileDialog):
         self, buffer: Buffer, tab: Tab | None, cb: Callable | None = None
     ) -> None:
         """Validate the the file to open exists."""
+        from apptk.path import parse_path
         from upath import UPath
-
-        from euporie.apptk.path import parse_path
 
         try:
             path = self.file_browser.control.dir / buffer.text
@@ -494,9 +491,8 @@ class SaveAsDialog(FileDialog):
         self, buffer: Buffer, tab: Tab | None, cb: Callable | None = None
     ) -> None:
         """Validate the the file to open exists."""
+        from apptk.path import parse_path
         from upath import UPath
-
-        from euporie.apptk.path import parse_path
 
         try:
             path = self.file_browser.control.dir / buffer.text
@@ -637,9 +633,9 @@ class ErrorDialog(Dialog):
         """Load dialog body & buttons."""
         import traceback
 
-        from euporie.apptk.layout.containers import MarginContainer
-        from euporie.apptk.layout.margins import ScrollbarMargin
-        from euporie.apptk.widgets.formatted_text_area import FormattedTextArea
+        from apptk.layout.containers import MarginContainer
+        from apptk.layout.margins import ScrollbarMargin
+        from apptk.widgets.formatted_text_area import FormattedTextArea
         from euporie.core.widgets.forms import Checkbox
 
         if exception is None:
@@ -778,8 +774,8 @@ class ShortcutsDialog(Dialog):
 
     def load(self, *args: Any, **kwargs: Any) -> None:
         """Load the dialog body."""
-        from euporie.apptk.convert.datum import Datum
-        from euporie.apptk.layout.display import Display
+        from apptk.convert.datum import Datum
+        from apptk.layout.display import Display
 
         if not self.details:
             self.details = self.format_key_info()
@@ -795,13 +791,12 @@ class ShortcutsDialog(Dialog):
         import pkgutil
         from textwrap import dedent
 
-        from euporie.apptk.formatted_text.base import to_formatted_text
-
-        from euporie.apptk.border import InvisibleLine
-        from euporie.apptk.commands import get_cmd
-        from euporie.apptk.data_structures import DiInt
-        from euporie.apptk.formatted_text.table import Table
-        from euporie.apptk.formatted_text.utils import HorizontalAlign
+        from apptk.border import InvisibleLine
+        from apptk.commands import get_cmd
+        from apptk.data_structures import DiInt
+        from apptk.formatted_text.base import to_formatted_text
+        from apptk.formatted_text.table import Table
+        from apptk.formatted_text.utils import HorizontalAlign
 
         table = Table(padding=DiInt(0, 1, 0, 1))
 

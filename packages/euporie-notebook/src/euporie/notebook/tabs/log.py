@@ -4,23 +4,21 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from euporie.apptk.layout.dimension import Dimension
-from euporie.apptk.widgets import SearchToolbar
-
-from euporie.apptk.filters import Condition, has_focus
-from euporie.apptk.layout.containers import HSplit, MarginContainer, VSplit
-from euporie.apptk.layout.margins import ScrollbarMargin
-from euporie.apptk.path import parse_path
+from apptk.filters import has_focus
+from apptk.layout.containers import HSplit, MarginContainer, VSplit
+from apptk.layout.dimension import Dimension
+from apptk.layout.margins import ScrollbarMargin
+from apptk.path import parse_path
+from apptk.widgets import SearchToolbar
+from apptk.widgets.formatted_text_area import FormattedTextArea
 from euporie.core.log import LOG_QUEUE, QueueHandler
 from euporie.core.tabs.base import Tab
-from euporie.apptk.widgets.formatted_text_area import FormattedTextArea
 
 if TYPE_CHECKING:
     from collections.abc import Callable
     from pathlib import Path
 
-    from euporie.apptk.formatted_text.base import FormattedText
-
+    from apptk.formatted_text.base import FormattedText
     from euporie.core.app.app import BaseApp
 
 

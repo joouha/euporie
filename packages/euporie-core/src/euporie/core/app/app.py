@@ -12,24 +12,22 @@ from pathlib import PurePath
 from typing import TYPE_CHECKING, cast, overload
 from weakref import WeakSet, WeakValueDictionary
 
-from euporie.apptk.application.current import create_app_session, set_app
-from euporie.apptk.clipboard.base import DynamicClipboard
-from euporie.apptk.layout.layout import Layout
-from euporie.apptk.utils import Event
-
-from euporie.apptk.application.application import Application, _CombinedRegistry
-from euporie.apptk.color import Color, ColorPalette
-from euporie.apptk.filters import Condition
-from euporie.apptk.key_binding.key_bindings import KeyBindings
-from euporie.apptk.key_binding.key_processor import KeyProcessor
-from euporie.apptk.layout.containers import Float, FloatContainer, Window, to_container
-from euporie.apptk.output.vt100 import (
+from apptk.application.application import Application, _CombinedRegistry
+from apptk.application.current import create_app_session, set_app
+from apptk.clipboard.base import DynamicClipboard
+from apptk.color import Color, ColorPalette
+from apptk.filters import Condition
+from apptk.key_binding.key_bindings import KeyBindings
+from apptk.key_binding.key_processor import KeyProcessor
+from apptk.layout.containers import Float, FloatContainer, Window, to_container
+from apptk.layout.layout import Layout
+from apptk.output.vt100 import (
     ANSI_COLORS_TO_RGB,
     TERMINAL_COLORS_TO_RGB,
     Vt100_Output,
 )
-from euporie.apptk.renderer import Renderer
-from euporie.apptk.styles import (
+from apptk.renderer import Renderer
+from apptk.styles import (
     BaseStyle,
     ConditionalStyleTransformation,
     DynamicStyleTransformation,
@@ -40,8 +38,10 @@ from euporie.apptk.styles import (
     merge_styles,
     style_from_pygments_cls,
 )
-from euporie.apptk.styles.base import DynamicStyle
-from euporie.apptk.styles.style import PaletteStyle
+from apptk.styles.base import DynamicStyle
+from apptk.styles.style import PaletteStyle
+from apptk.utils import Event
+from apptk.widgets.base import Shadow
 from euporie.core.app.base import ConfigurableApp
 from euporie.core.app.cursor import CursorConfig
 from euporie.core.filters import has_toolbar
@@ -57,7 +57,6 @@ from euporie.core.style import (
     get_style_by_name,
 )
 from euporie.core.utils import ChainedList
-from euporie.apptk.widgets.base import Shadow
 from euporie.core.widgets.menu import CompletionsMenu
 
 if TYPE_CHECKING:
@@ -67,13 +66,12 @@ if TYPE_CHECKING:
     from types import FrameType
     from typing import Any, ClassVar, TypeVar
 
-    # from euporie.apptk.application import _AppResult
-    from euporie.apptk.clipboard.base import Clipboard
-    from euporie.apptk.contrib.ssh import PromptToolkitSSHSession
-    from euporie.apptk.layout.layout import FocusableElement
-
-    from euporie.apptk.filters import Filter, FilterOrBool
-    from euporie.apptk.layout.containers import AnyContainer
+    # from apptk.application import _AppResult
+    from apptk.clipboard.base import Clipboard
+    from apptk.contrib.ssh import PromptToolkitSSHSession
+    from apptk.filters import Filter, FilterOrBool
+    from apptk.layout.containers import AnyContainer
+    from apptk.layout.layout import FocusableElement
     from euporie.core.bars.command import CommandBar
     from euporie.core.bars.search import SearchBar
     from euporie.core.config import Setting
@@ -110,7 +108,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
 
     The base euporie application class.
 
-    This subclasses the `euporie.apptk.application.Application` class, so application
+    This subclasses the `apptk.application.Application` class, so application
     wide methods can be easily added.
     """
 
@@ -336,7 +334,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
     @classmethod
     def launch(cls) -> None:
         """Launch the app."""
-        from euporie.apptk.utils import in_main_thread
+        from apptk.utils import in_main_thread
 
         super().launch()
         # Run the application
@@ -426,7 +424,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
 
     def get_file_tabs(self, path: Path) -> list[TabRegistryEntry]:
         """Return the tab to use for a file path."""
-        from euporie.apptk.convert.mime import get_mime
+        from apptk.convert.mime import get_mime
 
         path_mime = get_mime(path) or "text/plain"
         log.debug("File %s has mime type: %s", path, path_mime)
@@ -495,7 +493,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
             tab_class: The tab type to use to open the file
 
         """
-        from euporie.apptk.path import parse_path
+        from apptk.path import parse_path
 
         ppath = parse_path(path, resolve=True)
         log.info("Opening file %s", path)

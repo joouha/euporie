@@ -25,9 +25,6 @@ euporie-core = { workspace = true }
 path = "../../VERSION"
 pattern = "(?P<version>.+)"
 
-[tool.hatch.build.targets.wheel]
-packages = ["src/euporie"]
-
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

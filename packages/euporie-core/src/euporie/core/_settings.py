@@ -5,8 +5,9 @@ from __future__ import annotations
 import json
 from pkgutil import resolve_name
 
-from euporie.core import __version__
 from euporie.core.config import add_setting
+
+from euporie.core import __version__
 
 # euporie.core.config
 
@@ -95,12 +96,12 @@ add_setting(
 
 add_setting(
     name="clipboard",
-    group="euporie.apptk.clipboard",
+    group="apptk.clipboard",
     flags=["--clipboard"],
     choices={
-        "external": "euporie.apptk.clipboard.pyperclip:PyperclipClipboard",
-        "internal": "euporie.apptk.clipboard.in_memory:InMemoryClipboard",
-        "terminal": "euporie.apptk.clipboard.osc52:Osc52Clipboard",
+        "external": "apptk.clipboard.pyperclip:PyperclipClipboard",
+        "internal": "apptk.clipboard.in_memory:InMemoryClipboard",
+        "terminal": "apptk.clipboard.osc52:Osc52Clipboard",
     },
     type_=str,
     validate=resolve_name,

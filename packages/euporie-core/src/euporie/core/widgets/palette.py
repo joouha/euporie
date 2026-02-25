@@ -7,35 +7,33 @@ import re
 from functools import partial
 from typing import TYPE_CHECKING, NamedTuple
 
-from euporie.apptk.application.current import get_app
-from euporie.apptk.key_binding.bindings.focus import focus_next, focus_previous
-
-from euporie.apptk.commands import COMMANDS, Command, add_cmd
-from euporie.apptk.data_structures import Point
-from euporie.apptk.filters import Condition
-from euporie.apptk.key_binding.vi_state import InputMode
-from euporie.apptk.layout.containers import (
+from apptk.application.current import get_app
+from apptk.commands import COMMANDS, Command, add_cmd
+from apptk.data_structures import Point
+from apptk.filters import Condition
+from apptk.key_binding.bindings.focus import focus_next, focus_previous
+from apptk.key_binding.vi_state import InputMode
+from apptk.layout.containers import (
     HSplit,
     MarginContainer,
     ScrollOffsets,
     VSplit,
     Window,
 )
-from euporie.apptk.layout.controls import UIContent, UIControl
-from euporie.apptk.layout.decor import FocusedStyle
-from euporie.apptk.layout.margins import ScrollbarMargin
-from euporie.apptk.mouse_events import MouseEvent, MouseEventType
+from apptk.layout.controls import UIContent, UIControl
+from apptk.layout.decor import FocusedStyle
+from apptk.layout.margins import ScrollbarMargin
+from apptk.mouse_events import MouseEvent, MouseEventType
 from euporie.core.bars.status import StatusContainer
 from euporie.core.widgets.dialog import Dialog
 from euporie.core.widgets.forms import Text
 
 if TYPE_CHECKING:
-    from euporie.apptk.buffer import Buffer
-
-    from euporie.apptk.formatted_text import StyleAndTextTuples
-    from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
-    from euporie.apptk.key_binding.key_processor import KeyPressEvent
-    from euporie.apptk.layout.controls import GetLinePrefixCallable
+    from apptk.buffer import Buffer
+    from apptk.formatted_text import StyleAndTextTuples
+    from apptk.key_binding.key_bindings import NotImplementedOrNone
+    from apptk.key_binding.key_processor import KeyPressEvent
+    from apptk.layout.controls import GetLinePrefixCallable
     from euporie.core.app.app import BaseApp
     from euporie.core.bars.status import StatusBarFields
 

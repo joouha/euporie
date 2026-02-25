@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from euporie.apptk.history import History
+from apptk.history import History
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Callable, Iterable

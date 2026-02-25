@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from functools import cache
 
-from euporie.apptk.application.current import get_app
-
-from euporie.apptk.filters import (
+from apptk.application.current import get_app
+from apptk.filters import (
     Condition,
     has_completions,
 )
@@ -21,7 +20,7 @@ def has_tabs() -> bool:
 @Condition
 def has_dialog() -> bool:
     """Determine if a dialog is being displayed."""
-    from euporie.apptk.layout.containers import ConditionalContainer
+    from apptk.layout.containers import ConditionalContainer
 
     app = get_app()
     for dialog in app.dialogs.values():
@@ -33,7 +32,7 @@ def has_dialog() -> bool:
 @Condition
 def has_menus() -> bool:
     """Determine if a menu is being displayed."""
-    from euporie.apptk.layout.containers import ConditionalContainer
+    from apptk.layout.containers import ConditionalContainer
     from euporie.notebook.current import get_app
 
     app = get_app()

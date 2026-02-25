@@ -5,16 +5,15 @@ from __future__ import annotations
 from functools import partial
 from typing import TYPE_CHECKING
 
-from euporie.apptk.layout.containers import Window
-from euporie.apptk.layout.controls import FormattedTextControl
-from euporie.apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
+from apptk.layout.containers import Window
+from apptk.layout.controls import FormattedTextControl
+from apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
 
 if TYPE_CHECKING:
     from typing import Any
 
-    from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
-
-    from euporie.apptk.formatted_text import StyleAndTextTuples
+    from apptk.formatted_text import StyleAndTextTuples
+    from apptk.key_binding.key_bindings import NotImplementedOrNone
 
 
 class JsonView:

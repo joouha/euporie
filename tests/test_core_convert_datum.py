@@ -6,12 +6,11 @@ import gc
 import sys
 from unittest.mock import PropertyMock, patch
 
-from euporie.apptk.application.current import set_app
-from PIL import Image
-
-from euporie.apptk.convert.datum import Datum
-from euporie.apptk.data_structures import Size
+from apptk.application.current import set_app
+from apptk.convert.datum import Datum
+from apptk.data_structures import Size
 from euporie.core.app.dummy import DummyApp
+from PIL import Image
 
 
 def test_datum_new() -> None:
@@ -78,11 +77,11 @@ async def test_cell_size_async() -> None:
     """Tests the asynchronous retrieval of a Datum object's cell size."""
     datum = Datum(Image.new("RGB", (256, 128), color="red"), format="pil")
     with patch(
-        "euporie.apptk.output.plain_text.PlainTextOutput.cell_pixel_size",
+        "apptk.output.plain_text.PlainTextOutput.cell_pixel_size",
         new_callable=PropertyMock,
     ) as mock_cell_size_px:
         mock_cell_size_px.return_value = (8, 16)
-        from euporie.apptk.output.plain_text import PlainTextOutput
+        from apptk.output.plain_text import PlainTextOutput
 
         output = PlainTextOutput(sys.stdout)
         app = DummyApp(output=output)

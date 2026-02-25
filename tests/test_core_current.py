@@ -4,8 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import Mock
 
-from euporie.apptk.application.current import get_app, get_app_session, set_app
-
+from apptk.application.current import get_app, get_app_session, set_app
 from euporie.core.app.app import BaseApp
 
 

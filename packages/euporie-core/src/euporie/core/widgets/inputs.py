@@ -6,24 +6,17 @@ import logging
 from functools import lru_cache
 from typing import TYPE_CHECKING
 
-from euporie.apptk.application.current import get_app
-from euporie.apptk.buffer import Buffer
-from euporie.apptk.completion.base import Completer, DynamicCompleter
-from euporie.apptk.document import Document
-from euporie.apptk.layout.dimension import AnyDimension
-from euporie.apptk.layout.dimension import Dimension as D
-from euporie.apptk.validation import DynamicValidator, Validator
-from euporie.apptk.widgets import TextArea
-from euporie.apptk.widgets.toolbars import SearchToolbar
-from pygments.lexers import ClassNotFound, get_lexer_by_name
-
-from euporie.apptk.auto_suggest import (
+from apptk.application.current import get_app
+from apptk.auto_suggest import (
     AutoSuggest,
     ConditionalAutoSuggestAsync,
     DynamicAutoSuggest,
 )
-from euporie.apptk.commands import add_cmd
-from euporie.apptk.filters import (
+from apptk.buffer import Buffer
+from apptk.commands import add_cmd
+from apptk.completion.base import Completer, DynamicCompleter
+from apptk.document import Document
+from apptk.filters import (
     Condition,
     buffer_has_focus,
     has_focus,
@@ -33,27 +26,29 @@ from euporie.apptk.filters import (
     is_true,
     to_filter,
 )
-from euporie.apptk.filters.app import scrollable
-from euporie.apptk.filters.buffer import buffer_is_code
-from euporie.apptk.key_binding.key_bindings import KeyBindings, merge_key_bindings
-from euporie.apptk.layout.containers import (
+from apptk.filters.app import scrollable
+from apptk.filters.buffer import buffer_is_code
+from apptk.key_binding.key_bindings import KeyBindings, merge_key_bindings
+from apptk.layout.containers import (
     ConditionalContainer,
     MarginContainer,
     ScrollOffsets,
     VSplit,
     Window,
 )
-from euporie.apptk.layout.controls import (
+from apptk.layout.controls import (
     BufferControl,
     GetLinePrefixCallable,
 )
-from euporie.apptk.layout.margins import (
+from apptk.layout.dimension import AnyDimension
+from apptk.layout.dimension import Dimension as D
+from apptk.layout.margins import (
     ConditionalMargin,
     NumberedMargin,
     OverflowMargin,
     ScrollbarMargin,
 )
-from euporie.apptk.layout.processors import (
+from apptk.layout.processors import (
     AppendLineAutoSuggestion,
     BeforeInput,
     ConditionalProcessor,
@@ -66,26 +61,29 @@ from euporie.apptk.layout.processors import (
     ShowTrailingWhiteSpaceProcessor,
     TabsProcessor,
 )
-from euporie.apptk.lexers import DynamicLexer, PygmentsLexer, SimpleLexer
+from apptk.lexers import DynamicLexer, PygmentsLexer, SimpleLexer
+from apptk.validation import DynamicValidator, Validator
+from apptk.widgets import TextArea
+from apptk.widgets.toolbars import SearchToolbar
 from euporie.core.diagnostics import Report
 from euporie.core.processors import DiagnosticProcessor
+from pygments.lexers import ClassNotFound, get_lexer_by_name
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
 
-    from euporie.apptk.buffer import BufferAcceptHandler
-    from euporie.apptk.formatted_text.base import StyleAndTextTuples
-    from euporie.apptk.history import History
-    from euporie.apptk.layout.layout import FocusableElement
-    from euporie.apptk.lexers.base import Lexer
-
-    from euporie.apptk.filters import Filter, FilterOrBool
-    from euporie.apptk.formatted_text import (
+    from apptk.buffer import BufferAcceptHandler
+    from apptk.filters import Filter, FilterOrBool
+    from apptk.formatted_text import (
         AnyFormattedText,
     )
-    from euporie.apptk.key_binding.key_bindings import KeyBindingsBase
-    from euporie.apptk.layout.containers import AnyContainer, Container
-    from euporie.apptk.layout.margins import Margin
+    from apptk.formatted_text.base import StyleAndTextTuples
+    from apptk.history import History
+    from apptk.key_binding.key_bindings import KeyBindingsBase
+    from apptk.layout.containers import AnyContainer, Container
+    from apptk.layout.layout import FocusableElement
+    from apptk.layout.margins import Margin
+    from apptk.lexers.base import Lexer
     from euporie.core.bars.status import StatusBarFields
     from euporie.core.format import Formatter
     from euporie.core.inspection import Inspector
@@ -306,9 +304,9 @@ class KernelInput(TextArea):
         ]
         right_margins = [OverflowMargin()]
         self.window = Window(
-            height=lambda: height or D(min=1)
-            if self.buffer.multiline()
-            else D.exact(1),
+            height=lambda: (
+                height or D(min=1) if self.buffer.multiline() else D.exact(1)
+            ),
             width=width,
             dont_extend_height=dont_extend_height,
             dont_extend_width=dont_extend_width,
@@ -455,7 +453,7 @@ class KernelInput(TextArea):
     @add_cmd(filter=buffer_is_code & buffer_has_focus, keys=["c-A-up"])
     def _history_prev() -> None:
         """Get the previous history entry."""
-        from euporie.apptk.application.current import get_app
+        from apptk.application.current import get_app
 
         get_app().current_buffer.history_backward()
 
@@ -463,7 +461,7 @@ class KernelInput(TextArea):
     @add_cmd(filter=buffer_is_code & buffer_has_focus, keys=["c-A-down"])
     def _history_next() -> None:
         """Get the next history entry."""
-        from euporie.apptk.application.current import get_app
+        from apptk.application.current import get_app
 
         get_app().current_buffer.history_forward()
 
@@ -471,8 +469,7 @@ class KernelInput(TextArea):
     @add_cmd()
     def _reformat_input() -> None:
         """Format the contents of the current input field."""
-        from euporie.apptk.application.current import get_app
-
+        from apptk.application.current import get_app
         from euporie.core.tabs.kernel import KernelTab
 
         if (

@@ -7,19 +7,18 @@ import json
 from pkgutil import resolve_name
 from textwrap import dedent
 
-from euporie.apptk.formatted_text.base import to_formatted_text
-from euporie.apptk.layout.dimension import Dimension
-from euporie.apptk.shortcuts.utils import print_formatted_text
-
-from euporie.apptk.border import (
+from apptk.border import (
     AsciiLine,
     AsciiThickLine,
     DiLineStyle,
 )
-from euporie.apptk.commands import get_cmd
-from euporie.apptk.formatted_text.table import Table
-from euporie.apptk.formatted_text.utils import indent
-from euporie.apptk.key_binding.utils import format_keys, parse_keys
+from apptk.commands import get_cmd
+from apptk.formatted_text.base import to_formatted_text
+from apptk.formatted_text.table import Table
+from apptk.formatted_text.utils import indent
+from apptk.key_binding.utils import format_keys, parse_keys
+from apptk.layout.dimension import Dimension
+from apptk.shortcuts.utils import print_formatted_text
 from euporie.core.key_binding.registry import BINDINGS
 
 groups = [
@@ -36,7 +35,7 @@ groups = [
     "euporie.core.key_binding.bindings.micro:EditMode",
     "euporie.core.key_binding.bindings.page_navigation:PageNavigation",
     "euporie.core.key_binding.bindings.terminal:TerminalQueries",
-    "euporie.apptk.layout.display:DisplayControl",
+    "apptk.layout.display:DisplayControl",
     "euporie.core.widgets.inputs:KernelInput",
     "euporie.core.widgets.pager:Pager",
     "euporie.web.widgets.webview:WebViewControl",

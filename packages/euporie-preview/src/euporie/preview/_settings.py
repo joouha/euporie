@@ -4,9 +4,8 @@ from __future__ import annotations
 
 import logging
 
-from upath import UPath
-
 from euporie.core.config import add_setting
+from upath import UPath
 
 log = logging.getLogger(__name__)
 

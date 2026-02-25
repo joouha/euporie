@@ -6,26 +6,24 @@ import logging
 from math import ceil
 from typing import TYPE_CHECKING
 
-from euporie.apptk.application.current import get_app
-from euporie.apptk.layout.dimension import Dimension
-from euporie.apptk.utils import get_cwidth
-
-from euporie.apptk.data_structures import Point
-from euporie.apptk.filters import Condition, has_completions, is_done
-from euporie.apptk.formatted_text.utils import apply_style, pad, truncate
-from euporie.apptk.layout.containers import ConditionalContainer, HSplit, Window
-from euporie.apptk.layout.controls import GetLinePrefixCallable, UIContent, UIControl
+from apptk.application.current import get_app
+from apptk.data_structures import Point
+from apptk.filters import Condition, has_completions, is_done
+from apptk.formatted_text.utils import apply_style, pad, truncate
+from apptk.layout.containers import ConditionalContainer, HSplit, Window
+from apptk.layout.controls import GetLinePrefixCallable, UIContent, UIControl
+from apptk.layout.dimension import Dimension
+from apptk.utils import get_cwidth
 from euporie.core.filters import has_toolbar
 
 if TYPE_CHECKING:
-    from euporie.apptk.buffer import CompletionState
-    from euporie.apptk.key_binding.key_bindings import (
+    from apptk.buffer import CompletionState
+    from apptk.formatted_text import StyleAndTextTuples
+    from apptk.key_binding.key_bindings import (
         KeyBindingsBase,
         NotImplementedOrNone,
     )
-
-    from euporie.apptk.formatted_text import StyleAndTextTuples
-    from euporie.apptk.mouse_events import MouseEvent
+    from apptk.mouse_events import MouseEvent
 
 log = logging.getLogger(__name__)
 

@@ -10,16 +10,15 @@ from functools import cache
 from pathlib import PurePath
 from typing import TYPE_CHECKING
 
-from euporie.apptk.application.current import get_app
-
-from euporie.apptk.cache import SimpleCache
-from euporie.apptk.convert.registry import find_route
-from euporie.apptk.layout.containers import (
+from apptk.application.current import get_app
+from apptk.cache import SimpleCache
+from apptk.convert.registry import find_route
+from apptk.layout.containers import (
     DynamicContainer,
     HSplit,
     to_container,
 )
-from euporie.apptk.layout.display import Display
+from apptk.layout.display import Display
 from euporie.core.widgets.layout import Box
 from euporie.core.widgets.tree import JsonView
 
@@ -27,7 +26,7 @@ if TYPE_CHECKING:
     from typing import Any, Protocol, TypeVar
     from weakref import ReferenceType
 
-    from euporie.apptk.layout.containers import AnyContainer, Window
+    from apptk.layout.containers import AnyContainer, Window
     from euporie.core.config import Setting
     from euporie.core.tabs.kernel import KernelTab
 
@@ -102,9 +101,9 @@ class CellOutputDataElement(CellOutputElement):
             metadata: Any metadata relating to the data
             parent: The cell the output-element is attached to
         """
-        from euporie.apptk.convert.datum import Datum
-        from euporie.apptk.convert.formats import BASE64_FORMATS
-        from euporie.apptk.convert.mime import MIME_FORMATS
+        from apptk.convert.datum import Datum
+        from apptk.convert.formats import BASE64_FORMATS
+        from apptk.convert.mime import MIME_FORMATS
 
         self.parent = parent
 
@@ -190,7 +189,7 @@ class CellOutputDataElement(CellOutputElement):
     @data.setter
     def data(self, value: Any) -> None:
         """Set the cell output's data."""
-        from euporie.apptk.convert.datum import Datum
+        from apptk.convert.datum import Datum
 
         self._datum = Datum(
             value,
@@ -552,7 +551,7 @@ class CellOutputArea:
 
     def to_plain_text(self) -> str:
         """Convert the contents of the output to plain text."""
-        from euporie.apptk.formatted_text.utils import to_plain_text
+        from apptk.formatted_text.utils import to_plain_text
 
         outputs = []
         app = get_app()

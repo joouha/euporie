@@ -5,19 +5,18 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from euporie.apptk.application.current import set_app
-
-from euporie.apptk.convert.datum import Datum
-from euporie.apptk.convert.mime import get_format
-from euporie.apptk.layout.containers import DummyContainer
-from euporie.apptk.path import parse_path
+from apptk.application.current import set_app
+from apptk.convert.datum import Datum
+from apptk.convert.mime import get_format
+from apptk.layout.containers import DummyContainer
+from apptk.path import parse_path
 from euporie.core.app.app import BaseApp
 
 if TYPE_CHECKING:
     from collections.abc import Callable
     from typing import Any
 
-    from euporie.apptk.eventloop import InputHook
+    from apptk.eventloop import InputHook
 
 
 class ShowApp(BaseApp):

@@ -7,13 +7,13 @@ import logging
 from functools import partial
 from typing import TYPE_CHECKING
 
-from euporie.apptk.filters.base import Condition
-
-from euporie.apptk.convert.datum import Datum
-from euporie.apptk.convert.mime import MIME_FORMATS
-from euporie.apptk.layout.containers import ConditionalContainer, HSplit, VSplit
-from euporie.apptk.layout.decor import FocusedStyle
-from euporie.apptk.mouse_events import (
+from apptk.convert.datum import Datum
+from apptk.convert.mime import MIME_FORMATS
+from apptk.filters.base import Condition
+from apptk.layout.containers import ConditionalContainer, HSplit, VSplit
+from apptk.layout.decor import FocusedStyle
+from apptk.layout.display import Display
+from apptk.mouse_events import (
     MouseButton,
     MouseEventType,
     MouseModifier,
@@ -21,7 +21,6 @@ from euporie.apptk.mouse_events import (
 )
 from euporie.core.comm.base import CommView
 from euporie.core.comm.ipywidgets import IpyWidgetComm
-from euporie.apptk.layout.display import Display
 from euporie.core.widgets.forms import Button, Label, ToggleButton
 from euporie.core.widgets.layout import Box
 
@@ -29,9 +28,8 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
     from typing import Any
 
-    from euporie.apptk.key_binding.key_bindings import NotImplementedOrNone
-
-    from euporie.apptk.mouse_events import MouseEvent as PtkMouseEvent
+    from apptk.key_binding.key_bindings import NotImplementedOrNone
+    from apptk.mouse_events import MouseEvent as PtkMouseEvent
     from euporie.core.tabs.kernel import KernelTab
     from euporie.core.widgets.cell_outputs import OutputParent
 log = logging.getLogger(__name__)
@@ -319,7 +317,7 @@ class ToolbarModel(IpyWidgetComm):
 
     def create_view(self, parent: OutputParent) -> CommView:
         """Create a new view of the toolbar ipywidget."""
-        from euporie.apptk.styles.icons import FA_ICONS
+        from apptk.styles.icons import FA_ICONS
 
         buttons = {}
         children = []

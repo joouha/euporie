@@ -10,16 +10,15 @@ from functools import lru_cache, partial
 from typing import TYPE_CHECKING
 from weakref import WeakKeyDictionary
 
-from euporie.apptk.application.current import get_app
-from euporie.apptk.completion.base import DynamicCompleter, _MergedCompleter
-from euporie.apptk.history import DummyHistory, InMemoryHistory
-
-from euporie.apptk.auto_suggest import DummyAutoSuggest, DynamicAutoSuggest
-from euporie.apptk.commands import add_cmd
-from euporie.apptk.completion.deduplicate import DeduplicateCompleter
-from euporie.core.diagnostics import Report
+from apptk.application.current import get_app
+from apptk.auto_suggest import DummyAutoSuggest, DynamicAutoSuggest
+from apptk.commands import add_cmd
+from apptk.completion.base import DynamicCompleter, _MergedCompleter
+from apptk.completion.deduplicate import DeduplicateCompleter
+from apptk.history import DummyHistory, InMemoryHistory
 from euporie.core.comm.registry import open_comm
 from euporie.core.completion import KernelCompleter, LspCompleter
+from euporie.core.diagnostics import Report
 from euporie.core.filters import kernel_tab_has_focus
 from euporie.core.format import LspFormatter
 from euporie.core.history import KernelHistory
@@ -33,10 +32,9 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any
 
-    from euporie.apptk.completion.base import Completer
-    from euporie.apptk.history import History
-
-    from euporie.apptk.auto_suggest import AutoSuggest
+    from apptk.auto_suggest import AutoSuggest
+    from apptk.completion.base import Completer
+    from apptk.history import History
     from euporie.core.app.app import BaseApp
     from euporie.core.comm.base import Comm
     from euporie.core.format import Formatter
@@ -52,15 +50,15 @@ log = logging.getLogger(__name__)
 def autosuggest_factory(kind: str, history: History) -> AutoSuggest:
     """Generate autosuggesters."""
     if kind == "smart":
-        from euporie.apptk.auto_suggest import SmartHistoryAutoSuggest
+        from apptk.auto_suggest import SmartHistoryAutoSuggest
 
         return SmartHistoryAutoSuggest(history)
     elif kind == "simple":
-        from euporie.apptk.auto_suggest import SimpleHistoryAutoSuggest
+        from apptk.auto_suggest import SimpleHistoryAutoSuggest
 
         return SimpleHistoryAutoSuggest(history)
     else:
-        from euporie.apptk.auto_suggest import DummyAutoSuggest
+        from apptk.auto_suggest import DummyAutoSuggest
 
         return DummyAutoSuggest()
 

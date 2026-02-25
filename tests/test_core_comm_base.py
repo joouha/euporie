@@ -6,11 +6,10 @@ from typing import cast
 from unittest.mock import Mock, call, patch
 
 import pytest
-
-from euporie.apptk.layout.containers import Window
+from apptk.layout.containers import Window
+from apptk.layout.display import Display
 from euporie.core.comm.base import Comm, CommView, UnimplementedComm
 from euporie.core.tabs.kernel import KernelTab
-from euporie.apptk.layout.display import Display
 
 
 class MockOutputParent:

@@ -6,27 +6,25 @@ import logging
 import re
 from typing import TYPE_CHECKING
 
-from euporie.apptk.application.current import get_app
-from euporie.apptk.buffer import Buffer
-from euporie.apptk.document import Document
-from euporie.apptk.filters.base import Condition
-from euporie.apptk.formatted_text.base import to_formatted_text
-from euporie.apptk.search import SearchDirection
-from euporie.apptk.selection import SelectionState
-from euporie.apptk.widgets import SearchToolbar as PtkSearchToolbar
-
-from euporie.apptk.commands import add_cmd
-from euporie.apptk.filters.app import is_searching
-from euporie.apptk.key_binding.key_bindings import KeyBindings
-from euporie.apptk.key_binding.vi_state import InputMode
-from euporie.apptk.layout.controls import BufferControl, SearchBufferControl
+from apptk.application.current import get_app
+from apptk.buffer import Buffer
+from apptk.commands import add_cmd
+from apptk.document import Document
+from apptk.filters.app import is_searching
+from apptk.filters.base import Condition
+from apptk.formatted_text.base import to_formatted_text
+from apptk.key_binding.key_bindings import KeyBindings
+from apptk.key_binding.vi_state import InputMode
+from apptk.layout.controls import BufferControl, SearchBufferControl
+from apptk.search import SearchDirection
+from apptk.selection import SelectionState
+from apptk.widgets import SearchToolbar as PtkSearchToolbar
 from euporie.core.bars import SEARCH_BAR_BUFFER
 
 if TYPE_CHECKING:
-    from euporie.apptk.formatted_text.base import AnyFormattedText
-
-    from euporie.apptk.filters import FilterOrBool
-    from euporie.apptk.layout.controls import UIControl
+    from apptk.filters import FilterOrBool
+    from apptk.formatted_text.base import AnyFormattedText
+    from apptk.layout.controls import UIControl
 
 log = logging.getLogger(__name__)
 

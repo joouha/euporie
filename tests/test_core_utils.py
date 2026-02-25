@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from euporie.apptk.data_structures import Point
-from euporie.apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
+from apptk.data_structures import Point
+from apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
 from euporie.core.utils import ChainedList, dict_merge, on_click
 
 

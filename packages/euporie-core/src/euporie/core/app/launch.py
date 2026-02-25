@@ -2,12 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
 from euporie.core.app.base import ConfigurableApp
-
-
-if TYPE_CHECKING:
-    pass
 
 
 class LaunchApp(ConfigurableApp):

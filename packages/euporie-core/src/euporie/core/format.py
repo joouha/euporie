@@ -7,7 +7,7 @@ import subprocess
 from abc import ABCMeta, abstractmethod
 from typing import TYPE_CHECKING
 
-from euporie.apptk.filters.environment import command_exists
+from apptk.filters.environment import command_exists
 from euporie.core.lsp import range_to_slice
 
 if TYPE_CHECKING:

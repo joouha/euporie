@@ -7,13 +7,13 @@ from abc import ABCMeta, abstractmethod
 from typing import TYPE_CHECKING
 from weakref import WeakKeyDictionary
 
-from euporie.apptk.application.current import get_app
+from apptk.application.current import get_app
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping, Sequence
     from typing import Any
 
-    from euporie.apptk.layout.containers import AnyContainer
+    from apptk.layout.containers import AnyContainer
     from euporie.core.kernel.jupyter import JupyterKernel
     from euporie.core.tabs.kernel import KernelTab
     from euporie.core.widgets.cell_outputs import OutputParent
@@ -95,8 +95,8 @@ class Comm(metaclass=ABCMeta):
 
     def create_view(self, parent: OutputParent) -> CommView:
         """Create a new :class:`CommView` for this Comm."""
-        from euporie.apptk.convert.datum import Datum
-        from euporie.apptk.layout.display import Display
+        from apptk.convert.datum import Datum
+        from apptk.layout.display import Display
 
         return CommView(Display(Datum("[Object cannot be rendered]", format="ansi")))
 

@@ -7,20 +7,19 @@ import logging
 from abc import ABCMeta
 from typing import TYPE_CHECKING, ClassVar
 
-from euporie.apptk.utils import Event
-from upath import UPath
-
-from euporie.apptk.layout.containers import Window, WindowAlign
-from euporie.apptk.layout.controls import FormattedTextControl
-from euporie.apptk.path import parse_path
+from apptk.layout.containers import Window, WindowAlign
+from apptk.layout.controls import FormattedTextControl
+from apptk.path import parse_path
+from apptk.utils import Event
 from euporie.core.path import UntitledPath
+from upath import UPath
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
     from pathlib import Path
     from typing import Any
 
-    from euporie.apptk.layout.containers import AnyContainer
+    from apptk.layout.containers import AnyContainer
     from euporie.core.app.app import BaseApp
     from euporie.core.bars.status import StatusBarFields
 

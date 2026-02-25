@@ -5,13 +5,12 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from euporie.apptk.validation import ValidationError, Validator
+from apptk.validation import ValidationError, Validator
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from euporie.apptk.document import Document
-
+    from apptk.document import Document
     from euporie.core.kernel.base import BaseKernel
 
 log = logging.getLogger(__name__)
