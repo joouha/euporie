@@ -45,6 +45,15 @@ exclude = []
 requires = ["uv_build>=0.10.4,<0.11.0"]
 build-backend = "uv_build"
 
+[dependency-groups]
+dev = [
+    "codespell>=2.4.1",
+    "pre-commit-hooks>=6.0.0",
+    "prek>=0.3.3",
+    "pytest>=9.0.2",
+    "ruff>=0.15.2",
+]
+
 
 ## Tool configuration #########################################################
 

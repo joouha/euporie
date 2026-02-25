@@ -9,77 +9,77 @@ repos:
       - id: check-merge-conflict
         name: check for merge conflicts
         description: checks for files that contain merge conflict strings.
-        entry: check-merge-conflict
+        entry: uv run check-merge-conflict
         language: python
         types: [text]
       - id: debug-statements
         name: debug statements (python)
         description: checks for debugger imports and py37+ `breakpoint()` calls in python source.
-        entry: debug-statement-hook
+        entry: uv run debug-statement-hook
         language: python
         types: [python]
       - id: check-ast
         name: check python ast
         description: simply checks whether the files parse as valid python.
-        entry: check-ast
+        entry: uv run check-ast
         language: python
         types: [python]
       - id: check-case-conflict
         name: check for case conflicts
         description: checks for files that would conflict in case-insensitive filesystems.
-        entry: check-case-conflict
+        entry: uv run check-case-conflict
         language: python
       - id: fix-byte-order-marker
         name: Fix Byte Order Marker
-        entry: hatch run hatch-static-analysis:fix-byte-order-marker
+        entry: uv run fix-byte-order-marker
         language: system
         types: [text]
       - id: check-added-large-files
         name: Check for added large files
-        entry: hatch run hatch-static-analysis:check-added-large-files
+        entry: uv run check-added-large-files
         language: system
       - id: check-toml
         name: Check Toml
-        entry: hatch run hatch-static-analysis:check-toml
+        entry: uv run check-toml
         language: system
         types: [toml]
       - id: check-yaml
         name: Check Yaml
-        entry: hatch run hatch-static-analysis:check-yaml
+        entry: uv run check-yaml
         language: system
         types: [yaml]
       - id: trailing-whitespace
         name: Trim Trailing Whitespace
-        entry: hatch run hatch-static-analysis:trailing-whitespace-fixer
+        entry: uv run trailing-whitespace-fixer
         language: system
         types: [text]
         stages: [pre-commit, pre-push, manual]
       - id: end-of-file-fixer
         name: Fix End of Files
-        entry: hatch run hatch-static-analysis:end-of-file-fixer
+        entry: uv run end-of-file-fixer
         language: system
         types: [text]
         stages: [pre-commit, pre-push, manual]
       - id: ruff-check
         name: ruff check
-        entry: hatch run hatch-static-analysis:ruff check
+        entry: uv run ruff check
         args: ["--fix"]
         language: system
         types: [python]
       - id: ruff-format
         name: ruff format
-        entry: hatch run hatch-static-analysis:ruff format
+        entry: uv run ruff format
         language: system
         types: [python]
       - id: codespell
         name: codespell
         description: Checks for common misspellings in text files.
-        entry: hatch run hatch-static-analysis:codespell
+        entry: uv run codespell
         language: system
         types: [text]
         files: \.(md|txt|rst|py)$
       - id: tests
         name: tests
-        entry: hatch run test:run
+        entry: uv run pytest
         language: system
         pass_filenames: false
