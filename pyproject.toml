@@ -57,10 +57,20 @@ build-backend = "hatchling.build"
 [dependency-groups]
 dev = [
     "codespell>=2.4.1",
+    "importlib-metadata>=8.7.1",
+    "intersphinx-registry~=0.2411",
     "pre-commit-hooks>=6.0.0",
     "prek>=0.3.3",
     "pytest>=9.0.2",
     "ruff>=0.15.2",
+    "sphinx~=8.1",
+    "sphinx-argparse-cli~=1.19",
+    "sphinx-autobuild~=2024.10",
+    "sphinx-copybutton~=0.5",
+    "sphinx-design~=0.6.0",
+    "sphinx-rtd-theme~=3.0",
+    "sphinxext-opengraph~=0.9",
+    "taskipy>=1.14.1",
     "towncrier>=24.8.0",
 ]
 
@@ -188,6 +198,32 @@ module = [
   "pytest.*",
 ]
 ignore_missing_imports = true
+
+
+[tool.taskipy.tasks]
+# Formatting
+format = "ruff format ."
+format-check = "ruff format --check --diff ."
+
+# Linting
+lint = "ruff check --fix . && codespell -i 3 -w ."
+lint-check = "ruff check . && codespell ."
+
+# Combined format + lint
+fmt = "task format && task lint"
+fmt-check = "task format-check && task lint-check"
+
+# Type checking
+type = "mypy --namespace-packages -p euporie -p tests -p scripts"
+
+# Testing
+test = "pytest"
+cov = "coverage run --parallel -m pytest"
+
+# Documentation
+docs-build = "sphinx-build docs docs/_build/html"
+docs-serve = "python -m http.server --directory docs/_build/html/"
+docs-autobuild = "sphinx-autobuild docs docs/_build/html"
 
 
 [tool.pytest.ini_options]
