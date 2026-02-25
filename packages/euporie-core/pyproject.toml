@@ -1,0 +1,52 @@
+[project]
+name = "euporie-core"
+requires-python = ">=3.10"
+version = "3.0.0-dev"
+dependencies = [
+    "apptk",
+    "fastjsonschema>=2.21.2",
+    "jupyter-client>=8.8.0",
+    "jupytest>=3.0.0",
+    "nbformat>=5.10.4",
+    "platformdirs>=4.9.2",
+    "pyperclip>=1.11.0",
+    "python-code-minimap>=0.1.1",
+]
+
+[project.urls]
+Documentation = "https://euporie.readthedocs.io/en/latest"
+Issues = "https://github.com/joouha/euporie/issues"
+Source = "https://github.com/joouha/euporie"
+Changelog = "https://euporie.readthedocs.io/en/latest/pages/changelog.html"
+
+
+[tool.uv.sources]
+apptk = { workspace = true }
+
+[project.scripts]
+euporie = "euporie.core.__main__:main"
+
+[project.entry-points."pygments.lexers"]
+argparse = 'euporie.core.pygments:ArgparseLexer'
+
+[project.entry-points."pygments.styles"]
+euporie = 'euporie.core.pygments:EuporiePygmentsStyle'
+
+[project.entry-points."jupyter_client.kernel_provisioners"]
+logging-local-provisioner = "euporie.core.kernel.jupyter_manager:LoggingLocalProvisioner"
+
+[project.entry-points."universal_pathlib.implementations"]
+untitled = "euporie.core.path:UntitledPath"
+
+[project.entry-points."fsspec.specs"]
+http = "euporie.core.fsspec:HTTPFileSystem"
+https = "euporie.core.fsspec:HTTPFileSystem"
+untitled = "fsspec.implementations.memory:MemoryFileSystem"
+
+[tool.uv.build-backend]
+module-name = "euporie.core"
+
+[build-system]
+requires = ["uv_build>=0.10.4,<0.11.0"]
+build-backend = "uv_build"
+

@@ -1,9 +1,6 @@
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
 [project]
 name = "euporie"
+version = "3.0.0-dev"
 description = 'Euporie is a suite of terminal applications for interacting with Jupyter kernels'
 readme = "README.rst"
 requires-python = ">=3.10"
@@ -12,7 +9,6 @@ keywords = ["euporie", "jupyter", "ipython", "markdown", "terminal", "notebook"]
 authors = [
   { name = "Josiah Outram Halstead", email = "josiah@halstead.email" },
 ]
-dynamic = ["version"]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python",
@@ -27,192 +23,28 @@ classifiers = [
   "Framework :: Jupyter",
   "Topic :: Scientific/Engineering",
 ]
-dependencies = [
-  "prompt-toolkit>=3.0.52",
-  "Pygments~=2.11",
-  "nbformat~=5.0",
-  "jupyter_client>=7.1",
-  "typing-extensions~=4.5",
-  "fastjsonschema~=2.15",
-  "platformdirs~=3.5",
-  "pyperclip~=1.9",
-  "imagesize~=1.3",
-  "markdown-it-py~=3.0",
-  "linkify-it-py~=2.0",
-  "mdit-py-plugins~=0.4.2",
-  "flatlatex~=0.15",
-  # "chafa.py~=1.2",
-  "timg~=1.1.6",
-  "Pillow>=9.0",
-  "sixelcrop~=0.1.9",
-  "universal-pathlib~=0.2.1",
-  "fsspec[http]>=2022.12.0",
-  "jupytext>=1.14.0",
-  "python-code-minimap>=0.1.1",
-  "modshim>=0.5.0",
-]
+dependencies = ["euporie-notebook", "euporie-preview", "euporie-console"]
 
-[project.optional-dependencies]
-hub = ["asyncssh~=2.18"]
+[tool.uv.sources]
+apptk = { workspace = true }
+euporie-core = { workspace = true }
+euporie-notebook = { workspace = true }
+euporie-preview = { workspace = true }
+euporie-console = { workspace = true }
+euporie-hub = { workspace = true }
 
-[project.urls]
-Documentation = "https://euporie.readthedocs.io/en/latest"
-Issues = "https://github.com/joouha/euporie/issues"
-Source = "https://github.com/joouha/euporie"
-Changelog = "https://euporie.readthedocs.io/en/latest/pages/changelog.html"
+[tool.uv]
+managed = true
+package = false  # the project itself is not a package
 
-[project.scripts]
-euporie = "euporie.core.__main__:main"
-euporie-console = "euporie.console.__main__:main"
-euporie-notebook = "euporie.notebook.__main__:main"
-euporie-preview = "euporie.preview.__main__:main"
-euporie-hub = "euporie.hub.__main__:main"
+[tool.uv.workspace]
+members = ["packages/*"]
+exclude = []
 
-[project.entry-points."euporie.apps"]
-launch = "euporie.core.app.launch:LaunchApp"
-console = "euporie.console.app:ConsoleApp"
-notebook = "euporie.notebook.app:NotebookApp"
-preview = "euporie.preview.app:PreviewApp"
-hub = "euporie.hub.app:HubApp"
+[build-system]
+requires = ["uv_build>=0.10.4,<0.11.0"]
+build-backend = "uv_build"
 
-[project.entry-points."pygments.lexers"]
-argparse = 'euporie.core.pygments:ArgparseLexer'
-
-[project.entry-points."pygments.styles"]
-euporie = 'euporie.core.pygments:EuporiePygmentsStyle'
-
-[project.entry-points."jupyter_client.kernel_provisioners"]
-logging-local-provisioner = "euporie.core.kernel.jupyter_manager:LoggingLocalProvisioner"
-
-[project.entry-points."universal_pathlib.implementations"]
-untitled = "euporie.core.path:UntitledPath"
-
-[project.entry-points."fsspec.specs"]
-http = "euporie.core.fsspec:HTTPFileSystem"
-https = "euporie.core.fsspec:HTTPFileSystem"
-untitled = "fsspec.implementations.memory:MemoryFileSystem"
-
-[tool.hatch.build.targets.wheel.shared-data]
-"euporie/data/desktop" = "share/applications/"
-
-[tool.hatch.version]
-path = "euporie/core/__init__.py"
-
-[tool.hatch.build]
-packages = ["euporie"]
-
-
-## Environment configuration ##################################################
-
-
-# Default development environment
-[tool.hatch.envs.default]
-installer = "uv"
-dev-mode = true
-features = ["hub"]
-
-
-# Environment for testing on various python versions
-[tool.hatch.envs.multi]
-installer = "uv"
-features = []
-
-[[tool.hatch.envs.multi.matrix]]
-python = ["3.10", "3.11", "3.12", "3.13", "3.13t", "3.14", "3.14t", "pypy3"]
-
-
-# Environment used to run `hatch fmt`
-[tool.hatch.envs.hatch-static-analysis]
-installer = "uv"
-config-path = "none"  # Ignore hatch default format config
-detached = true
-dependencies = [
-  # Formatting & linting
-  "ruff~=0.9",
-  # Spell checking
-  "codespell~=2.3", "tomli~=2.0.2",
-  # Pre-commit hooks run in static analysis environment
-  "prek~=0.2.21",
-  "pre-commit-hooks~=6.0",
-]
-
-[tool.hatch.envs.hatch-static-analysis.scripts]
-"format-fix" = [
-  "ruff format{env:HATCH_FMT_ARGS} {args:.}",
-]
-"lint-fix" = [
-  "ruff check{env:HATCH_FMT_ARGS} --fix {args:.}",
-  "codespell -i 3 -w {args:.}",
-]
-"format-check" = [
-  "ruff format{env:HATCH_FMT_ARGS} --check --diff {args:.}",
-]
-"lint-check" = [
-  "ruff check{env:HATCH_FMT_ARGS} {args:.}",
-  "codespell {args:.}",
-]
-
-
-# Environment for running static type checking (with mypy)
-[tool.hatch.envs.type]
-description = "Type check the codebase."
-dependencies = [
-  "mypy",
-  # Dependencies
-  "types-appdirs", "importlib_metadata", "types-Pillow", "sixelcrop", "python-code-minimap",
-  # Non-dependencies
-  "html2text", "sympy"
-]
-[tool.hatch.envs.type.scripts]
-run = "mypy {args:--namespace-packages -p euporie -p tests -p scripts}"
-
-
-# Environment for running tests
-[tool.hatch.envs.test]
-installer = "uv"
-description = "Run tests."
-detached = false
-dependencies = [
-  "pytest", "pytest-asyncio", "pytest-cov", "coverage",
-  # Optional non-dependencies
-  "python-magic", "html2text",
-]
-
-[[tool.hatch.envs.test.matrix]]
-python = ["3.10", "3.11", "3.12", "3.13", "3.14", "3.14t", "pypy3"]
-
-[tool.hatch.envs.test.scripts]
-run = "pytest {args}"
-cov = "coverage run --parallel -m pytest {args}"
-
-
-# Environment for building documentation
-[tool.hatch.envs.docs]
-installer = "uv"
-description = "Build documentation."
-dependencies = [
-  "importlib_metadata",
-  "Sphinx~=8.1",
-  "sphinx-autobuild~=2024.10",
-  "sphinx-rtd-theme~=3.0",
-  "sphinx-argparse-cli~=1.19",
-  "sphinxext-opengraph~=0.9",
-  "sphinx-copybutton~=0.5",
-  "sphinx-design~=0.6.0",
-  "intersphinx-registry~=0.2411"
-]
-
-[tool.hatch.envs.docs.scripts]
-build = "sphinx-build docs docs/_build/html"
-serve = "python -m http.server --directory docs/_build/html/"
-autobuild = "sphinx-autobuild docs docs/_build/html"
-
-
-# Environment for prototyping using Jupyter
-[tool.hatch.envs.kernel]
-installer = "uv"
-description = "Euporie Jupyter kernel development environment."
-dependencies = [ "ipykernel~=6.29" ]
 
 ## Tool configuration #########################################################
 

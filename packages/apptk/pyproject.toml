@@ -1,0 +1,30 @@
+[project]
+name = "apptk"
+requires-python = ">=3.10"
+version = "3.0.0-dev"
+dependencies = [
+    "flatlatex>=0.15",
+    "fsspec[http]>=2026.2.0",
+    "imagesize>=1.4.1",
+    "linkify-it-py>=2.0.3",
+    "markdown-it-py>=4.0.0",
+    "mdit-py-plugins>=0.5.0",
+    "modshim>=0.5.0",
+    "pillow>=12.1.1",
+    "prompt-toolkit>=3.0.52",
+    "pyperclip>=1.11.0",
+    "sixelcrop>=0.1.9",
+    "timg>=1.1.6",
+    "universal-pathlib>=0.3.10",
+]
+
+[tool.uv.sources]
+euporie-core = { workspace = true }
+
+[tool.uv.build-backend]
+module-name = "euporie.apptk"
+
+[build-system]
+requires = ["uv_build>=0.10.4,<0.11.0"]
+build-backend = "uv_build"
+
