@@ -3,13 +3,14 @@
 
 from __future__ import annotations
 
+from pkgutil import resolve_name
 from textwrap import dedent, indent
 
-from euporie.core.__main__ import available_apps
+from euporie.core.app.current import available_apps
 from euporie.core.config import Config
 
 for app in available_apps().values():
-    app.load()
+    resolve_name(app)
 
 for name, setting in Config._settings.items():
     print(f".. option:: {name}\n")

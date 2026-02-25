@@ -78,26 +78,35 @@ def format_parser(
     return s
 
 
+def load_app_class(entry_point_value: str) -> type:
+    """Load an app class from an entry-point value string."""
+    from pkgutil import resolve_name
+
+    # Remove the .launch suffix from the entry-point value
+    # e.g., "euporie.console.app:ConsoleApp.launch" -> "euporie.console.app:ConsoleApp"
+    if entry_point_value.endswith(".launch"):
+        entry_point_value = entry_point_value[: -len(".launch")]
+    return resolve_name(entry_point_value)
+
+
 if __name__ == "__main__":
     for script in entry_points(group="console_scripts"):
-        if script.module.split(".")[0] == "euporie":
-            if sys.argv[-1].startswith("euporie"):
+        if script.name.startswith("euporie"):
+            if len(sys.argv) > 1 and sys.argv[-1].startswith("euporie"):
                 if sys.argv[-1] == script.name:
-                    for app in entry_points(group="euporie.apps"):
-                        if app.value.split(".")[:2] == script.value.split(".")[:2]:
-                            App = app.load()
-                            parser = App.config._load_parser()
-                            parser.prog = script.name
-                            print(f".. _cli-{script.name}-start:")
-                            print(
-                                format_parser(
-                                    f":command:`{script.name}`",
-                                    parser,
-                                    description=dedent("    " + App.__doc__),
-                                )
-                            )
-                            print(f".. _cli-{script.name}-end:")
-                            break
+                    App = load_app_class(script.value)
+                    config = App.config
+                    parser = config._populate_parser(config.parser)
+                    parser.prog = script.name
+                    print(f".. _cli-{script.name}-start:")
+                    print(
+                        format_parser(
+                            f":command:`{script.name}`",
+                            parser,
+                            description=dedent("    " + (App.__doc__ or "")),
+                        )
+                    )
+                    print(f".. _cli-{script.name}-end:")
                     break
-            else:
+            elif len(sys.argv) == 1:
                 subprocess.call([sys.executable, __file__, script.name])  # S603

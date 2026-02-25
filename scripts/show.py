@@ -42,6 +42,7 @@ class ShowApp(BaseApp):
     ) -> None:
         """Display a file."""
         with set_app(self):
+            self.update_palette()
             size = self.output.get_size()
             for file in self.config.files:
                 path = parse_path(file)
@@ -51,7 +52,7 @@ class ShowApp(BaseApp):
                     Datum(data_bytes, format=get_format(path), path=path).convert(
                         "ft", rows=size.rows, cols=size.columns
                     ),
-                    style=self.create_merged_style(),
+                    style=self._create_merged_style(),
                 )
 
 

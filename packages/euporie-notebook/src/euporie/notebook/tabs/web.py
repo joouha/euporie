@@ -16,7 +16,7 @@ from apptk.layout.dimension import Dimension
 from apptk.layout.margins import ScrollbarMargin
 from euporie.core.tabs.base import Tab
 from euporie.core.widgets.forms import Button, Text
-from euporie.web.widgets.webview import WebViewControl
+from euporie.core.widgets.webview import WebViewControl
 from upath import UPath
 
 if TYPE_CHECKING:

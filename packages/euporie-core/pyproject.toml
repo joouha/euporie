@@ -31,7 +31,7 @@ pattern = "(?P<version>.+)"
 packages = ["src/euporie"]
 
 [project.scripts]
-euporie = "euporie.core.__main__:main"
+euporie = "euporie.core.app.launch:LaunchApp.launch"
 
 [project.entry-points."pygments.lexers"]
 argparse = 'euporie.core.pygments:ArgparseLexer'

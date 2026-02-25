@@ -10,7 +10,7 @@ from apptk.key_binding import key_processor  # noqa: F401
 from apptk.input.vt100 import raw_mode
 from apptk.keys import Keys
 
-from apptk.io import Vt100Parser
+from apptk.input.vt100_parser import Vt100Parser
 
 if TYPE_CHECKING:
     from apptk.key_binding import KeyPress
