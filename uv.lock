@@ -194,7 +194,6 @@ wheels = [
 
 [[package]]
 name = "apptk"
-version = "3.0.0.dev0"
 source = { editable = "packages/apptk" }
 dependencies = [
     { name = "flatlatex" },
@@ -562,6 +561,18 @@ wheels = [
 ]
 
 [[package]]
+name = "click"
+version = "8.3.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "colorama", marker = "sys_platform == 'win32'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/3d/fa/656b739db8587d7b5dfa22e22ed02566950fbfbcdc20311993483657a5c0/click-8.3.1.tar.gz", hash = "sha256:12ff4785d337a1bb490bb7e9c2b1ee5da3112e94a8622f26a6c77f5d2fc6842a", size = 295065, upload-time = "2025-11-15T20:45:42.706Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/98/78/01c019cdb5d6498122777c1a43056ebb3ebfeef2076d9d026bfe15583b2b/click-8.3.1-py3-none-any.whl", hash = "sha256:981153a64e25f12d547d3426c367a4857371575ee7ad18df2a6183ab0545b2a6", size = 108274, upload-time = "2025-11-15T20:45:41.139Z" },
+]
+
+[[package]]
 name = "codespell"
 version = "2.4.1"
 source = { registry = "https://pypi.org/simple" }
@@ -697,8 +708,7 @@ wheels = [
 
 [[package]]
 name = "euporie"
-version = "3.0.0.dev0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "euporie-console" },
     { name = "euporie-notebook" },
@@ -712,6 +722,7 @@ dev = [
     { name = "prek" },
     { name = "pytest" },
     { name = "ruff" },
+    { name = "towncrier" },
 ]
 
 [package.metadata]
@@ -728,11 +739,11 @@ dev = [
     { name = "prek", specifier = ">=0.3.3" },
     { name = "pytest", specifier = ">=9.0.2" },
     { name = "ruff", specifier = ">=0.15.2" },
+    { name = "towncrier", specifier = ">=24.8.0" },
 ]
 
 [[package]]
 name = "euporie-console"
-version = "3.0.0.dev0"
 source = { editable = "packages/euporie-console" }
 dependencies = [
     { name = "euporie-core" },
@@ -743,7 +754,6 @@ requires-dist = [{ name = "euporie-core", editable = "packages/euporie-core" }]
 
 [[package]]
 name = "euporie-core"
-version = "3.0.0.dev0"
 source = { editable = "packages/euporie-core" }
 dependencies = [
     { name = "apptk" },
@@ -770,7 +780,6 @@ requires-dist = [
 
 [[package]]
 name = "euporie-hub"
-version = "3.0.0.dev0"
 source = { editable = "packages/euporie-hub" }
 dependencies = [
     { name = "asyncssh" },
@@ -785,7 +794,6 @@ requires-dist = [
 
 [[package]]
 name = "euporie-notebook"
-version = "3.0.0.dev0"
 source = { editable = "packages/euporie-notebook" }
 dependencies = [
     { name = "euporie-core" },
@@ -796,7 +804,6 @@ requires-dist = [{ name = "euporie-core", editable = "packages/euporie-core" }]
 
 [[package]]
 name = "euporie-preview"
-version = "3.0.0.dev0"
 source = { editable = "packages/euporie-preview" }
 dependencies = [
     { name = "euporie-core" },
@@ -3000,6 +3007,20 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/0c/1a/d7592328d037d36f2d2462f4bc1fbb383eec9278bc786c1b111cbbd44cfa/tornado-6.5.4-cp39-abi3-win32.whl", hash = "sha256:1768110f2411d5cd281bac0a090f707223ce77fd110424361092859e089b38d1", size = 446481, upload-time = "2025-12-15T19:21:00.008Z" },
     { url = "https://files.pythonhosted.org/packages/d6/6d/c69be695a0a64fd37a97db12355a035a6d90f79067a3cf936ec2b1dc38cd/tornado-6.5.4-cp39-abi3-win_amd64.whl", hash = "sha256:fa07d31e0cd85c60713f2b995da613588aa03e1303d75705dca6af8babc18ddc", size = 446886, upload-time = "2025-12-15T19:21:01.287Z" },
     { url = "https://files.pythonhosted.org/packages/50/49/8dc3fd90902f70084bd2cd059d576ddb4f8bb44c2c7c0e33a11422acb17e/tornado-6.5.4-cp39-abi3-win_arm64.whl", hash = "sha256:053e6e16701eb6cbe641f308f4c1a9541f91b6261991160391bfc342e8a551a1", size = 445910, upload-time = "2025-12-15T19:21:02.571Z" },
+]
+
+[[package]]
+name = "towncrier"
+version = "25.8.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "click" },
+    { name = "jinja2" },
+    { name = "tomli", marker = "python_full_version < '3.11'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c2/eb/5bf25a34123698d3bbab39c5bc5375f8f8bcbcc5a136964ade66935b8b9d/towncrier-25.8.0.tar.gz", hash = "sha256:eef16d29f831ad57abb3ae32a0565739866219f1ebfbdd297d32894eb9940eb1", size = 76322, upload-time = "2025-08-30T11:41:55.393Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/42/06/8ba22ec32c74ac1be3baa26116e3c28bc0e76a5387476921d20b6fdade11/towncrier-25.8.0-py3-none-any.whl", hash = "sha256:b953d133d98f9aeae9084b56a3563fd2519dfc6ec33f61c9cd2c61ff243fb513", size = 65101, upload-time = "2025-08-30T11:41:53.644Z" },
 ]
 
 [[package]]

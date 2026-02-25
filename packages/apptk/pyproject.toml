@@ -1,7 +1,7 @@
 [project]
 name = "apptk"
 requires-python = ">=3.10"
-version = "3.0.0-dev"
+dynamic = ["version"]
 dependencies = [
     "flatlatex>=0.15",
     "fsspec[http]>=2026.2.0",
@@ -21,10 +21,13 @@ dependencies = [
 [tool.uv.sources]
 euporie-core = { workspace = true }
 
-[tool.uv.build-backend]
-module-name = "euporie.apptk"
+[tool.hatch.version]
+path = "../../VERSION"
+pattern = "(?P<version>.+)"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/euporie"]
 
 [build-system]
-requires = ["uv_build>=0.10.4,<0.11.0"]
-build-backend = "uv_build"
-
+requires = ["hatchling"]
+build-backend = "hatchling.build"

@@ -1,6 +1,6 @@
 [project]
 name = "euporie"
-version = "3.0.0-dev"
+dynamic = ["version"]
 description = 'Euporie is a suite of terminal applications for interacting with Jupyter kernels'
 readme = "README.rst"
 requires-python = ">=3.10"
@@ -35,15 +35,24 @@ euporie-hub = { workspace = true }
 
 [tool.uv]
 managed = true
-package = false  # the project itself is not a package
 
 [tool.uv.workspace]
 members = ["packages/*"]
 exclude = []
 
+[tool.hatch.version]
+path = "VERSION"
+pattern = "(?P<version>.+)"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/euporie"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/euporie/meta"]
+
 [build-system]
-requires = ["uv_build>=0.10.4,<0.11.0"]
-build-backend = "uv_build"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
@@ -52,10 +61,43 @@ dev = [
     "prek>=0.3.3",
     "pytest>=9.0.2",
     "ruff>=0.15.2",
+    "towncrier>=24.8.0",
 ]
 
 
 ## Tool configuration #########################################################
+
+
+[tool.towncrier]
+name = "euporie"
+directory = "changelog.d"
+filename = "CHANGELOG.rst"
+template = "changelog.d/_template.rst"
+title_format = false
+underlines = ["*", "=", "-"]
+issue_format = "`#{issue} <https://github.com/joouha/euporie/issues/{issue}>`_"
+package = "euporie.meta"
+package_dir = "src"
+
+[[tool.towncrier.type]]
+directory = "added"
+name = "Added"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "changed"
+name = "Changed"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "fixed"
+name = "Fixed"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "removed"
+name = "Removed"
+showcontent = true
 
 
 [tool.ruff]

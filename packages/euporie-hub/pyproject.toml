@@ -1,7 +1,7 @@
 [project]
 name = "euporie-hub"
 requires-python = ">=3.10"
-version = "3.0.0-dev"
+dynamic = ["version"]
 dependencies = [
     "asyncssh>=2.22.0",
     "euporie-core",
@@ -16,13 +16,16 @@ Changelog = "https://euporie.readthedocs.io/en/latest/pages/changelog.html"
 [tool.uv.sources]
 euporie-core = { workspace = true }
 
+[tool.hatch.version]
+path = "../../VERSION"
+pattern = "(?P<version>.+)"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/euporie"]
+
 [project.scripts]
 euporie-hub = "euporie.hub.app:HubApp.launch"
 
-[tool.uv.build-backend]
-module-name = "euporie.hub"
-
 [build-system]
-requires = ["uv_build>=0.10.4,<0.11.0"]
-build-backend = "uv_build"
-
+requires = ["hatchling"]
+build-backend = "hatchling.build"

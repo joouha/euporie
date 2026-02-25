@@ -1,7 +1,7 @@
 [project]
 name = "euporie-core"
 requires-python = ">=3.10"
-version = "3.0.0-dev"
+dynamic = ["version"]
 dependencies = [
     "apptk",
     "fastjsonschema>=2.21.2",
@@ -23,6 +23,13 @@ Changelog = "https://euporie.readthedocs.io/en/latest/pages/changelog.html"
 [tool.uv.sources]
 apptk = { workspace = true }
 
+[tool.hatch.version]
+path = "../../VERSION"
+pattern = "(?P<version>.+)"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/euporie"]
+
 [project.scripts]
 euporie = "euporie.core.__main__:main"
 
@@ -43,10 +50,6 @@ http = "euporie.core.fsspec:HTTPFileSystem"
 https = "euporie.core.fsspec:HTTPFileSystem"
 untitled = "fsspec.implementations.memory:MemoryFileSystem"
 
-[tool.uv.build-backend]
-module-name = "euporie.core"
-
 [build-system]
-requires = ["uv_build>=0.10.4,<0.11.0"]
-build-backend = "uv_build"
-
+requires = ["hatchling"]
+build-backend = "hatchling.build"

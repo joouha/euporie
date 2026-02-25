@@ -4,6 +4,8 @@ Changelog
 
 Notable changes to this project will be documented in this file.
 
+.. towncrier release notes start
+
 ********************
 v2.10.4 (2026-02-23)
 ********************
