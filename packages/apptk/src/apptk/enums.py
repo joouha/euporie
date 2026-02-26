@@ -2,7 +2,15 @@
 
 from __future__ import annotations
 
-from enum import Enum, StrEnum
+import sys
+from enum import Enum
+
+if sys.version_info >= (3, 11):
+    from enum import StrEnum
+else:
+
+    class StrEnum(str, Enum):
+        """String enum for Python < 3.11 compatibility."""
 
 
 class EditingMode(Enum):
