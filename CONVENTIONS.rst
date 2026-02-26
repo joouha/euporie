@@ -403,9 +403,21 @@ Testing
 -------
 
 - Use ``pytest`` for all tests
-- Place tests in ``tests/`` directories within each package
-- Name test files ``test_*.py``
+- Place unit tests in a ``tests/`` subdirectory within each package folder (not in the ``src/`` folder with the code)
+- Name test files following the convention ``test_{module}_{submodule}_{subsubmodule}.py`` to mirror the module path being tested
 - Name test functions ``test_*``
+
+For example, tests for ``euporie.core.utils`` would be in:
+
+.. code-block:: text
+
+    packages/euporie-core/tests/test_core_utils.py
+
+And tests for ``euporie.core.widgets.layout`` would be in:
+
+.. code-block:: text
+
+    packages/euporie-core/tests/test_core_widgets_layout.py
 
 .. code-block:: python
 
@@ -432,7 +444,7 @@ Run tests with:
 .. code-block:: bash
 
     uv run pytest
-    uv run pytest tests/test_specific.py -v
+    uv run pytest packages/euporie-core/tests/test_core_utils.py -v
 
 Pre-commit Hooks
 ----------------
