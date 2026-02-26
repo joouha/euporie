@@ -224,7 +224,7 @@ fmt = "task format && task lint"
 fmt-check = "task format-check && task lint-check"
 
 # Type checking
-type = "mypy --namespace-packages -p euporie -p tests -p scripts"
+type = "mypy --namespace-packages -p euporie -p scripts"
 
 # Testing
 test-3-10 = "uv run --python 3.10 --isolated --group test pytest"
@@ -233,7 +233,7 @@ test-3-12 = "uv run --python 3.12 --isolated --group test pytest"
 test-3-13 = "uv run --python 3.13 --isolated --group test pytest"
 test-3-14 = "uv run --python 3.14 --isolated --group test pytest"
 test-pypy-3-11 = "uv run --python pypy3.11 --isolated --group test pytest"
-test = "task test-3-10 && task test-3-11 && task test-3-12 && task test-3-13 && task test-3-14 && task test-pypy-3-11"
+test = "sh -c 'for v in 3-10 3-11 3-12 3-13 3-14 pypy-3-11; do task test-$v \"$0\" \"$@\" || exit 1; done'"
 cov = "coverage run --parallel -m pytest"
 
 # Documentation

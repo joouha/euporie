@@ -80,7 +80,7 @@ repos:
         files: \.(md|txt|rst|py)$
       - id: tests
         name: tests
-        entry: uv run pytest
+        entry: uv run task test --exitfirst
         language: system
         types: [python]
         pass_filenames: false
