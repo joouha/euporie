@@ -5,9 +5,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from apptk.data_structures import DiBool
+from apptk.enums import HorizontalAlign, VerticalAlign
+from apptk.formatted_text import utils
 from apptk.formatted_text.base import FormattedText as Ft
 from apptk.formatted_text.utils import to_plain_text
-from euporie.core.ft import utils
 
 if TYPE_CHECKING:
     from apptk.formatted_text.base import StyleAndTextTuples
@@ -166,7 +167,7 @@ def test_align() -> None:
     )
     aligned_ft = utils.align(
         ft,
-        how=utils.FormattedTextAlign.CENTER,
+        how=HorizontalAlign.CENTER,
         width=20,
         style="class:qux",
     )
@@ -190,25 +191,19 @@ def test_align() -> None:
 def test_valign() -> None:
     """Test for utils.valign function."""
     ft = Ft([("", "A")])
-    aligned = to_plain_text(
-        utils.valign(ft, how=utils.FormattedTextVerticalAlign.TOP, height=3)
-    )
+    aligned = to_plain_text(utils.valign(ft, how=VerticalAlign.TOP, height=3))
     assert aligned == "A\n \n "
 
-    aligned = to_plain_text(
-        utils.valign(ft, how=utils.FormattedTextVerticalAlign.MIDDLE, height=3)
-    )
+    aligned = to_plain_text(utils.valign(ft, how=VerticalAlign.MIDDLE, height=3))
     assert aligned == " \nA\n "
 
-    aligned = to_plain_text(
-        utils.valign(ft, how=utils.FormattedTextVerticalAlign.BOTTOM, height=3)
-    )
+    aligned = to_plain_text(utils.valign(ft, how=VerticalAlign.BOTTOM, height=3))
     assert aligned == " \n \nA"
 
     ft = Ft([("class:foo", "A\n"), ("class:bar", "B")])
     aligned_ft = utils.valign(
         ft,
-        how=utils.FormattedTextVerticalAlign.MIDDLE,
+        how=VerticalAlign.MIDDLE,
         height=5,
         style="class:baz",
     )

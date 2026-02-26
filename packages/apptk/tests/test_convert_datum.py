@@ -105,7 +105,8 @@ def test_sized_datum() -> None:
     # Check keyed datum is the same
     result = Datum.get_size(key)
     assert result is not None
-    assert result == sized_datum
+    assert result[0] == datum
+    assert result[1] == size
     del result
     del sized_datum
 

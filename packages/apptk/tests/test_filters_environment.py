@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from euporie.core.filters import command_exists, have_modules
+from apptk.filters.environment import command_exists, have_modules
 
 
 def test_command_exists() -> None:

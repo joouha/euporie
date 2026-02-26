@@ -29,7 +29,7 @@ class DummyComm(UnimplementedComm):
 
 def test_open_comm_with_target_class() -> None:
     """`open_comm` returns an instance of the specified target class."""
-    TARGET_CLASSES["test.target"] = "tests.test_core_comm_registry:DummyComm"
+    TARGET_CLASSES["test.target"] = "test_comm_registry:DummyComm"
     comm_container = Mock(KernelTab)
     content = {
         "target_name": "test.target",

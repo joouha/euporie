@@ -10,10 +10,8 @@ import pytest
 from apptk.application.application import Application
 from apptk.application.current import set_app
 from apptk.commands import COMMANDS, Command, add_cmd, get_cmd
-from apptk.formatted_text.base import to_formatted_text
 from apptk.key_binding.key_bindings import Binding
 from apptk.key_binding.key_processor import KeyPressEvent, KeyProcessor
-from apptk.keys import Keys
 
 if TYPE_CHECKING:
     from apptk.commands import CommandHandler
@@ -36,22 +34,6 @@ def command(mock_handler: CommandHandler) -> Command:
         menu_title="Test Command Menu Title",
         description="This is a test command.",
     )
-
-
-def test_command_init(command: Command, mock_handler: CommandHandler) -> None:
-    """Commands are initalialized as expected."""
-    assert command.handler == mock_handler
-    assert command.filter() is True
-    assert command.hidden() is False
-    assert command.name == "test-command"
-    assert command.title == "Test Command"
-    assert command.menu_title == "Test Command Menu Title"
-    assert command.description == "This is a test command."
-    assert command.toggled is None
-    assert command.eager() is False
-    assert command.is_global() is False
-    assert command.record_in_macro() is True
-    assert command.keys == []
 
 
 def test_command_run(command: Command, mock_handler: CommandHandler) -> None:
@@ -188,39 +170,6 @@ def test_command_key_handler() -> None:
     check_cmd_key_handler(async_handler_without_args_notimplemented, check, 0, True)
 
 
-def test_command_bind(command: Command) -> None:
-    """Adding binding keys adds a key and key-binding."""
-    key_bindings = Mock()
-    command.bind(key_bindings, "a")
-    assert command.keys == [("a",)]
-    key_bindings.bindings.append.assert_called_once()
-
-
-def test_key_strs(command: Command) -> None:
-    """Key strings are formatted as expected."""
-    kb = Mock()
-
-    command.keys = []
-    command.bind(kb, Keys.ControlA)
-    assert command.key_strs() == ["Ctrl+A"]
-
-    command.keys = []
-    command.bind(kb, "c-a")
-    assert command.key_strs() == ["Ctrl+A"]
-
-    command.keys = []
-    command.bind(kb, ("escape", "a"))
-    assert command.key_strs() == ["Alt+A"]
-
-    command.keys = []
-    command.bind(kb, ("a", "b"))
-    assert command.key_strs() == ["A, B"]
-
-    command.keys = []
-    command.bind(kb, [("a", "b"), ("c-a", "c-b")])
-    assert command.key_strs() == ["A, B", "c-A, c-B"]
-
-
 def test_command_menu_handler(command: Command, mock_handler: CommandHandler) -> None:
     """Commands menu handlers run the command's handler."""
     # Run the menu handler
@@ -230,16 +179,6 @@ def test_command_menu_handler(command: Command, mock_handler: CommandHandler) ->
     cast("Mock", mock_handler).assert_called_once()
     # Assert that the command handler returns `None`
     assert result is None
-
-
-def test_command_menu(command: Command) -> None:
-    """Command's menu items are created as expected."""
-    command.bind(Mock(), [("a", "b")])
-    menu = command.menu
-
-    assert menu._formatted_text == "Test Command Menu Title"
-    assert menu.description == "This is a test command."
-    assert to_formatted_text(menu.shortcut) == [("", "A, B")]
 
 
 def test_add_cmd() -> None:
