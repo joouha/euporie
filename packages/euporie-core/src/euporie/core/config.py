@@ -24,10 +24,9 @@ from apptk.commands import add_cmd, get_cmd
 from apptk.filters.base import Condition
 from apptk.filters.utils import to_filter
 from apptk.utils import Event
+from euporie.core import __app_name__, __copyright__
 from platformdirs import user_config_dir
 from upath import UPath
-
-from euporie.core import __app_name__, __copyright__
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Sequence
@@ -153,7 +152,7 @@ class JSONEncoderPlus(json.JSONEncoder):
             The encoded object
 
         """
-        if isinstance(o, Path):
+        if isinstance(o, (Path, UPath)):
             return str(o)
         return json.JSONEncoder.default(self, o)
 
