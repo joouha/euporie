@@ -91,7 +91,7 @@ class DimensionTuple(NamedTuple):
 
 @lru_cache
 def distribute_dimensions(
-    size: int, dimensions: tuple[DimensionTuple, ...]
+    size: int, dimensions: tuple[DimensionTuple, ...], expand: bool = False
 ) -> list[int] | None:
     """Return the heights/widths for all rows/columns, or None when there is not enough space.
 
@@ -101,6 +101,8 @@ def distribute_dimensions(
     Args:
         size: Total size to distribute
         dimensions: Tuple of DimensionTuple objects specifying min/max/preferred sizes
+        expand: If True, always expand to fill available space up to max.
+            If False, only expand when app is not done (used for height distribution).
 
     Returns:
         List of distributed sizes or None if not enough space
@@ -140,7 +142,9 @@ def distribute_dimensions(
         i = next(child_generator)
 
     # Increase until we use all the available space. (or until "max")
-    if not get_app().is_done:
+    # For width distribution (expand=True), always expand.
+    # For height distribution, only expand when app is not done.
+    if expand or not get_app().is_done:
         max_stop = min(size, sum_dimensions.max)
         max_dimensions = [d.max for d in dimensions]
 
@@ -421,6 +425,7 @@ class VSplit(ptk_containers.VSplit):
                 )
                 for d in dimensions
             ),
+            expand=True,  # VSplit always expands to fill width
         )
         return result
 
@@ -509,12 +514,9 @@ class VSplit(ptk_containers.VSplit):
                     height,
                     DiInt(
                         bbox.top,
-                        max(0, bbox.left - write_position.xpos - xpos),
+                        bbox.right,
                         bbox.bottom,
-                        max(
-                            bbox.right,
-                            write_position.xpos + write_position.width - xpos - s,
-                        ),
+                        max(0, bbox.left - (xpos - write_position.xpos)),
                     ),
                 ),
                 style,
@@ -1312,7 +1314,7 @@ class Window(ptk_containers.Window):
             align=WindowAlign.LEFT,
             get_line_prefix=None,
         )
-        # Force renderer to contantly refresh graphics by constantly changing the style
+        # Force renderer to constantly refresh graphics by constantly changing the style
         self._apply_style(
             screen,
             graphic_wp,
