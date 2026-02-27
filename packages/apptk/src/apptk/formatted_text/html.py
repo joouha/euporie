@@ -66,7 +66,6 @@ from apptk.formatted_text.utils import (
 )
 from apptk.utils import Event
 from fsspec.core import url_to_fs
-from prompt_toolkit.formatted_text.html import HTML as PtkHTML
 from upath import UPath
 
 if TYPE_CHECKING:
@@ -2979,7 +2978,7 @@ class Node:
 
     def __init__(
         self,
-        dom: HTML,
+        dom: RichHTML,
         name: str,
         parent: Node | None,
         text: str = "",
@@ -3342,7 +3341,7 @@ class CustomHTMLParser(HTMLParser):
     soup: Node
     curr: Node
 
-    def __init__(self, dom: HTML) -> None:
+    def __init__(self, dom: RichHTML) -> None:
         """Create a new parser instance."""
         super().__init__()
         self.dom = dom
@@ -3395,7 +3394,7 @@ class CustomHTMLParser(HTMLParser):
             self.curr = self.curr.parent
 
 
-class HTML(PtkHTML):
+class RichHTML:
     """A HTML formatted text renderer.
 
     Accepts a HTML string and renders it at a given width.
@@ -3415,8 +3414,8 @@ class HTML(PtkHTML):
         mouse_handler: Callable[[Node, MouseEvent], NotImplementedOrNone] | None = None,
         paste_fixed: bool = True,
         defer_assets: bool = False,
-        on_update: Callable[[HTML], None] | None = None,
-        on_change: Callable[[HTML], None] | None = None,
+        on_update: Callable[[RichHTML], None] | None = None,
+        on_change: Callable[[RichHTML], None] | None = None,
     ) -> None:
         """Initialize the markdown formatter.
 
@@ -5271,7 +5270,7 @@ if __name__ == "__main__":
         print_formatted_text(
             to_formatted_text(
                 asyncio.run(
-                    HTML(
+                    RichHTML(
                         path.read_text(), base=path, collapse_root_margin=False
                     )._render(None, None)
                 )

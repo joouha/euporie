@@ -13,7 +13,7 @@ from apptk.convert.mime import get_format
 from apptk.data_structures import Point
 from apptk.eventloop.utils import get_or_create_loop, run_coro_async
 from apptk.filters import Condition
-from apptk.formatted_text.html import HTML, Node
+from apptk.formatted_text.html import Node, RichHTML
 from apptk.formatted_text.utils import fragment_list_width, paste, split_lines
 from apptk.key_binding.key_bindings import KeyBindings
 from apptk.layout.containers import Window
@@ -101,7 +101,7 @@ class WebViewControl(UIControl):
 
         self.key_bindings = KeyBindings.from_commands(self.commands)
 
-        self._dom_cache: FastDictCache[tuple[Path], HTML] = FastDictCache(
+        self._dom_cache: FastDictCache[tuple[Path], RichHTML] = FastDictCache(
             get_value=self.get_dom, size=100
         )
         self._content_cache: FastDictCache = FastDictCache(self.get_content, size=1_000)
@@ -133,7 +133,7 @@ class WebViewControl(UIControl):
         if changed:
             self.on_cursor_position_changed.fire()
 
-    def get_dom(self, url: Path) -> HTML:
+    def get_dom(self, url: Path) -> RichHTML:
         """Load a HTML page as renderable formatted text."""
         markup = str(
             Datum(
@@ -149,7 +149,7 @@ class WebViewControl(UIControl):
 
             css = {**MARKDOWN_CSS, **css}
 
-        return HTML(
+        return RichHTML(
             markup,
             base=url,
             mouse_handler=self._node_mouse_handler,
@@ -165,7 +165,7 @@ class WebViewControl(UIControl):
         self.rendered.fire()
 
     @property
-    def dom(self) -> HTML:
+    def dom(self) -> RichHTML:
         """Return the dom for the current URL."""
         return self._dom_cache[self.url,]
 

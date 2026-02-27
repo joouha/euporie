@@ -19,11 +19,11 @@ if TYPE_CHECKING:
 
     from apptk.convert.datum import Datum
     from apptk.formatted_text.base import StyleAndTextTuples
-    from apptk.formatted_text.html import HTML, CssSelectors
+    from apptk.formatted_text.html import CssSelectors, RichHTML
 
 log = logging.getLogger(__name__)
 
-_html_cache: SimpleCache[tuple[str | Any, ...], HTML] = SimpleCache(maxsize=20)
+_html_cache: SimpleCache[tuple[str | Any, ...], RichHTML] = SimpleCache(maxsize=20)
 
 
 @register(
@@ -41,7 +41,7 @@ async def html_to_ft(
     **kwargs: Any,
 ) -> StyleAndTextTuples:
     """Convert HTML to formatted text."""
-    from apptk.formatted_text.html import HTML
+    from apptk.formatted_text.html import RichHTML
 
     data = datum.data
     markup = data.decode() if isinstance(data, bytes) else data
@@ -56,7 +56,7 @@ async def html_to_ft(
     html = _html_cache.get(
         (datum.hash, *kwargs.items()),
         partial(
-            HTML,
+            RichHTML,
             markup,
             width=cols,
             css=css,
