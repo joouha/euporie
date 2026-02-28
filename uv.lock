@@ -230,7 +230,7 @@ requires-dist = [
     { name = "mdit-py-plugins", specifier = ">=0.5.0" },
     { name = "modshim", specifier = ">=0.5.0" },
     { name = "pillow", specifier = ">=12.1.1" },
-    { name = "prompt-toolkit", specifier = ">=3.0.52" },
+    { name = "prompt-toolkit", specifier = "==3.0.52" },
     { name = "pyperclip", specifier = ">=1.11.0" },
     { name = "sixelcrop", specifier = ">=0.1.9" },
     { name = "timg", specifier = ">=1.1.6" },

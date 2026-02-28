@@ -3,6 +3,7 @@ name = "apptk"
 requires-python = ">=3.10"
 dynamic = ["version"]
 dependencies = [
+    "prompt-toolkit==3.0.52",
     "flatlatex>=0.15",
     "fsspec[http]>=2026.2.0",
     "imagesize>=1.4.1",
@@ -11,7 +12,6 @@ dependencies = [
     "mdit-py-plugins>=0.5.0",
     "modshim>=0.5.0",
     "pillow>=12.1.1",
-    "prompt-toolkit>=3.0.52",
     "pyperclip>=1.11.0",
     "sixelcrop>=0.1.9",
     "timg>=1.1.6",
