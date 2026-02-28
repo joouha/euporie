@@ -233,7 +233,7 @@ test-3-12 = "uv run --python 3.12 --isolated --group test pytest"
 test-3-13 = "uv run --python 3.13 --isolated --group test pytest"
 test-3-14 = "uv run --python 3.14 --isolated --group test pytest"
 test-pypy-3-11 = "uv run --python pypy3.11 --isolated --group test pytest"
-test = "sh -c 'for v in 3-10 3-11 3-12 3-13 3-14 pypy-3-11; do task test-$v \"$0\" \"$@\" || exit 1; done'"
+test = "sh -c 'for v in 3-10 3-11 3-12 3-13 3-14 pypy-3-11; do task test-$v \"$0\" \"$@\" || exit 1; done' --"
 cov = "coverage run --parallel -m pytest"
 
 # Documentation
