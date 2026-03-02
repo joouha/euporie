@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from functools import cache
 
 from apptk.filters import buffer_has_focus
 from apptk.key_binding.bindings.auto_suggest import load_auto_suggest_bindings
@@ -33,6 +34,7 @@ __all__ = [
 log = logging.getLogger(__name__)
 
 
+@cache
 def load_key_bindings() -> KeyBindingsBase:
     """Create a KeyBindings object that contains the default key bindings."""
     all_bindings = merge_key_bindings(
