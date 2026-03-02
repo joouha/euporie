@@ -579,6 +579,41 @@ def get_cmd(name: str) -> Command:
         raise KeyError(f"Unknown command: {name}") from e
 
 
+def _get_alt_keys(keys: tuple[Keys | str, ...]) -> tuple[Keys | str, ...] | None:
+    """Convert an 'escape, key' sequence to an equivalent 'alt-key' binding.
+
+    Args:
+        keys: A tuple of keys representing a key sequence
+
+    Returns:
+        A tuple with the alt-key equivalent, or None if not applicable
+    """
+    from apptk.keys import Keys
+
+    if len(keys) != 2:
+        return None
+
+    first_key = keys[0]
+    second_key = keys[1]
+
+    # Check if first key is escape
+    is_escape = first_key == Keys.Escape or first_key == "escape"
+    if not is_escape:
+        return None
+
+    # Convert second key to alt-key format
+    if isinstance(second_key, Keys):
+        key_str = second_key.value
+    else:
+        key_str = str(second_key)
+
+    # Only convert single character keys or simple key names
+    if len(key_str) == 1 or key_str.isalpha():
+        return (f"A-{key_str}",)
+
+    return None
+
+
 def commands_from_key_bindings(
     key_bindings: KeyBindingsBase,
     prefix: str = "",
@@ -590,6 +625,9 @@ def commands_from_key_bindings(
     into Command objects, registering them in the global commands registry.
     It returns a new KeyBindings object where the bindings are loaded through
     the command system, allowing for future key override capabilities.
+
+    For bindings with 'escape, key' sequences, equivalent 'alt-key' bindings
+    are also added automatically.
 
     Args:
         key_bindings: The key bindings to convert
@@ -619,6 +657,18 @@ def commands_from_key_bindings(
             )
             # Add the new binding to the key bindings
             new_key_bindings.bindings.append(existing_cmd.bindings[-1])
+            # Also add alt-key equivalent if applicable
+            alt_keys = _get_alt_keys(binding.keys)
+            if alt_keys is not None:
+                existing_cmd.add_keys(
+                    alt_keys,
+                    filter=binding.filter,
+                    eager=binding.eager,
+                    is_global=binding.is_global,
+                    save_before=binding.save_before,
+                    record_in_macro=binding.record_in_macro,
+                )
+                new_key_bindings.bindings.append(existing_cmd.bindings[-1])
             continue
 
         # Generate a name from the handler function
@@ -641,10 +691,16 @@ def commands_from_key_bindings(
             name = f"{base_name}-{counter}"
             counter += 1
 
+        # Build list of key sequences including alt-key equivalent
+        keys_list: list[AnyKeys] = [binding.keys]
+        alt_keys = _get_alt_keys(binding.keys)
+        if alt_keys is not None:
+            keys_list.append(alt_keys)
+
         # Command.__new__ handles deduplication, update handles registry
         cmd = Command(
             handler=handler,
-            keys=[binding.keys],
+            keys=keys_list,
             filter=binding.filter,
             hidden=hidden,
             name=name,
