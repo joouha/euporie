@@ -93,5 +93,8 @@ class Output(PtkOutput, metaclass=ABCMeta):
     def ask_for_csiu_status(self) -> None:
         """Query terminal to check for CSI-u support."""
 
+    def ask_for_device_status(self) -> None:
+        """Send a Device Status Report query (DSR 5) as a sentinel."""
+
 
 class DummyOutput(PtkDummyOutput, Output): ...

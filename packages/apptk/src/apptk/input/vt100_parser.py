@@ -89,6 +89,7 @@ class Vt100Parser(ptk_vt100_parser.Vt100Parser):
             Keys.ClipboardDataResponse: re.compile(
                 r"^\x1b\]52;(?:c|p)?;(?P<data>[A-Za-z0-9+/=]+)\x1b\\"
             ),
+            Keys.DeviceStatusResponse: re.compile(r"^\x1b\[0n"),
         }
 
     def _get_match(self, prefix: str) -> None | Keys | tuple[Keys, ...]:

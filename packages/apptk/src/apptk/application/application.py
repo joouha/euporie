@@ -15,6 +15,7 @@ from apptk.key_binding.key_bindings import (
 from apptk.key_binding.micro_state import MicroState
 from apptk.layout.containers import Window
 from apptk.layout.controls import UIControl
+from apptk.output.vt100 import Vt100_Output
 from apptk.utils import Event
 from prompt_toolkit.application.application import (
     Application as PtkApplication,
@@ -24,6 +25,7 @@ from prompt_toolkit.application.application import (
     _CombinedRegistry as _PtkCombinedRegistry,
 )
 from prompt_toolkit.application.current import set_app
+from prompt_toolkit.input.vt100 import Vt100Input
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -157,27 +159,43 @@ class Application(PtkApplication, Generic[_AppResult]):
         slow_callback_duration: float = 0.5,
     ) -> _AppResult:
         """Run the application."""
-        with set_app(self):
-            # Send terminal queries
-            self.output.ask_for_colors()
-            self.output.ask_for_pixel_size()
-            self.output.ask_for_kitty_graphics_status()
-            self.output.ask_for_device_attributes()
-            self.output.ask_for_iterm_graphics_status()
-            self.output.ask_for_sgr_pixel_status()
-            self.output.ask_for_csiu_status()
+        if isinstance(self.output, Vt100_Output) and isinstance(self.input, Vt100Input):
+            from apptk.key_binding.bindings import terminal as terminal_bindings
 
-            # Read responses
-            kp = self.key_processor
+            with set_app(self):
+                # Send terminal feature queries
+                self.output.ask_for_colors()
+                self.output.ask_for_pixel_size()
+                self.output.ask_for_kitty_graphics_status()
+                self.output.ask_for_device_attributes()
+                self.output.ask_for_iterm_graphics_status()
+                self.output.ask_for_sgr_pixel_status()
+                self.output.ask_for_csiu_status()
+                # Send a DSR sentinel query last — the terminal will respond
+                # with ``\x1b[0n``, letting us know all prior responses have
+                # been received.
+                self.output.ask_for_device_status()
 
-            def read_from_input() -> None:
-                kp.feed_multiple(self.input.read_keys())
+                # Read responses
+                kp = self.key_processor
+                sentinel = asyncio.Event()
+                terminal_bindings._device_status_received = sentinel
 
-            with self.input.raw_mode(), self.input.attach(read_from_input):
-                # Give the terminal time to respond and allow the event loop to read
-                # the terminal responses from the input
-                await asyncio.sleep(0.1)
-            kp.process_keys()
+                def read_from_input() -> None:
+                    kp.feed_multiple(self.input.read_keys())
+
+                try:
+                    with self.input.raw_mode(), self.input.attach(read_from_input):
+                        # Wait for the sentinel response or a short timeout
+                        # for terminals that don't respond
+                        try:
+                            await asyncio.wait_for(sentinel.wait(), timeout=0.5)
+                        except TimeoutError:
+                            log.debug("Terminal did not respond to device status query")
+                finally:
+                    terminal_bindings._device_status_received = None
+
+                kp.process_keys()
 
         return await super().run_async(
             pre_run, set_exception_handler, handle_sigint, slow_callback_duration

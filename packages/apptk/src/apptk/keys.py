@@ -211,6 +211,7 @@ class Keys(str, Enum):
     SgrPixelStatusResponse = "<sgr-pixel-status-response>"
     ClipboardDataResponse = "<clipboard-data-response>"
     PaletteDsrResponse = "<palette-dsr-response>"
+    DeviceStatusResponse = "<device-status-response>"
 
     # Regular key-presses
 

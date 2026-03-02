@@ -382,6 +382,16 @@ class Vt100_Output(PtkVt100_Output):
         self.write_raw("\x1b[?u")
         self.flush()
 
+    def ask_for_device_status(self) -> None:
+        r"""Send a Device Status Report query (DSR 5) as a sentinel.
+
+        The terminal should respond with ``\\x1b[0n`` to indicate it is ready.
+        This is used after sending other queries to know when all responses
+        have been received.
+        """
+        self.write_raw("\x1b[5n")
+        self.flush()
+
     def get_default_color_depth(self) -> ColorDepth:
         """Return the default color depth for a vt100 terminal, according to the our term value.
 

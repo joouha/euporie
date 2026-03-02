@@ -11,10 +11,15 @@ from apptk.key_binding.key_processor import KeyPressEvent
 from apptk.output.vt100 import ANSI_COLORS_TO_RGB, TERMINAL_COLORS_TO_RGB
 
 if TYPE_CHECKING:
+    import asyncio
+
     from apptk.key_binding import KeyBindingsBase, KeyPressEvent
     from apptk.key_binding.key_bindings import NotImplementedOrNone
 
 __all__ = ["load_terminal_bindings"]
+
+#: Event set when the device status sentinel response is received.
+_device_status_received: asyncio.Event | None = None
 
 log = logging.getLogger(__name__)
 
@@ -162,6 +167,14 @@ def _set_terminal_clipboard_data(event: KeyPressEvent) -> NotImplementedOrNone:
     return NotImplemented
 
 
+@add_cmd(keys=["<device-status-response>"], is_global=True, hidden=True)
+def _set_device_status_received(event: KeyPressEvent) -> NotImplementedOrNone:
+    """Run when the terminal receives a device status response (sentinel)."""
+    if _device_status_received is not None:
+        _device_status_received.set()
+    return NotImplemented
+
+
 def load_terminal_bindings() -> KeyBindingsBase:
     """Load key-bindings for terminal query responses."""
     return KeyBindings.from_commands(
@@ -174,5 +187,6 @@ def load_terminal_bindings() -> KeyBindingsBase:
             "set-terminal-graphics-iterm",
             "set-terminal-sgr-pixel",
             "set-terminal-clipboard-data",
+            "set-device-status-received",
         )
     )
