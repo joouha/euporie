@@ -23,7 +23,13 @@ get_by_name = get_cmd
 
 # Convert legacy named commands into Commands
 for name, binding in _readline_commands.items():
-    add_cmd(name=name)(binding.handler)
+    add_cmd(
+        name=name,
+        record_in_macro=binding.record_in_macro,
+        save_before=binding.save_before,
+        eager=binding.eager,
+        filter=binding.filter,
+    )(binding.handler)
 
 # Update some commands
 

@@ -15,8 +15,8 @@ from apptk.key_binding.key_processor import KeyPressEvent
 from apptk.key_binding.utils import format_keys, parse_keys
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Coroutine, Iterator
-    from typing import Any, TypedDict, Unpack
+    from collections.abc import Callable, Coroutine, Iterator, Unpack
+    from typing import Any, TypedDict
 
     from apptk.filters import Filter, FilterOrBool
     from apptk.key_binding.key_bindings import (
@@ -127,9 +127,19 @@ class Command:
         save_before: Callable[[KeyPressEvent], bool] = (lambda event: True),
         record_in_macro: FilterOrBool = True,
         keys: list[AnyKeys] | None = None,
-        bindings: list[Binding] | None = None,
+        bindings: list[BindingArgs] | None = None,
     ) -> Command:
         """Return existing Command for handler or create a new one.
+
+        If a Command already exists for the given handler, updates it with the
+        new parameters and adds any new key bindings. Otherwise creates and
+        initializes a new Command instance.
+
+        Note:
+            All initialization is performed in ``__new__`` rather than
+            ``__init__`` to avoid re-initialization when returning an existing
+            instance (Python calls ``__init__`` on the return value of
+            ``__new__`` whenever it is an instance of the class).
 
         Args:
             handler: The callable to run when the command is triggered
@@ -149,7 +159,7 @@ class Command:
             save_before: Determines if the buffer should be saved before running
             record_in_macro: Whether these key bindings should be recorded in macros
             keys: List of key bindings to associate with the command using default binding parameters
-            bindings: A list of existing key-bindings to associate with this command
+            bindings: A list of arguments for key-bindings to associate with this command
 
         Returns:
             An existing Command if handler was already registered, otherwise a new one.
@@ -176,14 +186,48 @@ class Command:
                 save_before=save_before,
                 record_in_macro=record_in_macro,
             )
+            # Add new keys/bindings to existing command
+            for args in bindings or []:
+                existing.add_keys(**args)
+            if keys:
+                existing.add_keys(
+                    keys,
+                    filter=existing._default_filter,
+                    eager=existing._default_eager,
+                    is_global=existing._default_is_global,
+                    save_before=existing._default_save_before,
+                    record_in_macro=existing._default_record_in_macro,
+                )
             return existing
 
-        # Create new instance
+        # Create and initialize new instance
         instance = super().__new__(cls)
         _HANDLER_REGISTRY[handler_id] = instance
+        instance._init(
+            handler=handler,
+            name=name,
+            aliases=aliases,
+            title=title,
+            menu_title=menu_title,
+            description=description,
+            icon=icon,
+            style=style,
+            hidden=hidden,
+            toggled=toggled,
+            filter=filter,
+            eager=eager,
+            is_global=is_global,
+            save_before=save_before,
+            record_in_macro=record_in_macro,
+            bindings=bindings,
+            keys=keys,
+        )
         return instance
 
-    def __init__(
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """No-op: all initialization is performed in :py:meth:`__new__`."""
+
+    def _init(
         self,
         handler: CommandHandler,
         *,
@@ -206,7 +250,7 @@ class Command:
         bindings: list[BindingArgs] | None = None,
         keys: list[AnyKeys] | None = None,
     ) -> None:
-        """Create a new instance of a command.
+        """Initialize a new command instance.
 
         Similar to a :py:`prompt_toolkit.key_binding.bindings.named_commands`, but also
          collection of :py:class:`prompt_toolkit.key_binding.key_bindings:Bindings`.
@@ -643,6 +687,20 @@ def commands_from_key_bindings(
         handler = binding.handler
         handler_id = id(handler)
 
+        # When the handler is a Command (e.g. from apptk's get_by_name()
+        # returning a Command instead of a Binding), the binding metadata
+        # such as record_in_macro and save_before may be incorrect. This
+        # happens because prompt_toolkit's KeyBindings.add() only preserves
+        # these attributes when the handler is a Binding instance. Since
+        # Command is not a Binding, the attributes fall back to defaults.
+        # We recover the correct values from the Command itself.
+        if isinstance(handler, Command):
+            record_in_macro = handler._default_record_in_macro
+            save_before = handler._default_save_before
+        else:
+            record_in_macro = binding.record_in_macro
+            save_before = binding.save_before
+
         # Check if command already exists for this handler (via _HANDLER_REGISTRY)
         if handler_id in _HANDLER_REGISTRY:
             # Add the keys to the existing command
@@ -652,8 +710,8 @@ def commands_from_key_bindings(
                 filter=binding.filter,
                 eager=binding.eager,
                 is_global=binding.is_global,
-                save_before=binding.save_before,
-                record_in_macro=binding.record_in_macro,
+                save_before=save_before,
+                record_in_macro=record_in_macro,
             )
             # Add the new binding to the key bindings
             new_key_bindings.bindings.append(existing_cmd.bindings[-1])
@@ -665,8 +723,8 @@ def commands_from_key_bindings(
                     filter=binding.filter,
                     eager=binding.eager,
                     is_global=binding.is_global,
-                    save_before=binding.save_before,
-                    record_in_macro=binding.record_in_macro,
+                    save_before=save_before,
+                    record_in_macro=record_in_macro,
                 )
                 new_key_bindings.bindings.append(existing_cmd.bindings[-1])
             continue
@@ -706,8 +764,8 @@ def commands_from_key_bindings(
             name=name,
             eager=binding.eager,
             is_global=binding.is_global,
-            save_before=binding.save_before,
-            record_in_macro=binding.record_in_macro,
+            save_before=save_before,
+            record_in_macro=record_in_macro,
         )
 
         # Add the binding from the command to the key bindings
