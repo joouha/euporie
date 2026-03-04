@@ -72,6 +72,7 @@ async def chafa_convert_cmd(
         f"--format={output_format}",
         "--passthrough=none",
         "--polite=on",
+        "--symbols=all",
     ]
     if cols is not None or rows is not None:
         size = "--size="
