@@ -838,18 +838,18 @@ def select_graphic_control(
     if preferred is DisabledGraphicControl:
         return None
 
-    useable: list[type[GraphicControl]] = []
+    usable: list[type[GraphicControl]] = []
 
     # Check iTerm support
     if graphics_iterm and find_route(format_, "base64-png"):
-        useable.append(ItermGraphicControl)
+        usable.append(ItermGraphicControl)
         if preferred is ItermGraphicControl and not in_mplex:
             return ItermGraphicControl
 
     # Check Kitty support (doesn't work in mplex without passthrough)
     if graphics_kitty and find_route(format_, "base64-png") and not in_mplex:
-        useable.append(KittyGraphicControl)
-        useable.append(KittyUnicodeGraphicControl)
+        usable.append(KittyGraphicControl)
+        usable.append(KittyUnicodeGraphicControl)
         if preferred is KittyGraphicControl:
             return KittyGraphicControl
         if preferred is KittyUnicodeGraphicControl:
@@ -857,8 +857,8 @@ def select_graphic_control(
 
     # Check Sixel support
     if graphics_sixel and find_route(format_, "sixel"):
-        useable.append(SixelGraphicControl)
+        usable.append(SixelGraphicControl)
         if preferred is SixelGraphicControl:
             return SixelGraphicControl
 
-    return useable[0] if useable else None
+    return usable[0] if usable else None

@@ -93,7 +93,7 @@ def test_emacs_cursor_movements() -> None:
     result, _cli = _feed_cli_with_input("hello\x01X\r")
     assert result.text == "Xhello"
 
-    # ControlE (end-of-line)
+    # ControlE (end-of-line)  # codespell:ignore ControlE
     result, _cli = _feed_cli_with_input("hello\x01X\x05Y\r")
     assert result.text == "XhelloY"
 
@@ -131,13 +131,13 @@ def test_emacs_cursor_movements() -> None:
 
     # Left, Left, ControlK  (kill-line)
     result, _cli = _feed_cli_with_input("hello\x1b[D\x1b[D\x0b\r")
-    assert result.text == "hel"
+    assert result.text == "hel"  # codespell:ignore hel
 
     # Left, Left Esc- ControlK (kill-line, but negative)
     result, _cli = _feed_cli_with_input("hello\x1b[D\x1b[D\x1b-\x0b\r")
     assert result.text == "lo"
 
-    # ControlL: should not influence the result.
+    # ControlL: should not influence the result.  # codespell:ignore ControlL
     result, _cli = _feed_cli_with_input("hello\x0c\r")
     assert result.text == "hello"
 
@@ -184,12 +184,12 @@ def test_emacs_cursor_movements() -> None:
 
     # Backspace (backward-delete-char)
     result, _cli = _feed_cli_with_input("hello world\x7f\r")
-    assert result.text == "hello worl"
-    assert result.cursor_position == len("hello worl")
+    assert result.text == "hello worl"  # codespell:ignore worl
+    assert result.cursor_position == len("hello worl")  # codespell:ignore worl
 
     result, _cli = _feed_cli_with_input("hello world\x08\r")
-    assert result.text == "hello worl"
-    assert result.cursor_position == len("hello worl")
+    assert result.text == "hello worl"  # codespell:ignore worl
+    assert result.cursor_position == len("hello worl")  # codespell:ignore worl
 
     # Delete (delete-char)
     result, _cli = _feed_cli_with_input("hello world\x01\x1b[3~\r")
@@ -619,11 +619,11 @@ def test_vi_cursor_movements() -> None:
 
     # Esc \b\b
     result, cli = feed("hello\b\b\r")
-    assert result.text == "hel"
+    assert result.text == "hel"  # codespell:ignore hel
 
     # Esc \b\b
     result, cli = feed("hello\b\b\r")
-    assert result.text == "hel"
+    assert result.text == "hel"  # codespell:ignore hel
 
     # Esc 2h D
     result, cli = feed("hello\x1b[27u2hD\r")
@@ -861,7 +861,7 @@ def test_vi_character_delete_before_cursor() -> None:
 
     # Delete one character.
     result, _cli = feed("abcd\x1b[27uX\r")
-    assert result.text == "abd"
+    assert result.text == "abd"  # codespell:ignore abd
 
     # Delete multiple characters.
     result, _cli = feed("hello world\x1b[27u3X\r")

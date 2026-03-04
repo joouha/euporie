@@ -120,4 +120,4 @@ def test_swap_characters_before_cursor(buffer: Buffer) -> None:
     buffer.cursor_left()
     buffer.swap_characters_before_cursor()
 
-    assert buffer.text == "hello wrold"
+    assert buffer.text == "hello wrold"  # codespell:ignore wrold

@@ -143,7 +143,7 @@ class CellOutputDataElement(CellOutputElement):
 
         convert_kwargs = {"css": defaultdict(dict)}
 
-        # Apply Jupyter notbooks specific CSS styles
+        # Apply Jupyter notebooks specific CSS styles
         if format_ == "html":
             from euporie.core.css import NOTEBOOK_CSS
 

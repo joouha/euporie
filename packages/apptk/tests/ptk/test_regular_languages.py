@@ -64,7 +64,7 @@ def test_prefix() -> None:
     m = g.match_prefix("")
     assert isinstance(m, Match)
 
-    m = g.match_prefix("som")
+    m = g.match_prefix("som")  # codespell:ignore som
     assert isinstance(m, Match)
 
     m = g.match_prefix("hello wor")

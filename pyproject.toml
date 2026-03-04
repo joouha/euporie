@@ -185,8 +185,7 @@ docstring-code-format = true
 
 
 [tool.codespell]
-ignore-words-list = "iterm,edn,controll,controle,als"
-skip = "euporie/core/reference.py,.*"
+ignore-words-list = "adn,als,controle,controll,abd,edn,iterm"
 
 [tool.typos.default.extend-words]
 "als" = "als"
