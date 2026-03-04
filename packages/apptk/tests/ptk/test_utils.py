@@ -1,13 +1,21 @@
+"""Tests for utility functions."""
+
 from __future__ import annotations
 
 import itertools
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 import pytest
 from apptk.utils import take_using_weights
 
 
-def test_using_weights():
-    def take(generator, count):
+def test_using_weights() -> None:
+    """Test taking items using weights."""
+
+    def take(generator: Generator[Any, None, None], count: int) -> list[Any]:
         return list(itertools.islice(generator, 0, count))
 
     # Check distribution.
@@ -73,5 +81,5 @@ def test_using_weights():
     assert data.count("C") == 0
 
     # All zero-weight items.
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=r".*"):
         take(take_using_weights(["A", "B", "C"], [0, 0, 0]), 70)

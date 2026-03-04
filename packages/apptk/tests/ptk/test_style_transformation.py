@@ -1,3 +1,5 @@
+"""Tests for style transformation functionality."""
+
 from __future__ import annotations
 
 from unittest.mock import patch
@@ -14,7 +16,8 @@ DEFAULT_ANSI_COLORS_TO_RGB = {
 
 
 @pytest.fixture
-def default_attrs():
+def default_attrs() -> Attrs:
+    """Create default attributes fixture."""
     return Attrs(
         color="",
         bgcolor="",
@@ -29,7 +32,8 @@ def default_attrs():
     )
 
 
-def test_adjust_brightness_style_transformation(default_attrs):
+def test_adjust_brightness_style_transformation(default_attrs: Attrs) -> None:
+    """Test adjusting brightness of styles."""
     with patch.dict(ANSI_COLORS_TO_RGB, DEFAULT_ANSI_COLORS_TO_RGB, clear=True):
         tr = AdjustBrightnessStyleTransformation(0.5, 1.0)
 

@@ -1,3 +1,5 @@
+"""Tests for Document class."""
+
 from __future__ import annotations
 
 import pytest
@@ -5,46 +7,56 @@ from apptk.document import Document
 
 
 @pytest.fixture
-def document():
+def document() -> Document:
+    """Create a test document fixture."""
     return Document(
         "line 1\n" + "line 2\n" + "line 3\n" + "line 4\n", len("line 1\n" + "lin")
     )
 
 
-def test_current_char(document):
+def test_current_char(document: Document) -> None:
+    """Test current_char property."""
     assert document.current_char == "e"
     assert document.char_before_cursor == "n"
 
 
-def test_text_before_cursor(document):
+def test_text_before_cursor(document: Document) -> None:
+    """Test text_before_cursor property."""
     assert document.text_before_cursor == "line 1\nlin"
 
 
-def test_text_after_cursor(document):
+def test_text_after_cursor(document: Document) -> None:
+    """Test text_after_cursor property."""
     assert document.text_after_cursor == "e 2\n" + "line 3\n" + "line 4\n"
 
 
-def test_lines(document):
+def test_lines(document: Document) -> None:
+    """Test lines property."""
     assert document.lines == ["line 1", "line 2", "line 3", "line 4", ""]
 
 
-def test_line_count(document):
+def test_line_count(document: Document) -> None:
+    """Test line_count property."""
     assert document.line_count == 5
 
 
-def test_current_line_before_cursor(document):
+def test_current_line_before_cursor(document: Document) -> None:
+    """Test current_line_before_cursor property."""
     assert document.current_line_before_cursor == "lin"
 
 
-def test_current_line_after_cursor(document):
+def test_current_line_after_cursor(document: Document) -> None:
+    """Test current_line_after_cursor property."""
     assert document.current_line_after_cursor == "e 2"
 
 
-def test_current_line(document):
+def test_current_line(document: Document) -> None:
+    """Test current_line property."""
     assert document.current_line == "line 2"
 
 
-def test_cursor_position(document):
+def test_cursor_position(document: Document) -> None:
+    """Test cursor_position_row and cursor_position_col properties."""
     assert document.cursor_position_row == 1
     assert document.cursor_position_col == 3
 
@@ -53,7 +65,8 @@ def test_cursor_position(document):
     assert d.cursor_position_col == 0
 
 
-def test_translate_index_to_position(document):
+def test_translate_index_to_position(document: Document) -> None:
+    """Test translate_index_to_position method."""
     pos = document.translate_index_to_position(len("line 1\nline 2\nlin"))
 
     assert pos[0] == 2
@@ -63,6 +76,7 @@ def test_translate_index_to_position(document):
     assert pos == (0, 0)
 
 
-def test_is_cursor_at_the_end(document):
+def test_is_cursor_at_the_end(document: Document) -> None:
+    """Test is_cursor_at_the_end property."""
     assert Document("hello", 5).is_cursor_at_the_end
     assert not Document("hello", 4).is_cursor_at_the_end

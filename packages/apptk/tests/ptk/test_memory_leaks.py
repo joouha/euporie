@@ -1,8 +1,9 @@
+"""Tests for memory leaks."""
+
 from __future__ import annotations
 
 import gc
 
-import pytest
 from apptk.shortcuts.prompt import PromptSession
 
 
@@ -16,8 +17,8 @@ def _count_prompt_session_instances() -> int:
 
 
 # Fails in GitHub CI, probably due to GC differences.
-@pytest.mark.xfail(reason="Memory leak testing fails in GitHub CI.")
 def test_prompt_session_memory_leak() -> None:
+    """Test that PromptSession doesn't leak memory."""
     before_count = _count_prompt_session_instances()
 
     # Somehow in CI/CD, the before_count is > 0

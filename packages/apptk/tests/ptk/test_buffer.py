@@ -1,3 +1,5 @@
+"""Tests for Buffer functionality."""
+
 from __future__ import annotations
 
 import pytest
@@ -5,107 +7,117 @@ from apptk.buffer import Buffer
 
 
 @pytest.fixture
-def _buffer():
+def buffer() -> Buffer:
+    """Create a buffer for testing."""
     buff = Buffer()
     return buff
 
 
-def test_initial(_buffer):
-    assert _buffer.text == ""
-    assert _buffer.cursor_position == 0
+def test_initial(buffer: Buffer) -> None:
+    """Test initial buffer state."""
+    assert buffer.text == ""
+    assert buffer.cursor_position == 0
 
 
-def test_insert_text(_buffer):
-    _buffer.insert_text("some_text")
-    assert _buffer.text == "some_text"
-    assert _buffer.cursor_position == len("some_text")
+def test_insert_text(buffer: Buffer) -> None:
+    """Test inserting text into buffer."""
+    buffer.insert_text("some_text")
+    assert buffer.text == "some_text"
+    assert buffer.cursor_position == len("some_text")
 
 
-def test_cursor_movement(_buffer):
-    _buffer.insert_text("some_text")
-    _buffer.cursor_left()
-    _buffer.cursor_left()
-    _buffer.cursor_left()
-    _buffer.cursor_right()
-    _buffer.insert_text("A")
+def test_cursor_movement(buffer: Buffer) -> None:
+    """Test cursor movement and insertion."""
+    buffer.insert_text("some_text")
+    buffer.cursor_left()
+    buffer.cursor_left()
+    buffer.cursor_left()
+    buffer.cursor_right()
+    buffer.insert_text("A")
 
-    assert _buffer.text == "some_teAxt"
-    assert _buffer.cursor_position == len("some_teA")
-
-
-def test_backspace(_buffer):
-    _buffer.insert_text("some_text")
-    _buffer.cursor_left()
-    _buffer.cursor_left()
-    _buffer.delete_before_cursor()
-
-    assert _buffer.text == "some_txt"
-    assert _buffer.cursor_position == len("some_t")
+    assert buffer.text == "some_teAxt"
+    assert buffer.cursor_position == len("some_teA")
 
 
-def test_cursor_up(_buffer):
-    # Cursor up to a line thats longer.
-    _buffer.insert_text("long line1\nline2")
-    _buffer.cursor_up()
+def test_backspace(buffer: Buffer) -> None:
+    """Test deleting before cursor."""
+    buffer.insert_text("some_text")
+    buffer.cursor_left()
+    buffer.cursor_left()
+    buffer.delete_before_cursor()
 
-    assert _buffer.document.cursor_position == 5
+    assert buffer.text == "some_txt"
+    assert buffer.cursor_position == len("some_t")
+
+
+def test_cursor_up(buffer: Buffer) -> None:
+    """Test cursor up movement."""
+    # Cursor up to a line that's longer.
+    buffer.insert_text("long line1\nline2")
+    buffer.cursor_up()
+
+    assert buffer.document.cursor_position == 5
 
     # Going up when already at the top.
-    _buffer.cursor_up()
-    assert _buffer.document.cursor_position == 5
+    buffer.cursor_up()
+    assert buffer.document.cursor_position == 5
 
     # Going up to a line that's shorter.
-    _buffer.reset()
-    _buffer.insert_text("line1\nlong line2")
+    buffer.reset()
+    buffer.insert_text("line1\nlong line2")
 
-    _buffer.cursor_up()
-    assert _buffer.document.cursor_position == 5
+    buffer.cursor_up()
+    assert buffer.document.cursor_position == 5
 
 
-def test_cursor_down(_buffer):
-    _buffer.insert_text("line1\nline2")
-    _buffer.cursor_position = 3
+def test_cursor_down(buffer: Buffer) -> None:
+    """Test cursor down movement."""
+    buffer.insert_text("line1\nline2")
+    buffer.cursor_position = 3
 
     # Normally going down
-    _buffer.cursor_down()
-    assert _buffer.document.cursor_position == len("line1\nlin")
+    buffer.cursor_down()
+    assert buffer.document.cursor_position == len("line1\nlin")
 
     # Going down to a line that's shorter.
-    _buffer.reset()
-    _buffer.insert_text("long line1\na\nb")
-    _buffer.cursor_position = 3
+    buffer.reset()
+    buffer.insert_text("long line1\na\nb")
+    buffer.cursor_position = 3
 
-    _buffer.cursor_down()
-    assert _buffer.document.cursor_position == len("long line1\na")
+    buffer.cursor_down()
+    assert buffer.document.cursor_position == len("long line1\na")
 
 
-def test_join_next_line(_buffer):
-    _buffer.insert_text("line1\nline2\nline3")
-    _buffer.cursor_up()
-    _buffer.join_next_line()
+def test_join_next_line(buffer: Buffer) -> None:
+    """Test joining next line."""
+    buffer.insert_text("line1\nline2\nline3")
+    buffer.cursor_up()
+    buffer.join_next_line()
 
-    assert _buffer.text == "line1\nline2 line3"
+    assert buffer.text == "line1\nline2 line3"
 
     # Test when there is no '\n' in the text
-    _buffer.reset()
-    _buffer.insert_text("line1")
-    _buffer.cursor_position = 0
-    _buffer.join_next_line()
+    buffer.reset()
+    buffer.insert_text("line1")
+    buffer.cursor_position = 0
+    buffer.join_next_line()
 
-    assert _buffer.text == "line1"
-
-
-def test_newline(_buffer):
-    _buffer.insert_text("hello world")
-    _buffer.newline()
-
-    assert _buffer.text == "hello world\n"
+    assert buffer.text == "line1"
 
 
-def test_swap_characters_before_cursor(_buffer):
-    _buffer.insert_text("hello world")
-    _buffer.cursor_left()
-    _buffer.cursor_left()
-    _buffer.swap_characters_before_cursor()
+def test_newline(buffer: Buffer) -> None:
+    """Test inserting newline."""
+    buffer.insert_text("hello world")
+    buffer.newline()
 
-    assert _buffer.text == "hello wrold"
+    assert buffer.text == "hello world\n"
+
+
+def test_swap_characters_before_cursor(buffer: Buffer) -> None:
+    """Test swapping characters before cursor."""
+    buffer.insert_text("hello world")
+    buffer.cursor_left()
+    buffer.cursor_left()
+    buffer.swap_characters_before_cursor()
+
+    assert buffer.text == "hello wrold"

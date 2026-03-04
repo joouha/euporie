@@ -1,10 +1,12 @@
-"""These are almost end-to-end tests. They create a Prompt, feed it with some
-input and check the result.
+"""These are almost end-to-end tests.
+
+They create a Prompt, feed it with some input and check the result.
 """
 
 from __future__ import annotations
 
 from functools import partial
+from typing import TYPE_CHECKING
 
 import pytest
 from apptk.clipboard import ClipboardData, InMemoryClipboard
@@ -17,8 +19,13 @@ from apptk.key_binding.key_bindings import KeyBindings
 from apptk.output import DummyOutput
 from apptk.shortcuts import PromptSession
 
+if TYPE_CHECKING:
+    from apptk.application import Application
+    from apptk.document import Document
 
-def _history():
+
+def _history() -> InMemoryHistory:
+    """Create a history with sample entries."""
     h = InMemoryHistory()
     h.append_string("line1 first input")
     h.append_string("line2 second input")
@@ -27,16 +34,15 @@ def _history():
 
 
 def _feed_cli_with_input(
-    text,
-    editing_mode=EditingMode.EMACS,
-    clipboard=None,
-    history=None,
-    multiline=False,
-    check_line_ending=True,
-    key_bindings=None,
-):
-    """Create a Prompt, feed it with the given user input and return the CLI
-    object.
+    text: str,
+    editing_mode: EditingMode = EditingMode.EMACS,
+    clipboard: InMemoryClipboard | None = None,
+    history: InMemoryHistory | None = None,
+    multiline: bool = False,
+    check_line_ending: bool = True,
+    key_bindings: KeyBindings | None = None,
+) -> tuple[Document, Application[str]]:
+    """Create a Prompt, feed it with the given user input and return the CLI object.
 
     This returns a (result, Application) tuple.
     """
@@ -73,89 +79,90 @@ def _feed_cli_with_input(
         return session.default_buffer.document, session.app
 
 
-def test_simple_text_input():
+def test_simple_text_input() -> None:
+    """Test simple text input followed by enter."""
     # Simple text input, followed by enter.
     result, cli = _feed_cli_with_input("hello\r")
     assert result.text == "hello"
     assert cli.current_buffer.text == "hello"
 
 
-def test_emacs_cursor_movements():
+def test_emacs_cursor_movements() -> None:
     """Test cursor movements with Emacs key bindings."""
     # ControlA (beginning-of-line)
-    result, cli = _feed_cli_with_input("hello\x01X\r")
+    result, _cli = _feed_cli_with_input("hello\x01X\r")
     assert result.text == "Xhello"
 
     # ControlE (end-of-line)
-    result, cli = _feed_cli_with_input("hello\x01X\x05Y\r")
+    result, _cli = _feed_cli_with_input("hello\x01X\x05Y\r")
     assert result.text == "XhelloY"
 
     # ControlH or \b
-    result, cli = _feed_cli_with_input("hello\x08X\r")
+    result, _cli = _feed_cli_with_input("hello\x08X\r")
     assert result.text == "hellX"
 
     # Delete.  (Left, left, delete)
-    result, cli = _feed_cli_with_input("hello\x1b[D\x1b[D\x1b[3~\r")
+    result, _cli = _feed_cli_with_input("hello\x1b[D\x1b[D\x1b[3~\r")
     assert result.text == "helo"
 
     # Left.
-    result, cli = _feed_cli_with_input("hello\x1b[DX\r")
+    result, _cli = _feed_cli_with_input("hello\x1b[DX\r")
     assert result.text == "hellXo"
 
     # ControlA, right
-    result, cli = _feed_cli_with_input("hello\x01\x1b[CX\r")
+    result, _cli = _feed_cli_with_input("hello\x01\x1b[CX\r")
     assert result.text == "hXello"
 
     # ControlB (backward-char)
-    result, cli = _feed_cli_with_input("hello\x02X\r")
+    result, _cli = _feed_cli_with_input("hello\x02X\r")
     assert result.text == "hellXo"
 
     # ControlF (forward-char)
-    result, cli = _feed_cli_with_input("hello\x01\x06X\r")
+    result, _cli = _feed_cli_with_input("hello\x01\x06X\r")
     assert result.text == "hXello"
 
     # ControlD: delete after cursor.
-    result, cli = _feed_cli_with_input("hello\x01\x04\r")
+    result, _cli = _feed_cli_with_input("hello\x01\x04\r")
     assert result.text == "ello"
 
     # ControlD at the end of the input ssshould not do anything.
-    result, cli = _feed_cli_with_input("hello\x04\r")
+    result, _cli = _feed_cli_with_input("hello\x04\r")
     assert result.text == "hello"
 
     # Left, Left, ControlK  (kill-line)
-    result, cli = _feed_cli_with_input("hello\x1b[D\x1b[D\x0b\r")
+    result, _cli = _feed_cli_with_input("hello\x1b[D\x1b[D\x0b\r")
     assert result.text == "hel"
 
     # Left, Left Esc- ControlK (kill-line, but negative)
-    result, cli = _feed_cli_with_input("hello\x1b[D\x1b[D\x1b-\x0b\r")
+    result, _cli = _feed_cli_with_input("hello\x1b[D\x1b[D\x1b-\x0b\r")
     assert result.text == "lo"
 
     # ControlL: should not influence the result.
-    result, cli = _feed_cli_with_input("hello\x0c\r")
+    result, _cli = _feed_cli_with_input("hello\x0c\r")
     assert result.text == "hello"
 
     # ControlRight (forward-word)
-    result, cli = _feed_cli_with_input("hello world\x01X\x1b[1;5CY\r")
+    result, _cli = _feed_cli_with_input("hello world\x01X\x1b[1;5CY\r")
     assert result.text == "XhelloY world"
 
     # ContrlolLeft (backward-word)
-    result, cli = _feed_cli_with_input("hello world\x1b[1;5DY\r")
+    result, _cli = _feed_cli_with_input("hello world\x1b[1;5DY\r")
     assert result.text == "hello Yworld"
 
     # <esc>-f with argument. (forward-word)
-    result, cli = _feed_cli_with_input("hello world abc def\x01\x1b3\x1bfX\r")
+    result, _cli = _feed_cli_with_input("hello world abc def\x01\x1b3\x1bfX\r")
     assert result.text == "hello world abcX def"
 
     # <esc>-f with negative argument. (forward-word)
-    result, cli = _feed_cli_with_input("hello world abc def\x1b-\x1b3\x1bfX\r")
+    result, _cli = _feed_cli_with_input("hello world abc def\x1b-\x1b3\x1bfX\r")
     assert result.text == "hello Xworld abc def"
 
     # <esc>-b with argument. (backward-word)
-    result, cli = _feed_cli_with_input("hello world abc def\x1b3\x1bbX\r")
+    result, _cli = _feed_cli_with_input("hello world abc def\x1b3\x1bbX\r")
     assert result.text == "hello Xworld abc def"
 
     # <esc>-b with negative argument. (backward-word)
-    result, cli = _feed_cli_with_input("hello world abc def\x01\x1b-\x1b3\x1bbX\r")
+    result, _cli = _feed_cli_with_input("hello world abc def\x01\x1b-\x1b3\x1bbX\r")
     assert result.text == "hello world abc Xdef"
 
     # ControlW (kill-word / unix-word-rubout)
@@ -163,7 +170,7 @@ def test_emacs_cursor_movements():
     assert result.text == "hello "
     assert cli.clipboard.get_data().text == "world"
 
-    result, cli = _feed_cli_with_input("test hello world\x1b2\x17\r")
+    result, _cli = _feed_cli_with_input("test hello world\x1b2\x17\r")
     assert result.text == "test "
 
     # Escape Backspace (unix-word-rubout)
@@ -176,26 +183,27 @@ def test_emacs_cursor_movements():
     assert cli.clipboard.get_data().text == "world"
 
     # Backspace (backward-delete-char)
-    result, cli = _feed_cli_with_input("hello world\x7f\r")
+    result, _cli = _feed_cli_with_input("hello world\x7f\r")
     assert result.text == "hello worl"
     assert result.cursor_position == len("hello worl")
 
-    result, cli = _feed_cli_with_input("hello world\x08\r")
+    result, _cli = _feed_cli_with_input("hello world\x08\r")
     assert result.text == "hello worl"
     assert result.cursor_position == len("hello worl")
 
     # Delete (delete-char)
-    result, cli = _feed_cli_with_input("hello world\x01\x1b[3~\r")
+    result, _cli = _feed_cli_with_input("hello world\x01\x1b[3~\r")
     assert result.text == "ello world"
     assert result.cursor_position == 0
 
     # Escape-\\ (delete-horizontal-space)
-    result, cli = _feed_cli_with_input("hello     world\x1b8\x02\x1b\\\r")
+    result, _cli = _feed_cli_with_input("hello     world\x1b8\x02\x1b\\\r")
     assert result.text == "helloworld"
     assert result.cursor_position == len("hello")
 
 
-def test_emacs_kill_multiple_words_and_paste():
+def test_emacs_kill_multiple_words_and_paste() -> None:
+    """Test killing multiple words and pasting them."""
     # Using control-w twice should place both words on the clipboard.
     result, cli = _feed_cli_with_input(
         "hello world test\x17\x17--\x19\x19\r"  # Twice c-w.  Twice c-y.
@@ -216,187 +224,196 @@ def test_emacs_kill_multiple_words_and_paste():
     assert cli.clipboard.get_data().text == "world test"
 
 
-def test_interrupts():
+def test_interrupts() -> None:
+    """Test keyboard interrupts and EOF."""
     # ControlC: raise KeyboardInterrupt.
     with pytest.raises(KeyboardInterrupt):
-        result, cli = _feed_cli_with_input("hello\x03\r")
+        _result, _cli = _feed_cli_with_input("hello\x03\r")
 
     with pytest.raises(KeyboardInterrupt):
-        result, cli = _feed_cli_with_input("hello\x03\r")
+        _result, _cli = _feed_cli_with_input("hello\x03\r")
 
     # ControlD without any input: raises EOFError.
     with pytest.raises(EOFError):
-        result, cli = _feed_cli_with_input("\x04\r")
+        _result, _cli = _feed_cli_with_input("\x04\r")
 
 
-def test_emacs_yank():
+def test_emacs_yank() -> None:
+    """Test yanking from clipboard."""
     # ControlY (yank)
     c = InMemoryClipboard(ClipboardData("XYZ"))
-    result, cli = _feed_cli_with_input("hello\x02\x19\r", clipboard=c)
+    result, _cli = _feed_cli_with_input("hello\x02\x19\r", clipboard=c)
     assert result.text == "hellXYZo"
     assert result.cursor_position == len("hellXYZ")
 
 
-def test_quoted_insert():
+def test_quoted_insert() -> None:
+    """Test quoted insert functionality."""
     # ControlQ - ControlB (quoted-insert)
-    result, cli = _feed_cli_with_input("hello\x11\x02\r")
+    result, _cli = _feed_cli_with_input("hello\x11\x02\r")
     assert result.text == "hello\x02"
 
 
-def test_transformations():
+def test_transformations() -> None:
+    """Test text transformation commands."""
     # Meta-c (capitalize-word)
-    result, cli = _feed_cli_with_input("hello world\01\x1bc\r")
+    result, _cli = _feed_cli_with_input("hello world\01\x1bc\r")
     assert result.text == "Hello world"
     assert result.cursor_position == len("Hello")
 
     # Meta-u (uppercase-word)
-    result, cli = _feed_cli_with_input("hello world\01\x1bu\r")
+    result, _cli = _feed_cli_with_input("hello world\01\x1bu\r")
     assert result.text == "HELLO world"
     assert result.cursor_position == len("Hello")
 
     # Meta-u (downcase-word)
-    result, cli = _feed_cli_with_input("HELLO WORLD\01\x1bl\r")
+    result, _cli = _feed_cli_with_input("HELLO WORLD\01\x1bl\r")
     assert result.text == "hello WORLD"
     assert result.cursor_position == len("Hello")
 
     # ControlT (transpose-chars)
-    result, cli = _feed_cli_with_input("hello\x14\r")
+    result, _cli = _feed_cli_with_input("hello\x14\r")
     assert result.text == "helol"
     assert result.cursor_position == len("hello")
 
     # Left, Left, Control-T (transpose-chars)
-    result, cli = _feed_cli_with_input("abcde\x1b[D\x1b[D\x14\r")
+    result, _cli = _feed_cli_with_input("abcde\x1b[D\x1b[D\x14\r")
     assert result.text == "abdce"
     assert result.cursor_position == len("abcd")
 
 
-def test_emacs_other_bindings():
+def test_emacs_other_bindings() -> None:
+    """Test other Emacs key bindings."""
     # Transpose characters.
-    result, cli = _feed_cli_with_input("abcde\x14X\r")  # Ctrl-T
+    result, _cli = _feed_cli_with_input("abcde\x14X\r")  # Ctrl-T
     assert result.text == "abcedX"
 
     # Left, Left, Transpose. (This is slightly different.)
-    result, cli = _feed_cli_with_input("abcde\x1b[D\x1b[D\x14X\r")
+    result, _cli = _feed_cli_with_input("abcde\x1b[D\x1b[D\x14X\r")
     assert result.text == "abdcXe"
 
     # Clear before cursor.
-    result, cli = _feed_cli_with_input("hello\x1b[D\x1b[D\x15X\r")
+    result, _cli = _feed_cli_with_input("hello\x1b[D\x1b[D\x15X\r")
     assert result.text == "Xlo"
 
     # unix-word-rubout: delete word before the cursor.
     # (ControlW).
-    result, cli = _feed_cli_with_input("hello world test\x17X\r")
+    result, _cli = _feed_cli_with_input("hello world test\x17X\r")
     assert result.text == "hello world X"
 
-    result, cli = _feed_cli_with_input("hello world /some/very/long/path\x17X\r")
+    result, _cli = _feed_cli_with_input("hello world /some/very/long/path\x17X\r")
     assert result.text == "hello world X"
 
     # (with argument.)
-    result, cli = _feed_cli_with_input("hello world test\x1b2\x17X\r")
+    result, _cli = _feed_cli_with_input("hello world test\x1b2\x17X\r")
     assert result.text == "hello X"
 
-    result, cli = _feed_cli_with_input("hello world /some/very/long/path\x1b2\x17X\r")
+    result, _cli = _feed_cli_with_input("hello world /some/very/long/path\x1b2\x17X\r")
     assert result.text == "hello X"
 
     # backward-kill-word: delete word before the cursor.
     # (Esc-ControlH).
-    result, cli = _feed_cli_with_input("hello world /some/very/long/path\x1b\x08X\r")
+    result, _cli = _feed_cli_with_input("hello world /some/very/long/path\x1b\x08X\r")
     assert result.text == "hello world /some/very/long/X"
 
     # (with arguments.)
-    result, cli = _feed_cli_with_input(
+    result, _cli = _feed_cli_with_input(
         "hello world /some/very/long/path\x1b3\x1b\x08X\r"
     )
     assert result.text == "hello world /some/very/X"
 
 
-def test_controlx_controlx():
+def test_controlx_controlx() -> None:
+    """Test Control-X Control-X binding."""
     # At the end: go to the start of the line.
-    result, cli = _feed_cli_with_input("hello world\x18\x18X\r")
+    result, _cli = _feed_cli_with_input("hello world\x18\x18X\r")
     assert result.text == "Xhello world"
     assert result.cursor_position == 1
 
     # At the start: go to the end of the line.
-    result, cli = _feed_cli_with_input("hello world\x01\x18\x18X\r")
+    result, _cli = _feed_cli_with_input("hello world\x01\x18\x18X\r")
     assert result.text == "hello worldX"
 
     # Left, Left Control-X Control-X: go to the end of the line.
-    result, cli = _feed_cli_with_input("hello world\x1b[D\x1b[D\x18\x18X\r")
+    result, _cli = _feed_cli_with_input("hello world\x1b[D\x1b[D\x18\x18X\r")
     assert result.text == "hello worldX"
 
 
-def test_emacs_history_bindings():
+def test_emacs_history_bindings() -> None:
+    """Test Emacs history navigation bindings."""
     # Adding a new item to the history.
     history = _history()
-    result, cli = _feed_cli_with_input("new input\r", history=history)
+    result, _cli = _feed_cli_with_input("new input\r", history=history)
     assert result.text == "new input"
-    history.get_strings()[-1] == "new input"
+    assert history.get_strings()[-1] == "new input"
 
     # Go up in history, and accept the last item.
-    result, cli = _feed_cli_with_input("hello\x1b[A\r", history=history)
+    result, _cli = _feed_cli_with_input("hello\x1b[A\r", history=history)
     assert result.text == "new input"
 
     # Esc< (beginning-of-history)
-    result, cli = _feed_cli_with_input("hello\x1b<\r", history=history)
+    result, _cli = _feed_cli_with_input("hello\x1b<\r", history=history)
     assert result.text == "line1 first input"
 
     # Esc> (end-of-history)
-    result, cli = _feed_cli_with_input(
+    result, _cli = _feed_cli_with_input(
         "another item\x1b[A\x1b[a\x1b>\r", history=history
     )
     assert result.text == "another item"
 
     # ControlUp (previous-history)
-    result, cli = _feed_cli_with_input("\x1b[1;5A\r", history=history)
+    result, _cli = _feed_cli_with_input("\x1b[1;5A\r", history=history)
     assert result.text == "another item"
 
     # Esc< ControlDown (beginning-of-history, next-history)
-    result, cli = _feed_cli_with_input("\x1b<\x1b[1;5B\r", history=history)
+    result, _cli = _feed_cli_with_input("\x1b<\x1b[1;5B\r", history=history)
     assert result.text == "line2 second input"
 
 
-def test_emacs_reverse_search():
+def test_emacs_reverse_search() -> None:
+    """Test reverse search in history."""
     history = _history()
 
     # ControlR  (reverse-search-history)
-    result, cli = _feed_cli_with_input("\x12input\r\r", history=history)
+    result, _cli = _feed_cli_with_input("\x12input\r\r", history=history)
     assert result.text == "line3 third input"
 
     # Hitting ControlR twice.
-    result, cli = _feed_cli_with_input("\x12input\x12\r\r", history=history)
+    result, _cli = _feed_cli_with_input("\x12input\x12\r\r", history=history)
     assert result.text == "line2 second input"
 
 
-def test_emacs_arguments():
+def test_emacs_arguments() -> None:
     """Test various combinations of arguments in Emacs mode."""
     # esc 4
-    result, cli = _feed_cli_with_input("\x1b4x\r")
+    result, _cli = _feed_cli_with_input("\x1b4x\r")
     assert result.text == "xxxx"
 
     # esc 4 4
-    result, cli = _feed_cli_with_input("\x1b44x\r")
+    result, _cli = _feed_cli_with_input("\x1b44x\r")
     assert result.text == "x" * 44
 
     # esc 4 esc 4
-    result, cli = _feed_cli_with_input("\x1b4\x1b4x\r")
+    result, _cli = _feed_cli_with_input("\x1b4\x1b4x\r")
     assert result.text == "x" * 44
 
     # esc - right (-1 position to the right, equals 1 to the left.)
-    result, cli = _feed_cli_with_input("aaaa\x1b-\x1b[Cbbbb\r")
+    result, _cli = _feed_cli_with_input("aaaa\x1b-\x1b[Cbbbb\r")
     assert result.text == "aaabbbba"
 
     # esc - 3 right
-    result, cli = _feed_cli_with_input("aaaa\x1b-3\x1b[Cbbbb\r")
+    result, _cli = _feed_cli_with_input("aaaa\x1b-3\x1b[Cbbbb\r")
     assert result.text == "abbbbaaa"
 
     # esc - - - 3 right
-    result, cli = _feed_cli_with_input("aaaa\x1b---3\x1b[Cbbbb\r")
+    result, _cli = _feed_cli_with_input("aaaa\x1b---3\x1b[Cbbbb\r")
     assert result.text == "abbbbaaa"
 
 
-def test_emacs_arguments_for_all_commands():
-    """Test all Emacs commands with Meta-[0-9] arguments (both positive and
-    negative). No one should crash.
+def test_emacs_arguments_for_all_commands() -> None:
+    """Test all Emacs commands with Meta-[0-9] arguments.
+
+    Test both positive and negative arguments. No one should crash.
     """
     from prompt_toolkit.input.ansi_escape_sequences import ANSI_SEQUENCES
 
@@ -408,15 +425,16 @@ def test_emacs_arguments_for_all_commands():
                 # Note: we add an 'X' after the key, because Ctrl-Q (quoted-insert)
                 # expects something to follow. We add an additional \r, because
                 # Ctrl-R and Ctrl-S (reverse-search) expect that.
-                result, cli = _feed_cli_with_input("hello\x1b4" + key + "X\r\r")
+                _result, _cli = _feed_cli_with_input("hello\x1b4" + key + "X\r\r")
 
-                result, cli = _feed_cli_with_input("hello\x1b-" + key + "X\r\r")
+                _result, _cli = _feed_cli_with_input("hello\x1b-" + key + "X\r\r")
             except KeyboardInterrupt:
                 # This exception should only be raised for Ctrl-C
                 assert key == "\x03"
 
 
-def test_emacs_kill_ring():
+def test_emacs_kill_ring() -> None:
+    """Test kill ring functionality."""
     operations = (
         # abc ControlA ControlK
         "abc\x01\x0b"
@@ -428,20 +446,21 @@ def test_emacs_kill_ring():
         "\x19"
     )
 
-    result, cli = _feed_cli_with_input(operations + "\r")
+    result, _cli = _feed_cli_with_input(operations + "\r")
     assert result.text == "ghi"
 
-    result, cli = _feed_cli_with_input(operations + "\x1by\r")
+    result, _cli = _feed_cli_with_input(operations + "\x1by\r")
     assert result.text == "def"
 
-    result, cli = _feed_cli_with_input(operations + "\x1by\x1by\r")
+    result, _cli = _feed_cli_with_input(operations + "\x1by\x1by\r")
     assert result.text == "abc"
 
-    result, cli = _feed_cli_with_input(operations + "\x1by\x1by\x1by\r")
+    result, _cli = _feed_cli_with_input(operations + "\x1by\x1by\x1by\r")
     assert result.text == "ghi"
 
 
-def test_emacs_selection():
+def test_emacs_selection() -> None:
+    """Test text selection and copy/paste."""
     # Copy/paste empty selection should not do anything.
     operations = (
         "hello"
@@ -455,7 +474,7 @@ def test_emacs_selection():
         "\x19\x19\r"
     )
 
-    result, cli = _feed_cli_with_input(operations)
+    result, _cli = _feed_cli_with_input(operations)
     assert result.text == "hello"
 
     # Copy/paste one character.
@@ -475,22 +494,24 @@ def test_emacs_selection():
         "\x19\r"
     )
 
-    result, cli = _feed_cli_with_input(operations)
+    result, _cli = _feed_cli_with_input(operations)
     assert result.text == "lhelo"
 
 
-def test_emacs_insert_comment():
+def test_emacs_insert_comment() -> None:
+    """Test insert-comment (M-#) binding."""
     # Test insert-comment (M-#) binding.
-    result, cli = _feed_cli_with_input("hello\x1b#", check_line_ending=False)
+    result, _cli = _feed_cli_with_input("hello\x1b#", check_line_ending=False)
     assert result.text == "#hello"
 
-    result, cli = _feed_cli_with_input(
+    result, _cli = _feed_cli_with_input(
         "hello\rworld\x1b#", check_line_ending=False, multiline=True
     )
     assert result.text == "#hello\n#world"
 
 
-def test_emacs_record_macro():
+def test_emacs_record_macro() -> None:
+    """Test macro recording and execution."""
     operations = (
         "  "
         "\x18("  # Start recording macro. C-X(
@@ -502,11 +523,11 @@ def test_emacs_record_macro():
         "\r"
     )
 
-    result, cli = _feed_cli_with_input(operations)
+    result, _cli = _feed_cli_with_input(operations)
     assert result.text == "  hello  hellohello"
 
 
-def test_emacs_nested_macro():
+def test_emacs_nested_macro() -> None:
     """Test calling the macro within a macro."""
     # Calling a macro within a macro should take the previous recording (if one
     # exists), not the one that is in progress.
@@ -519,7 +540,7 @@ def test_emacs_nested_macro():
         "\r"
     )
 
-    result, cli = _feed_cli_with_input(operations)
+    result, _cli = _feed_cli_with_input(operations)
     assert result.text == "hellohello"
 
     operations = (
@@ -535,38 +556,40 @@ def test_emacs_nested_macro():
         "\r"
     )
 
-    result, cli = _feed_cli_with_input(operations)
+    result, _cli = _feed_cli_with_input(operations)
     assert result.text == "helloworld"
 
 
-def test_prefix_meta():
+def test_prefix_meta() -> None:
+    """Test the prefix-meta command."""
     # Test the prefix-meta command.
     b = KeyBindings()
     b.add("j", "j", filter=ViInsertMode())(prefix_meta)
 
-    result, cli = _feed_cli_with_input(
+    result, _cli = _feed_cli_with_input(
         "hellojjIX\r", key_bindings=b, editing_mode=EditingMode.VI
     )
     assert result.text == "Xhello"
 
 
-def test_bracketed_paste():
-    result, cli = _feed_cli_with_input("\x1b[200~hello world\x1b[201~\r")
+def test_bracketed_paste() -> None:
+    """Test bracketed paste mode."""
+    result, _cli = _feed_cli_with_input("\x1b[200~hello world\x1b[201~\r")
     assert result.text == "hello world"
 
-    result, cli = _feed_cli_with_input("\x1b[200~hello\rworld\x1b[201~\x1b\r")
+    result, _cli = _feed_cli_with_input("\x1b[200~hello\rworld\x1b[201~\x1b\r")
     assert result.text == "hello\nworld"
 
     # With \r\n endings.
-    result, cli = _feed_cli_with_input("\x1b[200~hello\r\nworld\x1b[201~\x1b\r")
+    result, _cli = _feed_cli_with_input("\x1b[200~hello\r\nworld\x1b[201~\x1b\r")
     assert result.text == "hello\nworld"
 
     # With \n endings.
-    result, cli = _feed_cli_with_input("\x1b[200~hello\nworld\x1b[201~\x1b\r")
+    result, _cli = _feed_cli_with_input("\x1b[200~hello\nworld\x1b[201~\x1b\r")
     assert result.text == "hello\nworld"
 
 
-def test_vi_cursor_movements():
+def test_vi_cursor_movements() -> None:
     """Test cursor movements with Vi key bindings."""
     feed = partial(_feed_cli_with_input, editing_mode=EditingMode.VI)
 
@@ -611,67 +634,70 @@ def test_vi_cursor_movements():
     assert result.text == "heXlo"
 
 
-def test_vi_operators():
+def test_vi_operators() -> None:
+    """Test Vi operators."""
     feed = partial(_feed_cli_with_input, editing_mode=EditingMode.VI)
 
     # Esc g~0
-    result, cli = feed("hello\x1b[27ug~0\r")
+    result, _cli = feed("hello\x1b[27ug~0\r")
     assert result.text == "HELLo"
 
     # Esc gU0
-    result, cli = feed("hello\x1b[27ugU0\r")
+    result, _cli = feed("hello\x1b[27ugU0\r")
     assert result.text == "HELLo"
 
     # Esc d0
-    result, cli = feed("hello\x1b[27ud0\r")
+    result, _cli = feed("hello\x1b[27ud0\r")
     assert result.text == "o"
 
 
-def test_vi_text_objects():
+def test_vi_text_objects() -> None:
+    """Test Vi text objects."""
     feed = partial(_feed_cli_with_input, editing_mode=EditingMode.VI)
 
     # Esc gUgg
-    result, cli = feed("hello\x1b[27ugUgg\r")
+    result, _cli = feed("hello\x1b[27ugUgg\r")
     assert result.text == "HELLO"
 
     # Esc gUU
-    result, cli = feed("hello\x1b[27ugUU\r")
+    result, _cli = feed("hello\x1b[27ugUU\r")
     assert result.text == "HELLO"
 
     # Esc di(
-    result, cli = feed("before(inside)after\x1b[27u8hdi(\r")
+    result, _cli = feed("before(inside)after\x1b[27u8hdi(\r")
     assert result.text == "before()after"
 
     # Esc di[
-    result, cli = feed("before[inside]after\x1b[27u8hdi[\r")
+    result, _cli = feed("before[inside]after\x1b[27u8hdi[\r")
     assert result.text == "before[]after"
 
     # Esc da(
-    result, cli = feed("before(inside)after\x1b[27u8hda(\r")
+    result, _cli = feed("before(inside)after\x1b[27u8hda(\r")
     assert result.text == "beforeafter"
 
 
-def test_vi_digraphs():
+def test_vi_digraphs() -> None:
+    """Test Vi digraph input."""
     feed = partial(_feed_cli_with_input, editing_mode=EditingMode.VI)
 
     # C-K o/
-    result, cli = feed("hello\x0bo/\r")
+    result, _cli = feed("hello\x0bo/\r")
     assert result.text == "helloø"
 
     # C-K /o  (reversed input.)
-    result, cli = feed("hello\x0b/o\r")
+    result, _cli = feed("hello\x0b/o\r")
     assert result.text == "helloø"
 
     # C-K e:
-    result, cli = feed("hello\x0be:\r")
+    result, _cli = feed("hello\x0be:\r")
     assert result.text == "helloë"
 
     # C-K xxy (Unknown digraph.)
-    result, cli = feed("hello\x0bxxy\r")
+    result, _cli = feed("hello\x0bxxy\r")
     assert result.text == "helloy"
 
 
-def test_vi_block_editing():
+def test_vi_block_editing() -> None:
     """Test Vi Control-V style block insertion."""
     feed = partial(_feed_cli_with_input, editing_mode=EditingMode.VI, multiline=True)
 
@@ -695,17 +721,17 @@ def test_vi_block_editing():
     )
 
     # Control-I
-    result, cli = feed(operations.replace("insert", "I"))
+    result, _cli = feed(operations.replace("insert", "I"))
 
     assert result.text == "-line1\n-***line2\n-***line3\n-***line4\n-line5\n-line6"
 
     # Control-A
-    result, cli = feed(operations.replace("insert", "A"))
+    result, _cli = feed(operations.replace("insert", "A"))
 
     assert result.text == "-line1\n-line***2\n-line***3\n-line***4\n-line5\n-line6"
 
 
-def test_vi_block_editing_empty_lines():
+def test_vi_block_editing_empty_lines() -> None:
     """Test block editing on empty lines."""
     feed = partial(_feed_cli_with_input, editing_mode=EditingMode.VI, multiline=True)
 
@@ -729,17 +755,18 @@ def test_vi_block_editing_empty_lines():
     )
 
     # Control-I
-    result, cli = feed(operations.replace("insert", "I"))
+    result, _cli = feed(operations.replace("insert", "I"))
 
     assert result.text == "***\n***\n***\n\n\n"
 
     # Control-A
-    result, cli = feed(operations.replace("insert", "A"))
+    result, _cli = feed(operations.replace("insert", "A"))
 
     assert result.text == "***\n***\n***\n\n\n"
 
 
-def test_vi_visual_line_copy():
+def test_vi_visual_line_copy() -> None:
+    """Test Vi visual line mode copy."""
     feed = partial(_feed_cli_with_input, editing_mode=EditingMode.VI, multiline=True)
 
     operations = (
@@ -763,7 +790,7 @@ def test_vi_visual_line_copy():
         "\x1b[27u\r"
     )
 
-    result, cli = feed(operations)
+    result, _cli = feed(operations)
 
     assert (
         result.text
@@ -771,7 +798,7 @@ def test_vi_visual_line_copy():
     )
 
 
-def test_vi_visual_empty_line():
+def test_vi_visual_empty_line() -> None:
     """Test edge case with an empty line in Visual-line mode."""
     feed = partial(_feed_cli_with_input, editing_mode=EditingMode.VI, multiline=True)
 
@@ -786,7 +813,7 @@ def test_vi_visual_empty_line():
         # Delete.
         "d\r"
     )
-    result, cli = feed(operations)
+    result, _cli = feed(operations)
     assert result.text == "world"
 
     # 1. Delete middle line.
@@ -799,87 +826,88 @@ def test_vi_visual_empty_line():
         "Vd\r"
     )
 
-    result, cli = feed(operations)
+    result, _cli = feed(operations)
     assert result.text == "hello\nworld"
 
 
-def test_vi_character_delete_after_cursor():
+def test_vi_character_delete_after_cursor() -> None:
     """Test 'x' keypress."""
     feed = partial(_feed_cli_with_input, editing_mode=EditingMode.VI, multiline=True)
 
     # Delete one character.
-    result, cli = feed("abcd\x1b[27uHx\r")
+    result, _cli = feed("abcd\x1b[27uHx\r")
     assert result.text == "bcd"
 
     # Delete multiple characters.
-    result, cli = feed("abcd\x1b[27uH3x\r")
+    result, _cli = feed("abcd\x1b[27uH3x\r")
     assert result.text == "d"
 
     # Delete on empty line.
-    result, cli = feed("\x1b[27uo\x1b[27uo\x1b[27uggx\r")
+    result, _cli = feed("\x1b[27uo\x1b[27uo\x1b[27uggx\r")
     assert result.text == "\n\n"
 
     # Delete multiple on empty line.
-    result, cli = feed("\x1b[27uo\x1b[27uo\x1b[27ugg10x\r")
+    result, _cli = feed("\x1b[27uo\x1b[27uo\x1b[27ugg10x\r")
     assert result.text == "\n\n"
 
     # Delete multiple on empty line.
-    result, cli = feed("hello\x1b[27uo\x1b[27uo\x1b[27ugg3x\r")
+    result, _cli = feed("hello\x1b[27uo\x1b[27uo\x1b[27ugg3x\r")
     assert result.text == "lo\n\n"
 
 
-def test_vi_character_delete_before_cursor():
+def test_vi_character_delete_before_cursor() -> None:
     """Test 'X' keypress."""
     feed = partial(_feed_cli_with_input, editing_mode=EditingMode.VI, multiline=True)
 
     # Delete one character.
-    result, cli = feed("abcd\x1b[27uX\r")
+    result, _cli = feed("abcd\x1b[27uX\r")
     assert result.text == "abd"
 
     # Delete multiple characters.
-    result, cli = feed("hello world\x1b[27u3X\r")
+    result, _cli = feed("hello world\x1b[27u3X\r")
     assert result.text == "hello wd"
 
     # Delete multiple characters on multiple lines.
-    result, cli = feed("hello\x1b[27uoworld\x1b[27ugg$3X\r")
+    result, _cli = feed("hello\x1b[27uoworld\x1b[27ugg$3X\r")
     assert result.text == "ho\nworld"
 
-    result, cli = feed("hello\x1b[27uoworld\x1b[27u100X\r")
+    result, _cli = feed("hello\x1b[27uoworld\x1b[27u100X\r")
     assert result.text == "hello\nd"
 
     # Delete on empty line.
-    result, cli = feed("\x1b[27uo\x1b[27uo\x1b[27u10X\r")
+    result, _cli = feed("\x1b[27uo\x1b[27uo\x1b[27u10X\r")
     assert result.text == "\n\n"
 
 
-def test_vi_character_paste():
+def test_vi_character_paste() -> None:
+    """Test Vi character paste commands."""
     feed = partial(_feed_cli_with_input, editing_mode=EditingMode.VI)
 
     # Test 'p' character paste.
-    result, cli = feed("abcde\x1b[27uhhxp\r")
+    result, _cli = feed("abcde\x1b[27uhhxp\r")
     assert result.text == "abdce"
     assert result.cursor_position == 3
 
     # Test 'P' character paste.
-    result, cli = feed("abcde\x1b[27uhhxP\r")
+    result, _cli = feed("abcde\x1b[27uhhxP\r")
     assert result.text == "abcde"
     assert result.cursor_position == 2
 
 
-def test_vi_temp_navigation_mode():
+def test_vi_temp_navigation_mode() -> None:
     """Test c-o binding: go for one action into navigation mode."""
     feed = partial(_feed_cli_with_input, editing_mode=EditingMode.VI)
 
-    result, cli = feed("abcde\x0f3hx\r")  # c-o  # 3 times to the left.
+    result, _cli = feed("abcde\x0f3hx\r")  # c-o  # 3 times to the left.
     assert result.text == "axbcde"
     assert result.cursor_position == 2
 
-    result, cli = feed("abcde\x0fbx\r")  # c-o  # One word backwards.
+    result, _cli = feed("abcde\x0fbx\r")  # c-o  # One word backwards.
     assert result.text == "xabcde"
     assert result.cursor_position == 1
 
     # In replace mode
-    result, cli = feed(
+    result, _cli = feed(
         "abcdef"
         "\x1b[27u"  # Navigation mode.
         "0l"  # Start of line, one character to the right.
@@ -893,27 +921,28 @@ def test_vi_temp_navigation_mode():
     assert result.cursor_position == 5
 
 
-def test_vi_macros():
+def test_vi_macros() -> None:
+    """Test Vi macro recording and execution."""
     feed = partial(_feed_cli_with_input, editing_mode=EditingMode.VI)
 
     # Record and execute macro.
-    result, cli = feed("\x1b[27uqcahello\x1b[27uq@c\r")
+    result, _cli = feed("\x1b[27uqcahello\x1b[27uq@c\r")
     assert result.text == "hellohello"
     assert result.cursor_position == 9
 
     # Running unknown macro.
-    result, cli = feed("\x1b[27u@d\r")
+    result, _cli = feed("\x1b[27u@d\r")
     assert result.text == ""
     assert result.cursor_position == 0
 
     # When a macro is called within a macro.
     # It shouldn't result in eternal recursion.
-    result, cli = feed("\x1b[27uqxahello\x1b[27u@xq@x\r")
+    result, _cli = feed("\x1b[27uqxahello\x1b[27u@xq@x\r")
     assert result.text == "hellohello"
     assert result.cursor_position == 9
 
     # Nested macros.
-    result, cli = feed(
+    result, _cli = feed(
         # Define macro 'x'.
         "\x1b[27uqxahello\x1b[27uq"
         # Define macro 'y' which calls 'x'.
@@ -927,7 +956,7 @@ def test_vi_macros():
     assert result.text == "helloworld"
 
 
-def test_accept_default():
+def test_accept_default() -> None:
     """Test `prompt(accept_default=True)`."""
     with create_pipe_input() as inp:
         session = PromptSession(input=inp, output=DummyOutput())

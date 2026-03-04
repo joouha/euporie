@@ -1,13 +1,21 @@
+"""Tests for regular language functionality."""
+
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from apptk.completion import CompleteEvent, Completer, Completion
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
 from apptk.contrib.regular_languages import compile
 from apptk.contrib.regular_languages.compiler import Match, Variables
 from apptk.contrib.regular_languages.completion import GrammarCompleter
 from apptk.document import Document
 
 
-def test_simple_match():
+def test_simple_match() -> None:
+    """Test simple pattern matching."""
     g = compile("hello|world")
 
     m = g.match("hello")
@@ -20,7 +28,7 @@ def test_simple_match():
     assert m is None
 
 
-def test_variable_varname():
+def test_variable_varname() -> None:
     """Test `Variable` with varname."""
     g = compile("((?P<varname>hello|world)|test)")
 
@@ -43,7 +51,7 @@ def test_variable_varname():
     assert variables["varname"] is None
 
 
-def test_prefix():
+def test_prefix() -> None:
     """Test `match_prefix`."""
     g = compile(r"(hello\ world|something\ else)")
 
@@ -71,14 +79,20 @@ def test_prefix():
     assert m.trailing_input().stop == len("hellotest")
 
 
-def test_completer():
+def test_completer() -> None:
+    """Test grammar completer functionality."""
+
     class completer1(Completer):
-        def get_completions(self, document, complete_event):
+        def get_completions(
+            self, document: Document, complete_event: CompleteEvent
+        ) -> Generator[Completion, None, None]:
             yield Completion(f"before-{document.text}-after", -len(document.text))
             yield Completion(f"before-{document.text}-after-B", -len(document.text))
 
     class completer2(Completer):
-        def get_completions(self, document, complete_event):
+        def get_completions(
+            self, document: Document, complete_event: CompleteEvent
+        ) -> Generator[Completion, None, None]:
             yield Completion(f"before2-{document.text}-after2", -len(document.text))
             yield Completion(f"before2-{document.text}-after2-B", -len(document.text))
 

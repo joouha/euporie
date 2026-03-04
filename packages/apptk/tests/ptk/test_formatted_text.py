@@ -1,3 +1,5 @@
+"""Tests for formatted text functionality."""
+
 from __future__ import annotations
 
 from apptk.formatted_text import (
@@ -12,7 +14,8 @@ from apptk.formatted_text import (
 from apptk.formatted_text.utils import split_lines
 
 
-def test_basic_html():
+def test_basic_html() -> None:
+    """Test basic HTML formatting."""
     html = HTML("<i>hello</i>")
     assert to_formatted_text(html) == [("class:i", "hello")]
 
@@ -33,7 +36,8 @@ def test_basic_html():
     assert isinstance(to_formatted_text(html), FormattedText)
 
 
-def test_html_with_fg_bg():
+def test_html_with_fg_bg() -> None:
+    """Test HTML with foreground and background colors."""
     html = HTML('<style bg="ansired">hello</style>')
     assert to_formatted_text(html) == [
         ("bg:ansired", "hello"),
@@ -53,7 +57,8 @@ def test_html_with_fg_bg():
     ]
 
 
-def test_ansi_formatting():
+def test_ansi_formatting() -> None:
+    """Test ANSI formatting codes."""
     value = ANSI("\x1b[32mHe\x1b[45mllo")
 
     assert to_formatted_text(value) == [
@@ -89,7 +94,8 @@ def test_ansi_formatting():
     assert isinstance(to_formatted_text(value), FormattedText)
 
 
-def test_ansi_dim():
+def test_ansi_dim() -> None:
+    """Test ANSI dim formatting."""
     # Test dim formatting
     value = ANSI("\x1b[2mhello\x1b[0m")
 
@@ -129,7 +135,8 @@ def test_ansi_dim():
     ]
 
 
-def test_ansi_256_color():
+def test_ansi_256_color() -> None:
+    """Test ANSI 256 color support."""
     assert to_formatted_text(ANSI("\x1b[38;5;124mtest")) == [
         ("#af0000", "t"),
         ("#af0000", "e"),
@@ -138,14 +145,16 @@ def test_ansi_256_color():
     ]
 
 
-def test_ansi_true_color():
+def test_ansi_true_color() -> None:
+    """Test ANSI true color support."""
     assert to_formatted_text(ANSI("\033[38;2;144;238;144m$\033[0;39;49m ")) == [
         ("#90ee90", "$"),
         ("ansidefault bg:ansidefault", " "),
     ]
 
 
-def test_ansi_interpolation():
+def test_ansi_interpolation() -> None:
+    """Test ANSI string interpolation."""
     # %-style interpolation.
     value = ANSI("\x1b[1m%s\x1b[0m") % "hello\x1b"
     assert to_formatted_text(value) == [
@@ -210,7 +219,8 @@ def test_ansi_interpolation():
     ]
 
 
-def test_interpolation():
+def test_interpolation() -> None:
+    """Test template interpolation."""
     value = Template(" {} ").format(HTML("<b>hello</b>"))
 
     assert to_formatted_text(value) == [
@@ -230,7 +240,8 @@ def test_interpolation():
     ]
 
 
-def test_html_interpolation():
+def test_html_interpolation() -> None:
+    """Test HTML string interpolation."""
     # %-style interpolation.
     value = HTML("<b>%s</b>") % "&hello"
     assert to_formatted_text(value) == [("class:b", "&hello")]
@@ -252,7 +263,8 @@ def test_html_interpolation():
     assert to_formatted_text(value) == [("class:b", "03"), ("class:u", "3.142")]
 
 
-def test_merge_formatted_text():
+def test_merge_formatted_text() -> None:
+    """Test merging formatted text."""
     html1 = HTML("<u>hello</u>")
     html2 = HTML("<b>world</b>")
     result = merge_formatted_text([html1, html2])
@@ -263,7 +275,8 @@ def test_merge_formatted_text():
     ]
 
 
-def test_pygments_tokens():
+def test_pygments_tokens() -> None:
+    """Test Pygments token formatting."""
     text = [
         (("A", "B"), "hello"),  # Token.A.B
         (("C", "D", "E"), "hello"),  # Token.C.D.E
@@ -277,7 +290,8 @@ def test_pygments_tokens():
     ]
 
 
-def test_split_lines():
+def test_split_lines() -> None:
+    """Test splitting formatted text into lines."""
     lines = list(split_lines([("class:a", "line1\nline2\nline3")]))
 
     assert lines == [
@@ -287,7 +301,8 @@ def test_split_lines():
     ]
 
 
-def test_split_lines_2():
+def test_split_lines_2() -> None:
+    """Test splitting formatted text with multiple fragments."""
     lines = list(
         split_lines([("class:a", "line1"), ("class:b", "line2\nline3\nline4")])
     )
@@ -299,8 +314,8 @@ def test_split_lines_2():
     ]
 
 
-def test_split_lines_3():
-    """Edge cases: inputs ending with newlines."""
+def test_split_lines_3() -> None:
+    """Test edge cases with inputs ending with newlines."""
     # -1-
     lines = list(split_lines([("class:a", "line1\nline2\n")]))
 
@@ -326,8 +341,8 @@ def test_split_lines_3():
     ]
 
 
-def test_split_lines_4():
-    """Edge cases: inputs starting and ending with newlines."""
+def test_split_lines_4() -> None:
+    """Test edge cases with inputs starting and ending with newlines."""
     # -1-
     lines = list(split_lines([("class:a", "\nline1\n")]))
 

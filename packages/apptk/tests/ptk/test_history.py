@@ -1,15 +1,18 @@
+"""Tests for history functionality."""
+
 from __future__ import annotations
 
 from asyncio import run
+from typing import Any
 
 from apptk.history import FileHistory, InMemoryHistory, ThreadedHistory
 
 
-def _call_history_load(history):
-    """Helper: Call the history "load" method and return the result as a list of strings."""
+def _call_history_load(history: Any) -> list[str]:
+    """Call the history load method and return the result as a list of strings."""
     result = []
 
-    async def call_load():
+    async def call_load() -> None:
         async for item in history.load():
             result.append(item)
 
@@ -17,7 +20,8 @@ def _call_history_load(history):
     return result
 
 
-def test_in_memory_history():
+def test_in_memory_history() -> None:
+    """Test in-memory history functionality."""
     history = InMemoryHistory()
     history.append_string("hello")
     history.append_string("world")
@@ -36,7 +40,8 @@ def test_in_memory_history():
     assert _call_history_load(history2) == ["def", "abc"]
 
 
-def test_file_history(tmpdir):
+def test_file_history(tmpdir: Any) -> None:
+    """Test file-based history functionality."""
     histfile = tmpdir.join("history")
 
     history = FileHistory(histfile)
@@ -58,7 +63,8 @@ def test_file_history(tmpdir):
     assert _call_history_load(history2) == ["test3", "world", "hello"]
 
 
-def test_threaded_file_history(tmpdir):
+def test_threaded_file_history(tmpdir: Any) -> None:
+    """Test threaded file history functionality."""
     histfile = tmpdir.join("history")
 
     history = ThreadedHistory(FileHistory(histfile))
@@ -80,7 +86,8 @@ def test_threaded_file_history(tmpdir):
     assert _call_history_load(history2) == ["test3", "world", "hello"]
 
 
-def test_threaded_in_memory_history():
+def test_threaded_in_memory_history() -> None:
+    """Test threaded in-memory history functionality."""
     # Threaded in memory history is not useful. But testing it anyway, just to
     # see whether everything plays nicely together.
     history = ThreadedHistory(InMemoryHistory())

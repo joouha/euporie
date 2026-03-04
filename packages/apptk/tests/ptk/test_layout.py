@@ -1,3 +1,5 @@
+"""Tests for layout functionality."""
+
 from __future__ import annotations
 
 import pytest
@@ -6,7 +8,8 @@ from apptk.layout.containers import HSplit, VSplit, Window
 from apptk.layout.controls import BufferControl
 
 
-def test_layout_class():
+def test_layout_class() -> None:
+    """Test the Layout class."""
     c1 = BufferControl()
     c2 = BufferControl()
     c3 = BufferControl()
@@ -47,6 +50,7 @@ def test_layout_class():
     assert layout.previous_control == c1
 
 
-def test_create_invalid_layout():
+def test_create_invalid_layout() -> None:
+    """Test creating an invalid layout raises an error."""
     with pytest.raises(InvalidLayoutError):
         Layout(HSplit([]))

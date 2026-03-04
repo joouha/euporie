@@ -1,6 +1,12 @@
+"""Tests for key binding functionality."""
+
 from __future__ import annotations
 
 from contextlib import contextmanager
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Generator
 
 import pytest
 from apptk.application import Application
@@ -14,20 +20,26 @@ from apptk.output import DummyOutput
 
 
 class Handlers:
-    def __init__(self):
-        self.called = []
+    """Handler class for tracking key binding calls."""
 
-    def __getattr__(self, name):
-        def func(event):
+    def __init__(self) -> None:
+        """Initialize the handlers."""
+        self.called: list[str] = []
+
+    def __getattr__(self, name: str) -> Callable[[Any], None]:
+        """Return a handler function for the given name."""
+
+        def func(event: Any) -> None:
             self.called.append(name)
 
         return func
 
 
 @contextmanager
-def set_dummy_app():
-    """Return a context manager that makes sure that this dummy application is
-    active. This is important, because we need an `Application` with
+def set_dummy_app() -> Generator[None, None, None]:
+    """Set up a dummy application for testing.
+
+    This is important, because we need an `Application` with
     `is_done=False` flag, otherwise no keys will be processed.
     """
     with create_pipe_input() as pipe_input:
@@ -51,12 +63,14 @@ def set_dummy_app():
 
 
 @pytest.fixture
-def handlers():
+def handlers() -> Handlers:
+    """Create a handlers fixture."""
     return Handlers()
 
 
 @pytest.fixture
-def bindings(handlers):
+def bindings(handlers: Handlers) -> KeyBindings:
+    """Create key bindings fixture."""
     bindings = KeyBindings()
     bindings.add(Keys.ControlX, Keys.ControlC)(handlers.controlx_controlc)
     bindings.add(Keys.ControlX)(handlers.control_x)
@@ -67,11 +81,13 @@ def bindings(handlers):
 
 
 @pytest.fixture
-def processor(bindings):
+def processor(bindings: KeyBindings) -> KeyProcessor:
+    """Create a key processor fixture."""
     return KeyProcessor(bindings)
 
 
-def test_remove_bindings(handlers):
+def test_remove_bindings(handlers: Handlers) -> None:
+    """Test removing key bindings."""
     with set_dummy_app():
         h = handlers.controlx_controlc
         h2 = handlers.controld
@@ -93,7 +109,8 @@ def test_remove_bindings(handlers):
         assert len(bindings.bindings) == 1
 
 
-def test_feed_simple(processor, handlers):
+def test_feed_simple(processor: KeyProcessor, handlers: Handlers) -> None:
+    """Test simple key feeding."""
     with set_dummy_app():
         processor.feed(KeyPress(Keys.ControlX, "\x18"))
         processor.feed(KeyPress(Keys.ControlC, "\x03"))
@@ -102,7 +119,8 @@ def test_feed_simple(processor, handlers):
         assert handlers.called == ["controlx_controlc"]
 
 
-def test_feed_several(processor, handlers):
+def test_feed_several(processor: KeyProcessor, handlers: Handlers) -> None:
+    """Test feeding several keys."""
     with set_dummy_app():
         # First an unknown key first.
         processor.feed(KeyPress(Keys.ControlQ, ""))
@@ -128,7 +146,8 @@ def test_feed_several(processor, handlers):
         assert handlers.called == ["controlx_controlc", "control_d"]
 
 
-def test_control_square_closed_any(processor, handlers):
+def test_control_square_closed_any(processor: KeyProcessor, handlers: Handlers) -> None:
+    """Test control square close with any key."""
     with set_dummy_app():
         processor.feed(KeyPress(Keys.ControlSquareClose, ""))
         processor.feed(KeyPress("C", "C"))
@@ -137,7 +156,8 @@ def test_control_square_closed_any(processor, handlers):
         assert handlers.called == ["control_square_close_any"]
 
 
-def test_common_prefix(processor, handlers):
+def test_common_prefix(processor: KeyProcessor, handlers: Handlers) -> None:
+    """Test key bindings with common prefix."""
     with set_dummy_app():
         # Sending Control_X should not yet do anything, because there is
         # another sequence starting with that as well.
@@ -154,12 +174,12 @@ def test_common_prefix(processor, handlers):
         assert handlers.called == ["control_x", "control_d"]
 
 
-def test_previous_key_sequence(processor):
+def test_previous_key_sequence(processor: KeyProcessor) -> None:
     """Test whether we receive the correct previous_key_sequence."""
     with set_dummy_app():
-        events = []
+        events: list[Any] = []
 
-        def handler(event):
+        def handler(event: Any) -> None:
             events.append(event)
 
         # Build registry.

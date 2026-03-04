@@ -5,9 +5,8 @@ from __future__ import annotations
 import json
 from pkgutil import resolve_name
 
-from euporie.core.config import add_setting
-
 from euporie.core import __version__
+from euporie.core.config import add_setting
 
 # euporie.core.config
 

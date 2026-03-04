@@ -301,9 +301,8 @@ class AboutDialog(Dialog):
 
     def load(self) -> None:
         """Load the dialog's body."""
-        from euporie.core.widgets.logo import logo_medium
-
         from euporie.core import __copyright__, __strapline__
+        from euporie.core.widgets.logo import logo_medium
 
         self.body = HSplit(
             [

@@ -1,3 +1,5 @@
+"""Tests for filter functionality."""
+
 from __future__ import annotations
 
 import pytest
@@ -5,15 +7,18 @@ from apptk.filters import Always, Condition, Filter, Never, to_filter
 from apptk.filters.base import _AndList, _OrList
 
 
-def test_never():
+def test_never() -> None:
+    """Test Never filter."""
     assert not Never()()
 
 
-def test_always():
+def test_always() -> None:
+    """Test Always filter."""
     assert Always()()
 
 
-def test_invert():
+def test_invert() -> None:
+    """Test filter inversion."""
     assert not (~Always())()
     assert (~Never())()
 
@@ -21,55 +26,60 @@ def test_invert():
     assert c()
 
 
-def test_or():
+def test_or() -> None:
+    """Test OR operation on filters."""
     for a in (True, False):
         for b in (True, False):
-            c1 = Condition(lambda: a)
-            c2 = Condition(lambda: b)
+            c1 = Condition(lambda a=a: a)
+            c2 = Condition(lambda b=b: b)
             c3 = c1 | c2
 
             assert isinstance(c3, Filter)
             assert c3() == a or b
 
 
-def test_and():
+def test_and() -> None:
+    """Test AND operation on filters."""
     for a in (True, False):
         for b in (True, False):
-            c1 = Condition(lambda: a)
-            c2 = Condition(lambda: b)
+            c1 = Condition(lambda a=a: a)
+            c2 = Condition(lambda b=b: b)
             c3 = c1 & c2
 
             assert isinstance(c3, Filter)
             assert c3() == (a and b)
 
 
-def test_nested_and():
+def test_nested_and() -> None:
+    """Test nested AND operations on filters."""
     for a in (True, False):
         for b in (True, False):
             for c in (True, False):
-                c1 = Condition(lambda: a)
-                c2 = Condition(lambda: b)
-                c3 = Condition(lambda: c)
+                c1 = Condition(lambda a=a: a)
+                c2 = Condition(lambda b=b: b)
+                c3 = Condition(lambda c=c: c)
                 c4 = (c1 & c2) & c3
 
                 assert isinstance(c4, Filter)
                 assert c4() == (a and b and c)
 
 
-def test_nested_or():
+def test_nested_or() -> None:
+    """Test nested OR operations on filters."""
     for a in (True, False):
         for b in (True, False):
             for c in (True, False):
-                c1 = Condition(lambda: a)
-                c2 = Condition(lambda: b)
-                c3 = Condition(lambda: c)
+                c1 = Condition(lambda a=a: a)
+                c2 = Condition(lambda b=b: b)
+                c3 = Condition(lambda c=c: c)
                 c4 = (c1 | c2) | c3
 
                 assert isinstance(c4, Filter)
                 assert c4() == (a or b or c)
 
 
-def test_to_filter():
+def test_to_filter() -> None:
+    """Test to_filter conversion."""
     f1 = to_filter(True)
     f2 = to_filter(False)
     f3 = to_filter(Condition(lambda: True))
@@ -88,20 +98,24 @@ def test_to_filter():
         to_filter(4)
 
 
-def test_filter_cache_regression_1():
-    # See: https://github.com/prompt-toolkit/python-prompt-toolkit/issues/1729
+def test_filter_cache_regression_1() -> None:
+    """Test filter cache regression.
 
+    See: https://github.com/prompt-toolkit/python-prompt-toolkit/issues/1729
+
+    The use of a `WeakValueDictionary` caused this following expression to
+    fail. The problem is that the nested `(a & a)` expression gets garbage
+    collected between the two statements and is removed from our cache.
+    """
     cond = Condition(lambda: True)
 
-    # The use of a `WeakValueDictionary` caused this following expression to
-    # fail. The problem is that the nested `(a & a)` expression gets garbage
-    # collected between the two statements and is removed from our cache.
     x = (cond & cond) & cond
     y = (cond & cond) & cond
     assert x == y
 
 
-def test_filter_cache_regression_2():
+def test_filter_cache_regression_2() -> None:
+    """Test filter cache with multiple conditions."""
     cond1 = Condition(lambda: True)
     cond2 = Condition(lambda: True)
     cond3 = Condition(lambda: True)
@@ -111,13 +125,15 @@ def test_filter_cache_regression_2():
     assert x == y
 
 
-def test_filter_remove_duplicates():
+def test_filter_remove_duplicates() -> None:
+    """Test filter duplicate removal.
+
+    When a condition is appended to itself using an `&` or `|` operator, it
+    should not be present twice. Having it twice in the `_AndList` or
+    `_OrList` will make them more expensive to evaluate.
+    """
     cond1 = Condition(lambda: True)
     cond2 = Condition(lambda: True)
-
-    # When a condition is appended to itself using an `&` or `|` operator, it
-    # should not be present twice. Having it twice in the `_AndList` or
-    # `_OrList` will make them more expensive to evaluate.
 
     assert isinstance(cond1 & cond1, Condition)
     assert isinstance(cond1 & cond1 & cond1, Condition)

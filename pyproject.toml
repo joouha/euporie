@@ -151,6 +151,8 @@ select = [ # "ANN", "B", "C", "D", "E", "F", "I", "Q", "S", "T", "UP"]
 ignore = [
     # Use of typing.Any
     "ANN401",
+    # Anync Pathlib
+    "ASYNC240",
     # Function too complex
     "C901",
     # Use of assert

@@ -1,11 +1,17 @@
+"""Tests for shortcuts functionality."""
+
 from __future__ import annotations
+
+from pathlib import Path
+from typing import Any
 
 from apptk.shortcuts import print_container
 from apptk.shortcuts.prompt import _split_multiline_prompt
 from apptk.widgets import Frame, TextArea
 
 
-def test_split_multiline_prompt():
+def test_split_multiline_prompt() -> None:
+    """Test splitting multiline prompts."""
     # Test 1: no newlines:
     tokens = [("class:testclass", "ab")]
     has_before_tokens, before, first_input_line = _split_multiline_prompt(
@@ -55,14 +61,15 @@ def test_split_multiline_prompt():
     assert first_input_line() == [("class:testclass", "a"), ("class:testclass", "b")]
 
 
-def test_print_container(tmpdir):
+def test_print_container(tmpdir: Any) -> None:
+    """Test printing a container to a file."""
     # Call `print_container`, render to a dummy file.
     f = tmpdir.join("output")
-    with open(f, "w") as fd:
+    with Path(f).open("w") as fd:
         print_container(Frame(TextArea(text="Hello world!\n"), title="Title"), file=fd)
 
     # Verify rendered output.
-    with open(f) as fd:
+    with Path(f).open() as fd:
         text = fd.read()
         assert "Hello world" in text
         assert "Title" in text
