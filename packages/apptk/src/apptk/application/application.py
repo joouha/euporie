@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+import io
 import logging
+import os
 from typing import TYPE_CHECKING, Generic
 
 from apptk.data_structures import Point
@@ -197,9 +199,41 @@ class Application(PtkApplication, Generic[_AppResult]):
 
                 kp.process_keys()
 
-        return await super().run_async(
-            pre_run, set_exception_handler, handle_sigint, slow_callback_duration
-        )
+        try:
+            return await super().run_async(
+                pre_run, set_exception_handler, handle_sigint, slow_callback_duration
+            )
+        finally:
+            # Drain pending input after renderer cleanup has disabled mouse tracking etc
+            self._drain_pending_input()
+
+    def _drain_pending_input(self) -> None:
+        """Drain any pending terminal query responses from stdin.
+
+        When the application sends terminal queries (e.g. for colors, pixel
+        size, device attributes), responses may still be in-flight when the app
+        exits. If not consumed, these responses appear as garbage text in the
+        shell. This method reads and discards any pending bytes from stdin.
+        """
+        import select
+
+        try:
+            fd = self.input.fileno()
+        except (AttributeError, io.UnsupportedOperation):
+            return
+        except NotImplementedError:
+            # Occurs when using DummyInput
+            return
+        try:
+            # Read and discard any pending input with a short timeout to allow
+            # late-arriving responses to be consumed
+            for _ in range(50):  # Safety limit to avoid infinite loop
+                readable, _, _ = select.select([fd], [], [], 0.01)
+                if not readable:
+                    break
+                os.read(fd, 4096)
+        except (OSError, ValueError):
+            pass
 
 
 class _CombinedRegistry(_PtkCombinedRegistry):
