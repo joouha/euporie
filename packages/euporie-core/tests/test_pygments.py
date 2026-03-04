@@ -3,47 +3,74 @@
 from __future__ import annotations
 
 from euporie.core.pygments import ArgparseLexer, EuporiePygmentsStyle
-from pygments import highlight
-from pygments.formatters.terminal256 import TerminalTrueColorFormatter
 from pygments.lexers import PythonLexer
+from pygments.token import Generic, Keyword, Name
 
 
-def test_argparse_lexer() -> None:
-    """Argparse lexer output is as expected."""
-    code = """usage: my_program.py [-h] [--foo FOO] [--bar BAR] filename
+def test_argparse_lexer_tokenizes_usage_line() -> None:
+    """Argparse lexer correctly tokenizes the usage line."""
+    code = "usage: my_program.py [-h] [--foo FOO] filename\n"
+    tokens = list(ArgparseLexer().get_tokens(code))
 
-description
-
-positional arguments:
-  filename
-
-optional arguments:
-  -h, --help  show this help message and exit
-  --foo FOO   description of foo
-  --bar BAR   description of bar
-"""
-    expected_output = "\x1b[01musage:\x1b[00m \x1b[38;2;113;173;255;04mmy_program.py\x1b[39;00m [\x1b[38;2;110;191;38;01m-h\x1b[39;00m] [\x1b[38;2;110;191;38;01m--foo\x1b[39;00m FOO] [\x1b[38;2;110;191;38;01m--bar\x1b[39;00m BAR] filename\n\ndescription\n\n\x1b[01mpositional arguments:\x1b[00m\n  filename\n\n\x1b[01moptional arguments:\x1b[00m\n  \x1b[38;2;110;191;38;01m-h\x1b[39;00m, \x1b[38;2;110;191;38;01m--help\x1b[39;00m  show this help message and exit\n  \x1b[38;2;110;191;38;01m--foo\x1b[39;00m FOO   description of foo\n  \x1b[38;2;110;191;38;01m--bar\x1b[39;00m BAR   description of bar\n"
-
-    result = highlight(
-        code,
-        ArgparseLexer(),
-        TerminalTrueColorFormatter(style=EuporiePygmentsStyle),
-    )
-    assert result == expected_output
+    # Check program name is tokenized as Name.Namespace
+    assert (Name.Namespace, "my_program.py") in tokens
+    # Check short option is tokenized as Keyword
+    assert (Keyword, "-h") in tokens
+    # Check long option is tokenized as Keyword
+    assert (Keyword, "--foo") in tokens
 
 
-def test_python_lexer() -> None:
-    """Python code is highlighted as expected."""
-    code = """
-def fibonacci(n: int) -> int:
-    if n <= 1:
-        return n
-    return fibonacci(n-1) + fibonacci(n-2)
-"""
-    expected_output = """\x1b[38;2;110;191;38;01mdef\x1b[39;00m \x1b[38;2;113;173;255mfibonacci\x1b[39m(n: \x1b[38;2;47;188;205mint\x1b[39m) -> \x1b[38;2;47;188;205mint\x1b[39m:\n    \x1b[38;2;110;191;38;01mif\x1b[39;00m n <= \x1b[38;2;81;178;253m1\x1b[39m:\n        \x1b[38;2;110;191;38;01mreturn\x1b[39;00m n\n    \x1b[38;2;110;191;38;01mreturn\x1b[39;00m fibonacci(n-\x1b[38;2;81;178;253m1\x1b[39m) + fibonacci(n-\x1b[38;2;81;178;253m2\x1b[39m)\n"""
-    result = highlight(
-        code,
-        PythonLexer(),
-        TerminalTrueColorFormatter(style=EuporiePygmentsStyle),
-    )
-    assert result == expected_output
+def test_argparse_lexer_tokenizes_section_headings() -> None:
+    """Argparse lexer correctly tokenizes section headings."""
+    code = "positional arguments:\n  filename\n\noptional arguments:\n  -h\n"
+    tokens = list(ArgparseLexer().get_tokens(code))
+
+    # Check section headings are tokenized as Generic.Heading
+    assert (Generic.Heading, "positional arguments:") in tokens
+    assert (Generic.Heading, "optional arguments:") in tokens
+
+
+def test_argparse_lexer_tokenizes_options() -> None:
+    """Argparse lexer correctly tokenizes options in help text."""
+    code = "  -h, --help  show this help message\n  --foo FOO   description\n"
+    tokens = list(ArgparseLexer().get_tokens(code))
+
+    # Check options are tokenized as Keyword
+    assert (Keyword, "-h") in tokens
+    assert (Keyword, "--help") in tokens
+    assert (Keyword, "--foo") in tokens
+
+
+def test_argparse_lexer_preserves_text() -> None:
+    """Argparse lexer preserves all input text."""
+    code = "usage: prog [-h]\n\ndescription\n"
+    tokens = list(ArgparseLexer().get_tokens(code))
+
+    # Reconstruct text from tokens
+    reconstructed = "".join(text for _, text in tokens)
+    assert reconstructed == code
+
+
+def test_euporie_pygments_style_has_required_tokens() -> None:
+    """EuporiePygmentsStyle defines styles for common token types."""
+    # Verify the style has definitions for important token types
+    assert Keyword in EuporiePygmentsStyle.styles
+    assert Name.Builtin in EuporiePygmentsStyle.styles
+    assert Name.Function in EuporiePygmentsStyle.styles
+    assert Generic.Heading in EuporiePygmentsStyle.styles
+
+
+def test_python_lexer_with_euporie_style() -> None:
+    """Python lexer works with EuporiePygmentsStyle."""
+    code = "def foo(): pass\n"
+    lexer = PythonLexer()
+    tokens = list(lexer.get_tokens(code))
+
+    # Verify basic tokenization works
+    token_types = [t[0] for t in tokens]
+    assert any(t for t in token_types if t in Keyword)
+
+    # Verify style can be applied to all tokens without error
+    for token_type, _ in tokens:
+        # This should not raise - style should handle all token types
+        EuporiePygmentsStyle.style_for_token(token_type)

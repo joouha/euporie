@@ -6,7 +6,6 @@ import logging
 from functools import cache
 from typing import TYPE_CHECKING
 
-from apptk.application.current import get_app
 from apptk.convert.registry import register
 from apptk.lexers.utils import detect_lexer
 
@@ -21,7 +20,7 @@ log = logging.getLogger(__name__)
 
 
 @cache
-def markdown_parser() -> MarkdownIt:
+def markdown_parser(syntax_theme: str) -> MarkdownIt:
     """Lazy-load a markdown parser."""
     from markdown_it import MarkdownIt
     from mdit_py_plugins.amsmath import amsmath_plugin
@@ -42,15 +41,7 @@ def markdown_parser() -> MarkdownIt:
                 "highlight": lambda text, language, lang_args: highlight(
                     text,
                     detect_lexer(text, language=language),
-                    HtmlFormatter(
-                        nowrap=True,
-                        noclasses=True,
-                        style=(
-                            app.syntax_theme
-                            if hasattr((app := get_app()), "syntax_theme")
-                            else "default"
-                        ),
-                    ),
+                    HtmlFormatter(nowrap=True, noclasses=True, style=syntax_theme),
                 )
             }
         )
@@ -70,10 +61,11 @@ async def markdown_to_html_markdown_it(
     rows: int | None = None,
     fg: str | None = None,
     bg: str | None = None,
+    syntax_theme: str = "euporie",
     **kwargs: Any,
 ) -> str:
     """Convert markdown to HTML using :py:mod:`markdownit_py`."""
-    parser = markdown_parser()
+    parser = markdown_parser(syntax_theme)
     data = datum.data
     markup = data.decode() if isinstance(data, bytes) else data
     return parser.render(markup)

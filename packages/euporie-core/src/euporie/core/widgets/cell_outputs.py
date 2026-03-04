@@ -141,7 +141,10 @@ class CellOutputDataElement(CellOutputElement):
             bg=bg_color,
         )
 
-        convert_kwargs = {"css": defaultdict(dict)}
+        convert_kwargs = {
+            "css": defaultdict(dict),
+            "syntax_theme": config.syntax_theme,
+        }
 
         # Apply Jupyter notebooks specific CSS styles
         if format_ == "html":

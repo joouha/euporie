@@ -169,7 +169,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
                 "enable_page_navigation_bindings": enable_page_navigation_bindings,
                 "style": merge_styles(
                     [
-                        DynamicStyle(lambda: _pygments_style(self.syntax_theme)),
+                        DynamicStyle(lambda: _pygments_style(self.config.syntax_theme)),
                         *BASE_STYLES,
                         PaletteStyle(self.color_palette, build_style),
                     ]
@@ -601,14 +601,6 @@ class BaseApp(ConfigurableApp, Application, ABC):
         if tab is not None:
             tab.close(cb=partial(self.cleanup_closed_tab, tab))
         self.invalidate()
-
-    @property
-    def syntax_theme(self) -> str:
-        """Calculate the current syntax theme."""
-        syntax_theme = self.config.syntax_theme
-        if syntax_theme == self.config.defaults.syntax_theme:
-            syntax_theme = "tango" if self.color_palette.bg.is_light else "euporie"
-        return syntax_theme
 
     def update_palette(self, caller: Application | Setting | None = None) -> None:
         """Set the application's color palette based on the configured theme."""

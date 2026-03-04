@@ -50,37 +50,42 @@ class ArgparseLexer(RegexLexer):
 
 
 class EuporiePygmentsStyle(Style):
-    """Version of pygment's "native" style which works better on light backgrounds."""
+    """ANSI color only pygments style.
+
+    This is loosely based on Pygments' "native" style, modified to use ANSI colors
+    instead of RGB. This adapts better to light/dark mode, because the built-in themes
+    from a terminal are typically designed for whatever background is used.
+    """
 
     styles: ClassVar[dict[_TokenType, str]] = {
-        Comment: "italic #888888",
-        Comment.Preproc: "noitalic bold #cd2828",
-        Comment.Special: "noitalic bold #e50808 bg:#520000",
-        Keyword: "bold #6ebf26",
+        Comment: "italic ansibrightblack",
+        Comment.Preproc: "noitalic bold ansired",
+        Comment.Special: "noitalic bold ansired",
+        Keyword: "bold ansigreen",
         Keyword.Pseudo: "nobold",
-        Keyword.Constant: "nobold #ff3d3d",
-        Operator.Word: "bold #6ebf26",
-        Literal.Date: "#2fbccd",
-        Literal.String: "#ed9d13",
-        Literal.String.Other: "#ffa500",
-        Literal.Number: "#51b2fd",
-        Name.Builtin: "#2fbccd",
-        Name.Variable: "#40ffff",
-        Name.Constant: "#40ffff",
-        Name.Class: "underline #71adff",
-        Name.Function: "#71adff",
-        Name.Namespace: "underline #71adff",
+        Keyword.Constant: "nobold ansired",
+        Operator.Word: "bold ansigreen",
+        Literal.Date: "ansicyan",
+        Literal.String: "ansiyellow",
+        Literal.String.Other: "ansiyellow",
+        Literal.Number: "ansibrightblue",
+        Name.Builtin: "ansicyan",
+        Name.Variable: "ansicyan",
+        Name.Constant: "ansicyan",
+        Name.Class: "underline ansibrightblue",
+        Name.Function: "ansibrightblue",
+        Name.Namespace: "underline ansibrightblue",
         Name.Exception: "noinherit bold",
-        Name.Tag: "bold #6ebf26",
+        Name.Tag: "bold ansigreen",
         Name.Attribute: "noinherit",
-        Name.Decorator: "#ffa500",
+        Name.Decorator: "ansiyellow",
         Generic.Heading: "bold",
         Generic.Subheading: "underline",
-        Generic.Deleted: "#d22323",
-        Generic.Inserted: "#589819",
-        Generic.Error: "#d22323",
+        Generic.Deleted: "ansired",
+        Generic.Inserted: "ansigreen",
+        Generic.Error: "ansired",
         Generic.Emph: "italic",
         Generic.Strong: "bold",
-        Generic.Traceback: "#d22323",
-        Error: "bold bg:#a61717 #ffffff",
+        Generic.Traceback: "ansired",
+        Error: "bold ansired",
     }
