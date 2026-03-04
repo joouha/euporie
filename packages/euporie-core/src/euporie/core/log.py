@@ -431,6 +431,11 @@ def setup_logs(config: Config | None = None) -> None:
                 "handlers": ["log_tab", "stdout"],
                 "propagate": False,
             },
+            "apptk": {
+                "level": "INFO",
+                "handlers": ["log_tab", "stdout"],
+                "propagate": False,
+            },
         },
         # Log everything to the internal logger
         "root": {"handlers": ["log_tab"]},
@@ -450,6 +455,7 @@ def setup_logs(config: Config | None = None) -> None:
                 "formatter": "file_format",
             }
             log_config["loggers"]["euporie"]["handlers"].append("file")
+            log_config["loggers"]["apptk"]["handlers"].append("file")
 
         # Configure stdout handler
         if log_file_is_stdout:
@@ -462,6 +468,7 @@ def setup_logs(config: Config | None = None) -> None:
 
         # Configure euporie logger
         log_config["loggers"]["euporie"]["level"] = log_level
+        log_config["loggers"]["apptk"]["level"] = log_level
 
         # Update log_config based on additional config dict provided
         if config.log_config:
