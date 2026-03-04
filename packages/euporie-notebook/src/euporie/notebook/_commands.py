@@ -72,3 +72,19 @@ def _toggle_side_bar_pane() -> None:
     from euporie.notebook.current import get_app
 
     get_app().side_bar.toggle_pane()
+
+
+@add_cmd(title="Open Configuration File")
+def _open_config_file() -> None:
+    """Open the configuration file in a new tab."""
+    from euporie.notebook.current import get_app
+    from euporie.notebook.tabs.edit import EditorTab
+    from upath import UPath
+
+    app = get_app()
+    config_path = UPath(app.config._config_file_path)
+    # Create the config file if it doesn't exist
+    if not config_path.exists():
+        config_path.write_text("{}\n")
+    app.add_tab(tab := EditorTab(app, config_path))
+    tab.focus()

@@ -523,6 +523,8 @@ class NotebookApp(BaseApp):
                         description="Turn code assistance tools on or off",
                     ),
                     MenuItem.from_cmd("toggle-run-after-external-edit"),
+                    separator,
+                    MenuItem.from_cmd("open-config-file"),
                 ],
                 description="Make changes to euporie's configuration",
             ),
