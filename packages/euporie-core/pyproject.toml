@@ -6,7 +6,7 @@ dependencies = [
     "apptk",
     "fastjsonschema>=2.21.2",
     "jupyter-client>=8.8.0",
-    "jupytest>=3.0.0",
+    "jupytext>=1.19.1",
     "nbformat>=5.10.4",
     "platformdirs>=4.9.2",
     "pyperclip>=1.11.0",
