@@ -114,6 +114,7 @@ def load_micro_bindings() -> KeyBindings:
 @add_cmd(
     keys=["insert"],
     filter=buffer_has_focus,
+    hidden=True,
 )
 def micro_toggle_overwrite_mode() -> None:
     """Toggle overwrite when using micro editing mode."""
@@ -174,6 +175,7 @@ get_cmd("backward-delete-char").update(title="Delete previous character").add_ke
     keys=["c-backspace", "A-backspace", "c-A-h", ("escape", "c-h")],
     title="Delete previous word",
     filter=buffer_has_focus,
+    hidden=True,
 )
 def micro_backward_kill_word(event: KeyPressEvent) -> None:
     """Delete the word behind the cursor, using whitespace as a word boundary."""
@@ -244,6 +246,7 @@ get_cmd("scroll-one-line-up").update(
 @add_cmd(
     keys=["left"],
     filter=buffer_has_focus,
+    hidden=True,
 )
 def micro_move_cursor_left() -> None:
     """Move back a character, or up a line."""
@@ -253,6 +256,7 @@ def micro_move_cursor_left() -> None:
 @add_cmd(
     keys=["right"],
     filter=buffer_has_focus,
+    hidden=True,
 )
 def micro_move_cursor_right() -> None:
     """Move forward a character, or down a line."""
@@ -262,6 +266,7 @@ def micro_move_cursor_right() -> None:
 @add_cmd(
     keys=["home", "A-left", "A-a"],
     filter=buffer_has_focus & ~shift_selection_mode,
+    hidden=True,
 )
 def micro_go_to_start_of_line() -> None:
     """Move the cursor to the start of the line."""
@@ -275,6 +280,7 @@ def micro_go_to_start_of_line() -> None:
 @add_cmd(
     keys=["end", "A-right", "A-e"],
     filter=buffer_has_focus & ~shift_selection_mode,
+    hidden=True,
 )
 def micro_go_to_end_of_line() -> None:
     """Move the cursor to the end of the line."""
@@ -285,6 +291,7 @@ def micro_go_to_end_of_line() -> None:
 @add_cmd(
     keys=["A-{"],
     filter=buffer_has_focus,
+    hidden=True,
 )
 def micro_go_to_start_of_paragraph() -> None:
     """Move the cursor to the start of the current paragraph."""
@@ -295,6 +302,7 @@ def micro_go_to_start_of_paragraph() -> None:
 @add_cmd(
     keys=["A-}"],
     filter=buffer_has_focus,
+    hidden=True,
 )
 def micro_go_to_end_of_paragraph() -> None:
     """Move the cursor to the end of the current paragraph."""
@@ -308,6 +316,7 @@ def micro_go_to_end_of_paragraph() -> None:
 @add_cmd(
     keys=["c-_"],
     filter=buffer_has_focus & buffer_is_code,
+    hidden=True,
 )
 def micro_toggle_comment() -> None:
     """Comment or uncomments the current or selected lines."""
@@ -415,6 +424,7 @@ for pair, keys in WRAP_PAIRS["code"]:
         title=f"Wrap selection in {pair}",
         description=f"Wraps the current selection with: {pair}",
         filter=buffer_has_focus & has_selection & buffer_is_code,
+        hidden=True,
     )(partial(wrap_selection_cmd, left, right))
 
 
@@ -426,12 +436,14 @@ for pair, keys in WRAP_PAIRS["markdown"]:
         title=f"Wrap selection in {pair}",
         description=f"Wraps the current selection with: {pair}",
         filter=buffer_has_focus & has_selection & buffer_is_markdown,
+        hidden=True,
     )(partial(wrap_selection_cmd, left, right))
 
 
 @add_cmd(
     keys=["c-d"],
     filter=buffer_has_focus & ~has_selection,
+    hidden=True,
 )
 def micro_duplicate_line() -> None:
     """Duplicate the current line."""
@@ -447,6 +459,7 @@ def micro_duplicate_line() -> None:
 @add_cmd(
     keys=["c-d"],
     filter=buffer_has_focus & has_selection,
+    hidden=True,
 )
 def micro_duplicate_selection() -> None:
     """Duplicate the current selection."""
@@ -462,6 +475,7 @@ def micro_duplicate_selection() -> None:
     keys=["c-v"],
     title="Paste",
     filter=buffer_has_focus,
+    hidden=True,
 )
 def micro_paste_clipboard() -> None:
     """Pate the clipboard contents, replacing any current selection."""
@@ -476,6 +490,7 @@ def micro_paste_clipboard() -> None:
     keys=["c-c"],
     title="Copy",
     filter=has_selection,
+    hidden=True,
 )
 def micro_copy_selection() -> None:
     """Add the current selection to the clipboard."""
@@ -491,6 +506,7 @@ def micro_copy_selection() -> None:
     keys=["c-x", "s-delete"],
     title="Cut",
     filter=has_selection,
+    hidden=True,
 )
 def micro_cut_selection() -> None:
     """Remove the current selection and adds it to the clipboard."""
@@ -501,6 +517,7 @@ def micro_cut_selection() -> None:
 @add_cmd(
     keys=["c-k"],
     filter=buffer_has_focus,
+    hidden=True,
 )
 def micro_cut_line() -> None:
     """Remove the current line adds it to the clipboard."""
@@ -556,6 +573,7 @@ def move_line(n: int) -> None:
 @add_cmd(
     keys=["A-up"],
     filter=buffer_has_focus,
+    hidden=True,
 )
 def micro_move_lines_up() -> None:
     """Move the current or selected lines up by one line."""
@@ -565,6 +583,7 @@ def micro_move_lines_up() -> None:
 @add_cmd(
     keys=["A-down"],
     filter=buffer_has_focus,
+    hidden=True,
 )
 def micro_move_lines_down() -> None:
     """Move the current or selected lines down by one line."""
@@ -637,6 +656,7 @@ def dent_buffer(event: KeyPressEvent, indenting: bool = True) -> None:
 @add_cmd(
     keys=["enter"],
     filter=buffer_has_focus & is_multiline,
+    hidden=True,
 )
 def micro_newline(event: KeyPressEvent) -> None:
     """Inert a new line, replacing any selection and indenting if appropriate."""
@@ -661,6 +681,7 @@ def micro_newline(event: KeyPressEvent) -> None:
 @add_cmd(
     keys=["tab"],
     filter=(buffer_has_focus & (cursor_in_leading_ws | has_selection)),
+    hidden=True,
 )
 def micro_indent_lines(event: KeyPressEvent) -> None:
     """Inndent the current or selected lines."""
@@ -683,6 +704,7 @@ def micro_indent_lines(event: KeyPressEvent) -> None:
             & (~cursor_at_start_of_line | cursor_at_start_of_line),
         },
     ],
+    hidden=True,
 )
 def micro_unindent_lines(event: KeyPressEvent) -> None:
     """Unindent the current or selected lines."""
@@ -692,6 +714,7 @@ def micro_unindent_lines(event: KeyPressEvent) -> None:
 @add_cmd(
     keys=["f4"],
     filter=buffer_has_focus,
+    hidden=True,
 )
 def micro_toggle_case() -> None:
     """Toggle the case of the current word or selection."""
@@ -719,6 +742,7 @@ def micro_toggle_case() -> None:
 @add_cmd(
     keys=["c-z"],
     filter=buffer_has_focus,
+    hidden=True,
 )
 def micro_undo() -> None:
     """Undo the last edit."""
@@ -728,6 +752,7 @@ def micro_undo() -> None:
 @add_cmd(
     keys=["c-y"],
     filter=buffer_has_focus,
+    hidden=True,
 )
 def micro_redo() -> None:
     """Redo the last edit."""
@@ -740,6 +765,7 @@ def micro_redo() -> None:
 @add_cmd(
     keys=["c-a"],
     filter=buffer_has_focus,
+    hidden=True,
 )
 def micro_select_all() -> None:
     """Select all text."""
@@ -914,6 +940,7 @@ def micro_cancel_selection(event: KeyPressEvent) -> None:
 @add_cmd(
     keys=["A-(", "A-)"],
     filter=buffer_has_focus,
+    hidden=True,
 )
 def micro_go_to_matching_bracket(event: KeyPressEvent) -> None:
     """Go to matching bracket if the cursor is on a paired bracket."""
@@ -924,6 +951,7 @@ def micro_go_to_matching_bracket(event: KeyPressEvent) -> None:
 @add_cmd(
     keys=["right", "c-f"],
     filter=has_suggestion,
+    hidden=True,
 )
 def micro_accept_suggestion(event: KeyPressEvent) -> None:
     """Accept suggestion."""
@@ -936,6 +964,7 @@ def micro_accept_suggestion(event: KeyPressEvent) -> None:
 @add_cmd(
     keys=["A-f"],
     filter=has_suggestion,
+    hidden=True,
 )
 def micro_fill_suggestion(event: KeyPressEvent) -> None:
     """Fill partial suggestion."""
@@ -947,6 +976,44 @@ def micro_fill_suggestion(event: KeyPressEvent) -> None:
 
 
 # Define page navigation key-bindings for buffers.
+
+
+@add_cmd(
+    keys=["pageup"],
+    filter=buffer_has_focus,
+    hidden=True,
+)
+def micro_scroll_page_up(event: KeyPressEvent) -> None:
+    """Scroll page up (prefer the cursor at the bottom of the page, after scrolling)."""
+    w = event.app.layout.current_window
+    b = event.app.current_buffer
+
+    if w and w.render_info:
+        line_index = b.document.cursor_position_row
+        page = w.render_info.window_height
+
+        if (
+            (screen := get_app().renderer._last_screen)
+            and (wp := screen.visible_windows_to_write_positions.get(w))
+            and (bbox := getattr(wp, "bbox", None))
+        ):
+            page -= bbox.top + bbox.bottom
+
+        # Put cursor at the first visible line. (But make sure that the cursor
+        # moves at least one line up.)
+        line_index = max(
+            0,
+            min(line_index - page, b.document.cursor_position_row - 1),
+        )
+
+        b.cursor_position = b.document.translate_row_col_to_index(line_index, 0)
+        b.cursor_position += b.document.get_start_of_line_position(
+            after_whitespace=True
+        )
+
+        # Set the scroll offset. We can safely set it to zero; the Window will
+        # make sure that it scrolls at least until the cursor becomes visible.
+        w.vertical_scroll = 0
 
 
 @add_cmd(
@@ -986,6 +1053,7 @@ def micro_scroll_page_down(event: KeyPressEvent) -> None:
 @add_cmd(
     keys=["c-f", "f3", "f7"],
     filter=micro_mode & buffer_has_focus,
+    hidden=True,
 )
 def micro_find() -> None:
     """Enter search mode."""
@@ -997,6 +1065,7 @@ def micro_find() -> None:
 @add_cmd(
     keys=["c-g"],
     filter=micro_mode & buffer_has_focus,
+    hidden=True,
 )
 def micro_find_next() -> None:
     """Find the next search match."""
@@ -1008,6 +1077,7 @@ def micro_find_next() -> None:
 @add_cmd(
     keys=["c-p"],
     filter=micro_mode & buffer_has_focus,
+    hidden=True,
 )
 def micro_find_previous() -> None:
     """Find the previous search match."""
@@ -1056,41 +1126,3 @@ def load_micro_search_bindings() -> KeyBindingsBase:
     ):
         get_cmd(name).bind(kb)
     return ConditionalKeyBindings(kb, micro_mode)
-
-
-@add_cmd(
-    keys=["pageup"],
-    filter=buffer_has_focus,
-    hidden=True,
-)
-def micro_scroll_page_up(event: KeyPressEvent) -> None:
-    """Scroll page up (prefer the cursor at the bottom of the page, after scrolling)."""
-    w = event.app.layout.current_window
-    b = event.app.current_buffer
-
-    if w and w.render_info:
-        line_index = b.document.cursor_position_row
-        page = w.render_info.window_height
-
-        if (
-            (screen := get_app().renderer._last_screen)
-            and (wp := screen.visible_windows_to_write_positions.get(w))
-            and (bbox := getattr(wp, "bbox", None))
-        ):
-            page -= bbox.top + bbox.bottom
-
-        # Put cursor at the first visible line. (But make sure that the cursor
-        # moves at least one line up.)
-        line_index = max(
-            0,
-            min(line_index - page, b.document.cursor_position_row - 1),
-        )
-
-        b.cursor_position = b.document.translate_row_col_to_index(line_index, 0)
-        b.cursor_position += b.document.get_start_of_line_position(
-            after_whitespace=True
-        )
-
-        # Set the scroll offset. We can safely set it to zero; the Window will
-        # make sure that it scrolls at least until the cursor becomes visible.
-        w.vertical_scroll = 0
