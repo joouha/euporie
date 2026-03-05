@@ -593,7 +593,10 @@ class MenuContainer(PtkMenuContainer):
             self.focused = self.focused | has_focus(container)
 
         self.container = FloatContainer(
-            content=HSplit([self.window, body]) if body else self.window,
+            content=StatusContainer(
+                body=HSplit([self.window, body]) if body else self.window,
+                status=self.__pt_status__,
+            ),
             floats=menu_floats + (floats or []),
         )
 
@@ -870,38 +873,35 @@ class MenuContainer(PtkMenuContainer):
 
             return result
 
-        return StatusContainer(
-            body=HSplit(
-                [
-                    VSplit(
-                        [
-                            Window(char=grid.TOP_LEFT, width=1, height=1),
-                            Window(char=grid.TOP_MID, height=1),
-                            Window(char=grid.TOP_RIGHT, width=1, height=1),
-                        ],
-                        style="class:menu-border",
+        return HSplit(
+            [
+                VSplit(
+                    [
+                        Window(char=grid.TOP_LEFT, width=1, height=1),
+                        Window(char=grid.TOP_MID, height=1),
+                        Window(char=grid.TOP_RIGHT, width=1, height=1),
+                    ],
+                    style="class:menu-border",
+                ),
+                Window(
+                    FormattedTextControl(
+                        get_text_fragments,
+                        focusable=True,
+                        show_cursor=False,
+                        key_bindings=self.kb,
                     ),
-                    Window(
-                        FormattedTextControl(
-                            get_text_fragments,
-                            focusable=True,
-                            show_cursor=False,
-                            key_bindings=self.kb,
-                        ),
-                        scroll_offsets=ScrollOffsets(top=1, bottom=1),
-                    ),
-                    VSplit(
-                        [
-                            Window(char=grid.BOTTOM_LEFT, width=1, height=1),
-                            Window(char=grid.BOTTOM_MID, height=1),
-                            Window(char=grid.BOTTOM_RIGHT, width=1, height=1),
-                        ],
-                        style="class:menu-border",
-                    ),
-                ],
-                style="class:menu",
-            ),
-            status=self.__pt_status__,
+                    scroll_offsets=ScrollOffsets(top=1, bottom=1),
+                ),
+                VSplit(
+                    [
+                        Window(char=grid.BOTTOM_LEFT, width=1, height=1),
+                        Window(char=grid.BOTTOM_MID, height=1),
+                        Window(char=grid.BOTTOM_RIGHT, width=1, height=1),
+                    ],
+                    style="class:menu-border",
+                ),
+            ],
+            style="class:menu",
         )
 
     def __pt_container__(self) -> Container:
