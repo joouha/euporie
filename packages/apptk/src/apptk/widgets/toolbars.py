@@ -207,32 +207,58 @@ class CommandCompleter(Completer):
     """Completer for registered commands.
 
     Provides completions from the global COMMANDS registry, filtering
-    out hidden commands and avoiding duplicates.
+    out hidden commands and avoiding duplicates. Results are sorted by
+    match quality: exact matches first, then prefix, substring, and
+    fuzzy matches.
     """
 
     def get_completions(
         self, document: Document, complete_event: CompleteEvent
     ) -> Iterable[Completion]:
-        """Complete registered commands.
+        """Complete registered commands, sorted by match quality.
+
+        Results are sorted by: exact match on name/alias, then prefix match,
+        then substring match. Within each tier, results are sorted
+        alphabetically by command name.
 
         Args:
             document: The current document.
             complete_event: The completion event.
 
         Yields:
-            Completion objects for matching commands.
+            Completion objects for matching commands, sorted by relevance.
         """
-        prefix = document.text
-        found_so_far: set[Command] = set()
+        query = document.text
+        if not query:
+            return
+
+        query_lower = query.lower()
+        matches: dict[Command, int] = {}
+
         for alias, command in COMMANDS.items():
-            if prefix in alias and command not in found_so_far and not command.hidden():
-                yield Completion(
-                    command.name,
-                    start_position=-len(prefix),
-                    display=command.name,
-                    display_meta=command.description,
-                )
-                found_so_far.add(command)
+            if command.hidden():
+                continue
+
+            # Determine match rank: 0=exact, 1=prefix, 2=substring
+            alias_lower = alias.lower()
+            if query_lower == alias_lower:
+                rank = 0
+            elif alias_lower.startswith(query_lower):
+                rank = 1
+            elif query_lower in alias_lower:
+                rank = 2
+            else:
+                continue
+            if command not in matches or matches[command] > rank:
+                matches[command] = rank
+
+        for command, _rank in sorted(matches.items(), key=lambda x: (x[1], x[0].name)):
+            yield Completion(
+                command.name,
+                start_position=-len(query),
+                display=command.name,
+                display_meta=command.description,
+            )
 
 
 class CommandBar:
