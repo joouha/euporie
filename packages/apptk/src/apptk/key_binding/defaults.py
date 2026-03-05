@@ -14,6 +14,10 @@ from apptk.key_binding.bindings.emacs import (
     load_emacs_search_bindings,
     load_emacs_shift_selection_bindings,
 )
+from apptk.key_binding.bindings.helix import (
+    load_helix_bindings,
+    load_helix_search_bindings,
+)
 from apptk.key_binding.bindings.micro import load_micro_bindings
 from apptk.key_binding.bindings.mouse import load_mouse_bindings
 from apptk.key_binding.bindings.terminal import load_terminal_bindings
@@ -50,6 +54,9 @@ def load_key_bindings() -> KeyBindingsBase:
             load_vi_search_bindings(),
             # Load micro bindings
             load_micro_bindings(),
+            # Load Helix bindings
+            load_helix_bindings(),
+            load_helix_search_bindings(),
             # Auto-suggestion (need to be after vi-bindings as we override the right
             # arrow binding if we have a suggestion)
             load_auto_suggest_bindings(),

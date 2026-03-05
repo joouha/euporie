@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Generic
 from apptk.data_structures import Point
 from apptk.enums import EditingMode
 from apptk.filters import to_filter
+from apptk.key_binding.helix_state import HelixState
 from apptk.key_binding.key_bindings import (
     KeyBindingsBase,
 )
@@ -123,8 +124,9 @@ class Application(PtkApplication, Generic[_AppResult]):
             input=input,
             output=output,
         )
-        # Micro editing mode state
+        # Additional editing mode states
         self.micro_state = MicroState()
+        self.helix_state = HelixState()
 
         # Events
         self.on_color_change = Event(self, on_color_change)

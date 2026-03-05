@@ -61,6 +61,7 @@ add_setting(
         "micro": EditingMode.MICRO,
         "emacs": EditingMode.EMACS,
         "vi": EditingMode.VI,
+        "helix": EditingMode.HELIX,
     },
     schema={"type": "string"},
     title="Editor key bindings",

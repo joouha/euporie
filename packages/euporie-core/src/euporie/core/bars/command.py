@@ -11,7 +11,8 @@ from apptk.application.current import get_app
 from apptk.buffer import Buffer
 from apptk.commands import COMMANDS, add_cmd, get_cmd
 from apptk.completion.base import Completer, Completion
-from apptk.filters import buffer_has_focus, has_focus, vi_navigation_mode
+from apptk.filters import buffer_has_focus, has_focus
+from apptk.filters.modes import navigation_mode
 from apptk.key_binding.key_bindings import KeyBindings
 from apptk.key_binding.vi_state import InputMode
 from apptk.layout.containers import ConditionalContainer, Container, Window
@@ -140,7 +141,7 @@ class CommandBar:
             {"keys": "A-:", "is_global": True},
             {
                 "keys": ":",
-                "filter": ~buffer_has_focus | vi_navigation_mode,
+                "filter": ~buffer_has_focus | navigation_mode,
             },
         ],
     )
@@ -148,6 +149,7 @@ class CommandBar:
         """Enter command mode."""
         event.app.layout.focus(COMMAND_BAR_BUFFER)
         event.app.vi_state.input_mode = InputMode.INSERT
+        event.app.helix_state.input_mode = InputMode.INSERT
 
     @staticmethod
     @add_cmd(

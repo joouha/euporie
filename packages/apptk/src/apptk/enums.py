@@ -17,6 +17,7 @@ class EditingMode(Enum):
     """The set of key bindings that is active."""
 
     VI = "VI"
+    HELIX = "HELIX"
     EMACS = "EMACS"
     MICRO = "MICRO"
 

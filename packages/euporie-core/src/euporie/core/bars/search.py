@@ -162,6 +162,7 @@ def start_global_search(
     layout.focus(search_buffer_control)
     # If we're in Vi mode, make sure to go into insert mode.
     app.vi_state.input_mode = InputMode.INSERT
+    app.helix_state.input_mode = InputMode.INSERT
 
 
 @add_cmd(menu_title="Find", keys=["c-f", "f3", "f7"])
