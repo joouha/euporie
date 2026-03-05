@@ -18,6 +18,7 @@ from apptk.filters import (
     is_multiline,
     shift_selection_mode,
 )
+from apptk.filters.app import is_searching
 from apptk.filters.buffer import (
     buffer_is_code,
     buffer_is_markdown,
@@ -41,6 +42,7 @@ from apptk.selection import SelectionState, SelectionType
 
 if TYPE_CHECKING:
     from apptk.key_binding import KeyPressEvent
+    from apptk.key_binding.key_bindings import KeyBindingsBase
 
 log = logging.getLogger(__name__)
 
@@ -976,6 +978,84 @@ def micro_scroll_page_down(event: KeyPressEvent) -> None:
         b.cursor_position += b.document.get_start_of_line_position(
             after_whitespace=True
         )
+
+
+# Search commands for micro mode
+
+
+@add_cmd(
+    keys=["c-f", "f3", "f7"],
+    filter=micro_mode & buffer_has_focus,
+)
+def micro_find() -> None:
+    """Enter search mode."""
+    from apptk.search import SearchDirection, start_global_search
+
+    start_global_search(direction=SearchDirection.FORWARD)
+
+
+@add_cmd(
+    keys=["c-g"],
+    filter=micro_mode & buffer_has_focus,
+)
+def micro_find_next() -> None:
+    """Find the next search match."""
+    from apptk.search import SearchDirection, find_next_match
+
+    find_next_match(SearchDirection.FORWARD)
+
+
+@add_cmd(
+    keys=["c-p"],
+    filter=micro_mode & buffer_has_focus,
+)
+def micro_find_previous() -> None:
+    """Find the previous search match."""
+    from apptk.search import SearchDirection, find_next_match
+
+    find_next_match(SearchDirection.BACKWARD)
+
+
+@add_cmd(
+    keys=["escape"],
+    filter=micro_mode & is_searching,
+    name="micro-stop-search",
+)
+def micro_stop_search() -> None:
+    """Abort the search."""
+    from apptk.search import stop_global_search
+
+    stop_global_search()
+
+
+@add_cmd(
+    keys=["enter"],
+    filter=micro_mode & is_searching,
+    name="micro-accept-search",
+)
+def micro_accept_search() -> None:
+    """Accept the search input."""
+    from apptk.search import accept_global_search
+
+    accept_global_search()
+
+
+def load_micro_search_bindings() -> KeyBindingsBase:
+    """Load micro-mode search key bindings.
+
+    Returns:
+        A KeyBindings object with micro-style search bindings.
+    """
+    kb = KeyBindings()
+    for name in (
+        "micro-find",
+        "micro-find-next",
+        "micro-find-previous",
+        "micro-stop-search",
+        "micro-accept-search",
+    ):
+        get_cmd(name).bind(kb)
+    return ConditionalKeyBindings(kb, micro_mode)
 
 
 @add_cmd(

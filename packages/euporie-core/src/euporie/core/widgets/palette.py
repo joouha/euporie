@@ -17,6 +17,7 @@ from apptk.layout.containers import (
     HSplit,
     MarginContainer,
     ScrollOffsets,
+    StatusContainer,
     VSplit,
     Window,
 )
@@ -24,7 +25,6 @@ from apptk.layout.controls import UIContent, UIControl
 from apptk.layout.decor import FocusedStyle
 from apptk.layout.margins import ScrollbarMargin
 from apptk.mouse_events import MouseEvent, MouseEventType
-from euporie.core.bars.status import StatusContainer
 from euporie.core.widgets.dialog import Dialog
 from euporie.core.widgets.forms import Text
 

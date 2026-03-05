@@ -28,3 +28,11 @@ def scrollable(window: Window) -> Filter:
             and window.render_info.content_height > window.render_info.window_height
         )
     )
+
+
+@Condition
+def has_toolbar() -> bool:
+    """Is there an active toolbar?"""
+    from apptk.enums import BAR_BUFFERS
+
+    return get_app().current_buffer.name in BAR_BUFFERS

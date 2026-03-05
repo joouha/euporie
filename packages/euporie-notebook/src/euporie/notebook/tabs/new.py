@@ -10,12 +10,11 @@ from apptk.border import RoundedLine
 from apptk.commands import get_cmd
 from apptk.convert.datum import Datum
 from apptk.data_structures import DiBool
-from apptk.layout.containers import HSplit, VSplit, Window
+from apptk.layout.containers import HSplit, StatusContainer, VSplit, Window
 from apptk.layout.decor import FocusedStyle, Pattern
 from apptk.layout.dimension import Dimension
 from apptk.layout.display import Display
 from apptk.mouse_events import MouseButton, MouseEventType
-from euporie.core.bars.status import StatusContainer
 from euporie.core.tabs.base import Tab
 from euporie.core.widgets.file_browser import FileBrowser
 from euporie.core.widgets.forms import BaseButton, Button

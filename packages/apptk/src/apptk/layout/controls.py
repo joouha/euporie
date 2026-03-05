@@ -5,8 +5,8 @@ from __future__ import annotations
 from functools import cached_property
 from typing import TYPE_CHECKING
 
+from prompt_toolkit.layout.controls import GetLinePrefixCallable, UIControl
 from prompt_toolkit.layout.controls import UIContent as PtkUIContent
-from prompt_toolkit.layout.controls import UIControl
 
 from apptk.data_structures import Point
 from apptk.formatted_text.utils import _ZERO_WIDTH_FRAGMENTS
@@ -14,6 +14,13 @@ from apptk.utils import get_cwidth
 
 if TYPE_CHECKING:
     from apptk.formatted_text import StyleAndTextTuples
+
+__all__ = [
+    "DummyControl",
+    "FocusableDummyControl",
+    "GetLinePrefixCallable",
+    "UIContent",
+]
 
 
 class UIContent(PtkUIContent):

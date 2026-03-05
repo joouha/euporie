@@ -6,16 +6,14 @@ from typing import TYPE_CHECKING
 
 from apptk.application.current import get_app
 from apptk.commands import add_cmd
-from apptk.filters import (
-    buffer_has_focus,
-    has_completions,
-    vi_mode,
-    vi_navigation_mode,
-)
+from apptk.filters import buffer_has_focus, has_completions
 from apptk.filters.app import display_has_focus
 from apptk.filters.buffer import (
     cursor_on_first_line,
     cursor_on_last_line,
+)
+from apptk.filters.modes import (
+    exitable_mode,
 )
 from euporie.core.filters import (
     kernel_tab_has_focus,
@@ -66,9 +64,7 @@ def _enter_cell_edit_mode() -> None:
 
 @add_cmd(
     keys=["escape"],
-    filter=cell_has_focus
-    & buffer_has_focus
-    & (~vi_mode | (vi_mode & vi_navigation_mode)),
+    filter=cell_has_focus & buffer_has_focus & ~exitable_mode,
 )
 def _exit_edit_mode() -> None:
     """Exit cell edit mode."""
@@ -643,11 +639,7 @@ def _split_cell() -> None:
 @add_cmd(
     keys=["up", "k"],
     filter=(
-        cell_has_focus
-        & buffer_has_focus
-        & cursor_on_first_line
-        & ~has_completions
-        & (~vi_mode | (vi_mode & vi_navigation_mode))
+        cell_has_focus & buffer_has_focus & cursor_on_first_line & ~has_completions
     ),
 )
 def _edit_previous_cell() -> None:
@@ -663,13 +655,7 @@ def _edit_previous_cell() -> None:
 
 @add_cmd(
     keys=["down", "j"],
-    filter=(
-        cell_has_focus
-        & buffer_has_focus
-        & cursor_on_last_line
-        & ~has_completions
-        & (~vi_mode | (vi_mode & vi_navigation_mode))
-    ),
+    filter=(cell_has_focus & buffer_has_focus & cursor_on_last_line & ~has_completions),
 )
 def _edit_next_cell() -> None:
     """Move the cursor down to the next cell."""

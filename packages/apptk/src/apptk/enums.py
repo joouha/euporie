@@ -41,6 +41,21 @@ class VerticalAlign(Enum):
     JUSTIFY = "justify"
 
 
+#: Name of the default buffer.
+DEFAULT_BUFFER = "DEFAULT_BUFFER"
+
+#: Name of the search buffer.
+SEARCH_BUFFER = "SEARCH_BUFFER"
+
+#: Name of the system buffer.
+SYSTEM_BUFFER = "SYSTEM_BUFFER"
+
+#: Name of the command buffer.
+COMMAND_BUFFER = "COMMAND_BUFFER"
+
+BAR_BUFFERS = {SEARCH_BUFFER, SYSTEM_BUFFER, COMMAND_BUFFER}
+
+
 class FitMode(StrEnum):
     """Fitting mode for display content scaling.
 

@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING, cast
 from apptk.application.current import get_app as ptk_get_app
 from apptk.filters.app import (
     has_completions,
+    has_toolbar,
     is_done,
-    is_searching,
     renderer_height_is_known,
 )
 from apptk.layout.containers import (
@@ -22,12 +22,14 @@ from apptk.layout.containers import (
 )
 from apptk.layout.dimension import Dimension
 from apptk.layout.mouse import DisableMouseOnScroll
+from apptk.widgets.toolbars import (
+    CommandBar,
+    HorizontalCompletionsMenu,
+    SearchToolbar,
+    StatusBar,
+)
 from euporie.console.tabs.console import Console
 from euporie.core.app.app import BaseApp
-from euporie.core.bars.command import CommandBar
-from euporie.core.bars.menu import ToolbarCompletionsMenu
-from euporie.core.bars.search import SearchBar
-from euporie.core.bars.status import StatusBar
 from euporie.core.filters import has_dialog
 from euporie.core.widgets.dialog import (
     AboutDialog,
@@ -87,7 +89,16 @@ class ConsoleApp(BaseApp):
         super().pre_run(app)
         # Add a toolbar completion menu
         self.menus["toolbar_completions"] = Float(
-            content=ToolbarCompletionsMenu(), ycursor=True, transparent=True
+            content=HorizontalCompletionsMenu(
+                filter=has_toolbar,
+                min_item_width=5,
+                max_item_width=30,
+                max_height=8,
+                show_meta=True,
+                style="class:toolbar,menu",
+            ),
+            ycursor=True,
+            transparent=True,
         )
 
     def _get_reserved_height(self) -> Dimension:
@@ -100,8 +111,12 @@ class ConsoleApp(BaseApp):
 
     def load_container(self) -> FloatContainer:
         """Return a container with all opened tabs."""
-        self.command_bar = CommandBar()
-        self.search_bar = SearchBar()
+        self.command_bar = CommandBar(style="class:toolbar")
+        self.search_bar = SearchToolbar(
+            forward_search_prompt=[("class:status-field", " Find: ")],
+            backward_search_prompt=[("class:status-field", " Find (up): ")],
+            auto_ignore_case=True,
+        )
         self.pager = Pager()
 
         self.dialogs["command-palette"] = CommandPalette(self)
@@ -128,16 +143,22 @@ class ConsoleApp(BaseApp):
                                         style="class:default",
                                     ),
                                     self.pager,
-                                    ConditionalContainer(
-                                        VSplit(
-                                            [
-                                                logo_micro,
-                                                self.command_bar,
-                                                self.search_bar,
-                                                StatusBar(),
-                                            ]
-                                        ),
-                                        filter=~is_searching,
+                                    VSplit(
+                                        [
+                                            logo_micro,
+                                            self.command_bar,
+                                            self.search_bar,
+                                            StatusBar(
+                                                filter=(
+                                                    self.config.filters.show_status_bar
+                                                    & ~has_toolbar
+                                                ),
+                                                left_style="class:status",
+                                                right_style="class:status.right",
+                                                left_separator=("▌", "▐"),
+                                                right_separator=("▌", "▐"),
+                                            ),
+                                        ]
                                     ),
                                 ],
                             ),

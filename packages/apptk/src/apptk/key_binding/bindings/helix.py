@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING
 from apptk.application.current import get_app
 from apptk.buffer import indent, unindent
 from apptk.clipboard import ClipboardData
-from apptk.commands import add_cmd, commands_from_key_bindings, get_cmd
+from apptk.commands import add_cmd, get_cmd
 from apptk.enums import EditingMode
 from apptk.filters import (
     Condition,
@@ -33,14 +33,12 @@ from apptk.filters import (
 from apptk.filters.app import (
     in_paste_mode,
     is_multiline,
+    is_searching,
 )
 from apptk.filters.buffer import is_returnable
 from apptk.key_binding import ConditionalKeyBindings, KeyBindings
 from apptk.key_binding.helix_state import CharacterFind, InputMode
 from apptk.selection import SelectionState, SelectionType
-from prompt_toolkit.key_binding.bindings.vi import (
-    load_vi_search_bindings as ptk_load_vi_search_bindings,
-)
 
 if TYPE_CHECKING:
     from apptk.key_binding.key_bindings import KeyBindingsBase
@@ -1416,20 +1414,6 @@ def helix_exit_view_mode(event: KeyPressEvent) -> None:
     _exit_helix_submodes()
 
 
-# Command mode
-
-
-@add_cmd(
-    keys=[":"],
-    filter=helix_normal_mode,
-    hidden=True,
-    name="helix-command-mode",
-)
-def helix_command_mode(event: KeyPressEvent) -> None:
-    """Enter command mode."""
-    event.app.open_system_prompt()
-
-
 # Search
 
 
@@ -1441,7 +1425,7 @@ def helix_command_mode(event: KeyPressEvent) -> None:
 )
 def helix_search_forward(event: KeyPressEvent) -> None:
     """Search forward."""
-    from euporie.core.bars.search import SearchDirection, start_global_search
+    from apptk.search import SearchDirection, start_global_search
 
     start_global_search(direction=SearchDirection.FORWARD)
 
@@ -1454,7 +1438,7 @@ def helix_search_forward(event: KeyPressEvent) -> None:
 )
 def helix_search_backward(event: KeyPressEvent) -> None:
     """Search backward."""
-    from euporie.core.bars.search import SearchDirection, start_global_search
+    from apptk.search import SearchDirection, start_global_search
 
     start_global_search(direction=SearchDirection.BACKWARD)
 
@@ -1467,10 +1451,9 @@ def helix_search_backward(event: KeyPressEvent) -> None:
 )
 def helix_search_next(event: KeyPressEvent) -> None:
     """Select next search match."""
-    search_state = event.app.current_search_state
-    event.current_buffer.apply_search(
-        search_state, include_current_position=False, count=event.arg
-    )
+    from apptk.search import SearchDirection, find_next_match
+
+    find_next_match(SearchDirection.FORWARD)
 
 
 @add_cmd(
@@ -1481,10 +1464,35 @@ def helix_search_next(event: KeyPressEvent) -> None:
 )
 def helix_search_prev(event: KeyPressEvent) -> None:
     """Select previous search match."""
-    search_state = event.app.current_search_state
-    event.current_buffer.apply_search(
-        ~search_state, include_current_position=False, count=event.arg
-    )
+    from apptk.search import SearchDirection, find_next_match
+
+    find_next_match(SearchDirection.BACKWARD)
+
+
+@add_cmd(
+    keys=["enter"],
+    filter=helix_mode & is_searching,
+    hidden=True,
+    name="helix-accept-search",
+)
+def helix_accept_search(event: KeyPressEvent) -> None:
+    """Accept the search input."""
+    from apptk.search import accept_global_search
+
+    accept_global_search()
+
+
+@add_cmd(
+    keys=["escape"],
+    filter=helix_mode & is_searching,
+    hidden=True,
+    name="helix-stop-search",
+)
+def helix_stop_search(event: KeyPressEvent) -> None:
+    """Abort the search."""
+    from apptk.search import stop_global_search
+
+    stop_global_search()
 
 
 @add_cmd(
@@ -2240,6 +2248,8 @@ def load_helix_bindings() -> KeyBindingsBase:
         "helix-search-next",
         "helix-search-prev",
         "helix-search-selection",
+        "helix-accept-search",
+        "helix-stop-search",
         "helix-arg-0",
         "helix-self-insert",
         "helix-replace-insert",
@@ -2310,7 +2320,18 @@ def load_helix_search_bindings() -> KeyBindingsBase:
     Returns:
         A KeyBindings object with Helix search bindings.
     """
-    # Reuse Vi search bindings as they work similarly
-    return commands_from_key_bindings(
-        ptk_load_vi_search_bindings(), prefix="helix-search", hidden=True
-    )
+    kb = KeyBindings()
+    for name in (
+        "helix-search-forward",
+        "helix-search-backward",
+        "helix-search-next",
+        "helix-search-prev",
+        "helix-search-selection",
+        "helix-accept-search",
+        "helix-stop-search",
+    ):
+        try:
+            get_cmd(name).bind(kb)
+        except KeyError:
+            log.warning("Command %s not found", name)
+    return ConditionalKeyBindings(kb, helix_mode)

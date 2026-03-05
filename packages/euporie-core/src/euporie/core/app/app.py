@@ -17,6 +17,7 @@ from apptk.application.current import create_app_session, set_app
 from apptk.clipboard.base import DynamicClipboard
 from apptk.color import Color, ColorPalette
 from apptk.filters import Condition
+from apptk.filters.app import has_toolbar
 from apptk.key_binding.key_bindings import KeyBindings
 from apptk.key_binding.key_processor import KeyProcessor
 from apptk.layout.containers import Float, FloatContainer, Window, to_container
@@ -44,7 +45,6 @@ from apptk.utils import Event
 from apptk.widgets.base import Shadow
 from euporie.core.app.base import ConfigurableApp
 from euporie.core.app.cursor import CursorConfig
-from euporie.core.filters import has_toolbar
 from euporie.core.format import CliFormatter
 from euporie.core.log import setup_logs
 from euporie.core.lsp import KNOWN_LSP_SERVERS, LspClient
@@ -72,7 +72,7 @@ if TYPE_CHECKING:
     from apptk.filters import Filter, FilterOrBool
     from apptk.layout.containers import AnyContainer
     from apptk.layout.layout import FocusableElement
-    from euporie.core.bars.command import CommandBar
+    from apptk.widgets.toolbars import CommandBar
     from euporie.core.bars.search import SearchBar
     from euporie.core.config import Setting
     from euporie.core.format import Formatter

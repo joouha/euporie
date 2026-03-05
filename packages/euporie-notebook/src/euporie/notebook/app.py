@@ -10,6 +10,7 @@ from weakref import WeakKeyDictionary
 
 from apptk.border import OuterHalfGrid
 from apptk.filters import Condition
+from apptk.filters.app import has_toolbar
 from apptk.formatted_text.base import to_formatted_text
 from apptk.formatted_text.utils import truncate
 from apptk.layout.containers import (
@@ -25,11 +26,13 @@ from apptk.layout.containers import (
 from apptk.layout.controls import FormattedTextControl
 from apptk.layout.dimension import Dimension
 from apptk.widgets.menus import MenuContainer, MenuItem
+from apptk.widgets.toolbars import (
+    CommandBar,
+    HorizontalCompletionsMenu,
+    SearchToolbar,
+    StatusBar,
+)
 from euporie.core.app.app import BaseApp
-from euporie.core.bars.command import CommandBar
-from euporie.core.bars.menu import ToolbarCompletionsMenu
-from euporie.core.bars.search import SearchBar
-from euporie.core.bars.status import StatusBar
 from euporie.core.filters import has_tabs
 from euporie.core.widgets.dialog import (
     AboutDialog,
@@ -112,7 +115,16 @@ class NotebookApp(BaseApp):
         super().pre_run(app)
         # Add a toolbar completion menu
         self.menus["toolbar_completions"] = Float(
-            content=ToolbarCompletionsMenu(), ycursor=True, transparent=True
+            content=HorizontalCompletionsMenu(
+                filter=has_toolbar,
+                min_item_width=5,
+                max_item_width=30,
+                max_height=8,
+                show_meta=True,
+                style="class:toolbar,menu",
+            ),
+            ycursor=True,
+            transparent=True,
         )
 
     @property
@@ -221,8 +233,13 @@ class NotebookApp(BaseApp):
         )
 
         self.pager = Pager()
-        self.search_bar = SearchBar()
-        self.command_bar = CommandBar()
+        self.search_bar = SearchToolbar(
+            forward_search_prompt=[("class:status-field", " Find: ")],
+            backward_search_prompt=[("class:status-field", " Find (up): ")],
+            auto_ignore_case=True,
+        )
+
+        self.command_bar = CommandBar(style="class:toolbar")
 
         self.dialog_classes = {
             "command-palette": CommandPalette,
@@ -297,7 +314,13 @@ class NotebookApp(BaseApp):
                     ),
                     self.command_bar,
                     self.search_bar,
-                    StatusBar(),
+                    StatusBar(
+                        filter=(self.config.filters.show_status_bar & ~has_toolbar),
+                        left_style="class:status",
+                        right_style="class:status.right",
+                        left_separator=("▌", "▐"),
+                        right_separator=("▌", "▐"),
+                    ),
                 ],
                 style="class:body",
             ),

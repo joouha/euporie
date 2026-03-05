@@ -22,6 +22,14 @@ import logging
 from functools import partial
 from typing import TYPE_CHECKING
 
+from prompt_toolkit.keys import Keys
+from prompt_toolkit.widgets.menus import (
+    MenuContainer as PtkMenuContainer,
+)
+from prompt_toolkit.widgets.menus import (
+    MenuItem as PtkMenuItem,
+)
+
 from apptk.application.current import get_app
 from apptk.border import ThinGrid
 from apptk.commands import get_cmd
@@ -40,6 +48,7 @@ from apptk.layout.containers import (
     FloatContainer,
     HSplit,
     ScrollOffsets,
+    StatusContainer,
     VSplit,
     Window,
     to_container,
@@ -48,26 +57,11 @@ from apptk.layout.controls import FormattedTextControl
 from apptk.layout.utils import explode_text_fragments
 from apptk.mouse_events import MouseEvent, MouseEventType
 from apptk.widgets.base import Shadow
-from euporie.core.bars.status import StatusContainer
-from prompt_toolkit.keys import Keys
-from prompt_toolkit.widgets.menus import (
-    MenuContainer as PtkMenuContainer,
-)
-from prompt_toolkit.widgets.menus import (
-    MenuItem as PtkMenuItem,
-)
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Sequence
     from typing import Any
 
-    from apptk.border import GridStyle
-    from apptk.commands import Command
-    from apptk.formatted_text.base import (
-        AnyFormattedText,
-        OneStyleAndTextTuple,
-        StyleAndTextTuples,
-    )
     from euporie.core.bars.status import StatusBarFields
     from prompt_toolkit.filters import Filter, FilterOrBool
     from prompt_toolkit.key_binding.key_bindings import (
@@ -77,6 +71,14 @@ if TYPE_CHECKING:
     from prompt_toolkit.key_binding.key_processor import KeyPressEvent
     from prompt_toolkit.layout.containers import AnyContainer
     from prompt_toolkit.layout.controls import UIControl
+
+    from apptk.border import GridStyle
+    from apptk.commands import Command
+    from apptk.formatted_text.base import (
+        AnyFormattedText,
+        OneStyleAndTextTuple,
+        StyleAndTextTuples,
+    )
 
 
 __all__ = [

@@ -14,6 +14,7 @@ from __future__ import annotations
 import logging
 from functools import lru_cache, partial
 from typing import TYPE_CHECKING, NamedTuple
+from weakref import WeakKeyDictionary
 
 from prompt_toolkit.layout import containers as ptk_containers
 from prompt_toolkit.layout.containers import (
@@ -64,6 +65,9 @@ if TYPE_CHECKING:
     from apptk.layout.screen import Screen
     from apptk.output.base import Size as OutputSize
 
+    #: Type for status bar fields: (left_fields, right_fields)
+    StatusBarFields = tuple[Sequence[AnyFormattedText], Sequence[AnyFormattedText]]
+
     class ScrollableContainer(Protocol):
         """Protocol for a scrollable container."""
 
@@ -74,6 +78,63 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 WindowAlign = HorizontalAlign
+
+#: Registry mapping containers to their status functions
+_CONTAINER_STATUSES: WeakKeyDictionary[
+    Container, Callable[[], StatusBarFields | None]
+] = WeakKeyDictionary()
+
+# Store original to_container for use in override
+_ptk_to_container = ptk_containers.to_container
+
+
+def to_container(container: AnyContainer) -> Container:
+    """Convert to container and collect __pt_status__ functions.
+
+    This overrides prompt_toolkit's to_container to additionally track
+    containers that implement the __pt_status__ protocol for status bar support.
+
+    Args:
+        container: Any container-like object to convert.
+
+    Returns:
+        The converted Container instance.
+    """
+    result = _ptk_to_container(container)
+    if hasattr(container, "__pt_status__"):
+        _CONTAINER_STATUSES[result] = container.__pt_status__
+    return result
+
+
+# Apply the override
+ptk_containers.to_container = to_container
+
+
+class StatusContainer:
+    """A container which allows attaching a status function.
+
+    This wrapper allows any container to provide status bar information
+    via the __pt_status__ protocol.
+
+    Args:
+        body: The container to wrap.
+        status: A callable that returns status bar fields or None.
+    """
+
+    def __init__(
+        self, body: AnyContainer, status: Callable[[], StatusBarFields | None]
+    ) -> None:
+        """Initialize with a body container and status function."""
+        self.body = body
+        self.status = status
+
+    def __pt_status__(self) -> StatusBarFields | None:
+        """Return the status fields."""
+        return self.status()
+
+    def __pt_container__(self) -> AnyContainer:
+        """Return the body container."""
+        return self.body
 
 
 class DimensionTuple(NamedTuple):

@@ -18,7 +18,10 @@ from apptk.key_binding.bindings.helix import (
     load_helix_bindings,
     load_helix_search_bindings,
 )
-from apptk.key_binding.bindings.micro import load_micro_bindings
+from apptk.key_binding.bindings.micro import (
+    load_micro_bindings,
+    load_micro_search_bindings,
+)
 from apptk.key_binding.bindings.mouse import load_mouse_bindings
 from apptk.key_binding.bindings.terminal import load_terminal_bindings
 from apptk.key_binding.bindings.vi import (
@@ -54,6 +57,7 @@ def load_key_bindings() -> KeyBindingsBase:
             load_vi_search_bindings(),
             # Load micro bindings
             load_micro_bindings(),
+            load_micro_search_bindings(),
             # Load Helix bindings
             load_helix_bindings(),
             load_helix_search_bindings(),
