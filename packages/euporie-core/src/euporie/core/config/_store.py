@@ -437,6 +437,8 @@ class SettingStore:
         """
         from euporie.core.config._setting import Setting
 
+        if name in cls._registry:
+            log.warning("Setting '%s' already registered, overwriting", name)
         setting = Setting(name, *args, **kwargs)
         cls._registry[name] = setting
 
