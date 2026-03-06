@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import tomlkit
+
+from euporie.core.config._toml import _to_toml_value
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -75,10 +77,10 @@ def migrate_json_to_toml(
     for key, value in data.items():
         if not isinstance(value, dict) and value is not None:
             if key in state_keys:
-                state_doc.add(key, _convert_value(value))
+                state_doc.add(key, _to_toml_value(value))
                 has_state = True
             else:
-                config_doc.add(key, _convert_value(value))
+                config_doc.add(key, _to_toml_value(value))
 
     # Dict values -> app sections
     for key, value in data.items():
@@ -88,9 +90,9 @@ def migrate_json_to_toml(
             for k, v in value.items():
                 if v is not None:
                     if k in state_keys:
-                        state_table[k] = _convert_value(v)
+                        state_table[k] = _to_toml_value(v)
                     else:
-                        config_table[k] = _convert_value(v)
+                        config_table[k] = _to_toml_value(v)
             if config_table:
                 config_doc.add(tomlkit.nl())
                 config_doc.add(key, config_table)
@@ -122,19 +124,3 @@ def migrate_json_to_toml(
         backup_path,
     )
     return True
-
-
-def _convert_value(value: Any) -> Any:
-    """Convert a JSON value to a TOML-compatible value.
-
-    Args:
-        value: The value to convert.
-
-    Returns:
-        The converted value.
-    """
-    if isinstance(value, list):
-        return [_convert_value(v) for v in value if v is not None]
-    if isinstance(value, dict):
-        return {k: _convert_value(v) for k, v in value.items() if v is not None}
-    return value
