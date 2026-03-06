@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 
     from apptk.formatted_text.base import StyleAndTextTuples
     from apptk.styles.base import BaseStyle
-    from euporie.core.config import Config
+    from euporie.core.config._config import Config
 
 log = logging.getLogger(__name__)
 
@@ -91,8 +91,10 @@ class BufferedLogs(logging.Handler):
         """Restore the original handlers."""
         # Remove ourselves
         self._logger.removeHandler(self)
-        # Restore original handlers
-        self._logger.handlers = self._original_handlers
+        # Restore original handlers if no new handlers were configured while we were active
+        current_handlers = self._logger.handlers[:]
+        if not current_handlers:
+            self._logger.handlers = self._original_handlers
         # Replay collected records through original handlers
         self.replay()
 
