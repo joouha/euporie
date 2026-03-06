@@ -130,6 +130,7 @@ class SettingStore:
 
         self._app = app
         self._settings_cache: dict[str, Setting] | None = None
+        self._resolved_cache: dict[str, Any] = {}
 
         # Build full layer stack: defaults (bottom) -> middle -> overrides (top)
         self._defaults_layer = DefaultsLayer()
@@ -201,6 +202,7 @@ class SettingStore:
 
     def load(self) -> None:
         """Load values from all layers."""
+        self._resolved_cache.clear()
         applicable = self.settings
         for layer in self._layers:
             layer.load(applicable)
@@ -386,6 +388,10 @@ class SettingStore:
             return super().__getattribute__(name)
         except AttributeError as exc:
             if name in self.settings:
+                cache = super().__getattribute__("_resolved_cache")
+                if name in cache:
+                    return cache[name]
+
                 setting = self.settings[name]
                 value = self._resolve(name)
 
@@ -406,9 +412,11 @@ class SettingStore:
                 else:
                     if setting.validate:
                         try:
-                            return setting.validate(value)
+                            value = setting.validate(value)
                         except (ValueError, TypeError):
                             pass
+
+                cache[name] = value
                 return value
             raise exc
 
@@ -439,6 +447,8 @@ class SettingStore:
                     if v == value:
                         value = k
                         break
+            # Invalidate cached resolved value
+            self._resolved_cache.pop(name, None)
             # Writing to the overrides layer automatically updates the
             # ChainMap, so _resolve sees the new value immediately.
             self._overrides_layer[name] = value
