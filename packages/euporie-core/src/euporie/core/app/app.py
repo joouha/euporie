@@ -127,9 +127,6 @@ class BaseApp(ConfigurableApp, Application, ABC):
         "toggle-command-palette",
         "activate-command-bar",
         "activate-command-bar-shell",
-        "find",
-        "find-next",
-        "find-previous",
     )
 
     def __init__(
