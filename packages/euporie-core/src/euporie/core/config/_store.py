@@ -126,7 +126,7 @@ class SettingStore:
             layers: Middle layers (between defaults and overrides).
             overrides: Initial programmatic override values.
         """
-        from euporie.core.config._layers import DefaultsLayer, OverridesLayer
+        from euporie.core.config._layers import DefaultsLayer, OverridesLayer, TomlFileLayer
 
         self._app = app
         self._settings_cache: dict[str, Setting] | None = None
@@ -136,6 +136,13 @@ class SettingStore:
         self._defaults_layer = DefaultsLayer()
         self._overrides_layer = OverridesLayer(overrides or {})
         self._layers = [self._defaults_layer, *layers, self._overrides_layer]
+
+        # Find the writable layer for persisting changes
+        self._writable_layer: TomlFileLayer | None = None
+        for layer in layers:
+            if isinstance(layer, TomlFileLayer) and layer._writable:
+                self._writable_layer = layer
+                break
 
         # ChainMap over the layer dicts: highest-priority first
         self._chain: ChainMap[str, Any] = ChainMap(
@@ -249,7 +256,7 @@ class SettingStore:
         return validated
 
     def _on_change(self, setting: Setting) -> None:
-        """Handle a setting value change by saving to writable layers.
+        """Handle a setting value change by saving to the writable layer.
 
         Args:
             setting: The setting that changed.
@@ -257,17 +264,12 @@ class SettingStore:
         if not self._valid_config:
             return
 
-        from euporie.core.config._layers import TomlFileLayer
+        if self._writable_layer is None:
+            return
 
         value = self._resolve(setting.name)
-        for layer in self._layers:
-            if isinstance(layer, TomlFileLayer):
-                try:
-                    layer.save(setting.name, value)
-                    log.debug("Saved `%s = %r`", setting.name, value)
-                    return
-                except NotImplementedError:
-                    continue
+        self._writable_layer.save(setting.name, value)
+        log.debug("Saved `%s = %r`", setting.name, value)
 
     def _register_all_commands(self) -> None:
         """Register commands for all applicable settings."""
