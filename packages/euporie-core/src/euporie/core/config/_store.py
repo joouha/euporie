@@ -110,7 +110,7 @@ class SettingStore:
         menus: Namespace providing menu items for each setting.
     """
 
-    _registry: ClassVar[dict[str, Setting]] = {}
+    _registry: ClassVar[dict[str, Setting]]
 
     def __init__(
         self,
