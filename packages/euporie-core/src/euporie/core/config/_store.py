@@ -129,6 +129,7 @@ class SettingStore:
         from euporie.core.config._layers import DefaultsLayer, OverridesLayer
 
         self._app = app
+        self._settings_cache: dict[str, Setting] | None = None
 
         # Build full layer stack: defaults (bottom) -> middle -> overrides (top)
         self._defaults_layer = DefaultsLayer()
@@ -164,11 +165,13 @@ class SettingStore:
     @property
     def settings(self) -> dict[str, Setting]:
         """Return settings applicable to this app."""
-        return {
-            name: setting
-            for name, setting in self._registry.items()
-            if setting.applies_to(self._app)
-        }
+        if self._settings_cache is None:
+            self._settings_cache = {
+                name: setting
+                for name, setting in self._registry.items()
+                if setting.applies_to(self._app)
+            }
+        return self._settings_cache
 
     @property
     def _schema(self) -> dict[str, Any]:
@@ -382,8 +385,8 @@ class SettingStore:
         try:
             return super().__getattribute__(name)
         except AttributeError as exc:
-            if name in self._registry:
-                setting = self._registry[name]
+            if name in self.settings:
+                setting = self.settings[name]
                 value = self._resolve(name)
 
                 # Convert choice aliases
@@ -410,8 +413,8 @@ class SettingStore:
             raise exc
 
     def __contains__(self, key: str) -> bool:
-        """Check if a key exists in state."""
-        return key in self._chain and self._chain[key] is not None
+        """Check if a key exists in the store for the current app."""
+        return key in self.settings and key in self._chain and self._chain[key] is not None
 
     @classmethod
     def register(cls, name: str, *args: Any, **kwargs: Any) -> None:
@@ -429,8 +432,8 @@ class SettingStore:
 
     def __setattr__(self, name: str, value: Any) -> None:
         """Set a setting value via the overrides layer."""
-        if name in self._registry:
-            setting = self._registry[name]
+        if name in self._registry and name in self.settings:
+            setting = self.settings[name]
             if isinstance(choices := setting.choices, Mapping):
                 for k, v in choices.items():
                     if v == value:
