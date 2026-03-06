@@ -106,8 +106,8 @@ def migrate_json_to_toml(
     with config_path.open("w") as f:
         tomlkit.dump(config_doc, f)
 
-    # Write new state TOML file if there are state entries
-    if has_state:
+    # Write new state TOML file if there are state entries and it doesn't exist
+    if has_state and not state_path.exists():
         state_path.parent.mkdir(parents=True, exist_ok=True)
         with state_path.open("w") as f:
             tomlkit.dump(state_doc, f)
