@@ -303,16 +303,7 @@ class SettingStore:
                     menu_title=str(choice).replace("_", " ").capitalize(),
                     description=f'Toggle "{choice}" in "{setting.name}"',
                     filter=setting.kwargs.get("filter", True),
-                )(
-                    partial(
-                        lambda c: (
-                            self._resolve(setting.name).remove
-                            if c in self._resolve(setting.name)
-                            else self._resolve(setting.name).append
-                        )(c),
-                        choice,
-                    )
-                )
+                )(partial(self._toggle_list_item, setting.name, choice))
 
         elif setting.type is bool:
             add_cmd(
@@ -352,6 +343,20 @@ class SettingStore:
                 description=f'Set "{setting.name}" to "{choice}"',
                 filter=setting.kwargs.get("filter", True),
             )(partial(setattr, self, setting.name, choice))
+
+    def _toggle_list_item(self, name: str, item: Any) -> None:
+        """Toggle an item in a list-type setting.
+
+        Args:
+            name: The setting name.
+            item: The item to add or remove.
+        """
+        current = self._resolve(name) or []
+        if item in current:
+            new = [x for x in current if x != item]
+        else:
+            new = [*current, item]
+        setattr(self, name, new)
 
     def toggle(self, name: str) -> None:
         """Toggle or cycle a setting's value.
