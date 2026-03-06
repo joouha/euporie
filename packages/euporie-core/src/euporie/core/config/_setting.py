@@ -129,19 +129,7 @@ class Setting:
         self.action = action or TYPE_ACTIONS.get(self.type)
         self.flags = flags if flags is not None else [f"--{name.replace('_', '-')}"]
         self.nullable = nullable if nullable is not None else default is None
-        schema_type = _SCHEMA_TYPES.get(self.type)
-        if schema_type is not None and self.nullable:
-            self._schema: dict[str, Any] = {
-                "type": [schema_type, "null"],
-                **(schema or {}),
-            }
-        elif schema_type is not None:
-            self._schema = {
-                "type": schema_type,
-                **(schema or {}),
-            }
-        else:
-            self._schema = dict(schema or {})
+        self._schema_overrides: dict[str, Any] = dict(schema or {})
         self.nargs = nargs
         self.hidden = to_filter(hidden)
         self.hooks = hooks or []
@@ -165,14 +153,28 @@ class Setting:
             return self._choices()
         return self._choices
 
-    @property
+    @cached_property
     def schema(self) -> dict[str, Any]:
         """Return a JSON schema property for the config item."""
-        schema = {
-            "description": self.help,
-            **({"default": self.default} if self.default is not None else {}),
-            **self._schema,
-        }
+        # Start with base type information
+        schema_type = _SCHEMA_TYPES.get(self.type)
+        schema: dict[str, Any] = {}
+
+        if schema_type is not None:
+            if self.nullable:
+                schema["type"] = [schema_type, "null"]
+            else:
+                schema["type"] = schema_type
+
+        # Add description and default
+        schema["description"] = self.help
+        if self.default is not None:
+            schema["default"] = self.default
+
+        # Apply user-provided overrides
+        schema.update(self._schema_overrides)
+
+        # Add choices/enum constraints
         if self.choices:
             choices_list = (
                 list(self.choices.keys())
@@ -186,9 +188,10 @@ class Setting:
                 if self.nullable:
                     enum_values.append(None)
                 schema["enum"] = enum_values
+
         return schema
 
-    @property
+    @cached_property
     def menu(self) -> MenuItem:
         """Return a menu item for the setting."""
         from apptk.commands import get_cmd
