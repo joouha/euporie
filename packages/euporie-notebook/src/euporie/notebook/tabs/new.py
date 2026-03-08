@@ -126,7 +126,7 @@ class NewTab(Tab):
 
         recent_files_section = Frame(
             FileBrowser(
-                path=lambda: self.app.config.recent_files,
+                path=lambda: self.app.state.recent_files,
                 on_open=self.app.open_file,
                 show_address_bar=False,
                 show_icons=self.app.config.filters.show_file_icons,

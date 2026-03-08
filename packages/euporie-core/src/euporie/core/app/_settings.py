@@ -9,7 +9,7 @@ from apptk.enums import EditingMode
 from apptk.filters.environment import in_mplex
 from apptk.output.color_depth import ColorDepth
 from euporie.core.app.current import available_apps
-from euporie.core.config import add_setting
+from euporie.core.config import add_setting, add_state
 from pygments.styles import STYLE_MAP as pygments_styles
 from upath import UPath
 
@@ -471,7 +471,7 @@ add_setting(
 )
 
 
-add_setting(
+add_state(
     name="recent_files",
     group="euporie.core.app.app",
     default=[],

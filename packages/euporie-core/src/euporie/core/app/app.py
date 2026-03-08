@@ -515,8 +515,8 @@ class BaseApp(ConfigurableApp, Application, ABC):
                 self.tab_idx = len(self.tabs) - 1
                 # Save 20 most recent files, deduplicating while keeping order
                 if ppath.exists():
-                    self.config.recent_files = list(
-                        dict.fromkeys([ppath, *self.config.recent_files]).keys()
+                    self.state.recent_files = list(
+                        dict.fromkeys([ppath, *self.state.recent_files]).keys()
                     )[:20]
 
     def open_files(self) -> None:
