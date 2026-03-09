@@ -7,14 +7,16 @@ import logging
 import os
 import sys
 from functools import partial
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, ClassVar, cast
 
 from apptk.application.current import get_app
 from apptk.io import PseudoTTY
 from apptk.layout.containers import DynamicContainer, FloatContainer, Window
 from apptk.output.defaults import create_output
 from apptk.output.vt100 import Vt100_Output
+from euporie.core import settings as core_settings
 from euporie.core.app.app import BaseApp
+from euporie.preview import settings as preview_settings
 from euporie.preview.tabs.notebook import PreviewNotebook
 
 if TYPE_CHECKING:
@@ -24,6 +26,7 @@ if TYPE_CHECKING:
     from apptk.application.application import _AppResult
     from apptk.layout.containers import Float
     from apptk.output import Output
+    from euporie.core.config._setting import Setting
     from euporie.core.tabs.base import Tab
 
 log = logging.getLogger(__name__)
@@ -41,6 +44,26 @@ class PreviewApp(BaseApp):
     """
 
     name = "preview"
+
+    states: ClassVar[list[Setting]] = [
+        *BaseApp.states,
+    ]
+
+    settings: ClassVar[list[Setting]] = [
+        *BaseApp.settings,
+        # Appearance
+        core_settings.show_cell_borders,
+        core_settings.max_notebook_width,
+        core_settings.expand,
+        # Preview-specific
+        preview_settings.output_file,
+        preview_settings.page,
+        preview_settings.run,
+        preview_settings.save,
+        preview_settings.show_filenames,
+        preview_settings.cell_start,
+        preview_settings.cell_stop,
+    ]
 
     def __init__(self, **kwargs: Any) -> None:
         """Create an app for dumping a prompt-toolkit layout."""

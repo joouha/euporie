@@ -129,7 +129,7 @@ class NewTab(Tab):
                 path=lambda: self.app.state.recent_files,
                 on_open=self.app.open_file,
                 show_address_bar=False,
-                show_icons=self.app.config.filters.show_file_icons,
+                show_icons=self.app.config.filters.show_icons,
                 height=Dimension(min=3, max=10),
                 sort=False,
             ),

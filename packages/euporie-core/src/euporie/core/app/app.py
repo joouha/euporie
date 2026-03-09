@@ -9,7 +9,7 @@ import sys
 from abc import ABC, abstractmethod
 from functools import cache, partial
 from pathlib import PurePath
-from typing import TYPE_CHECKING, cast, overload
+from typing import TYPE_CHECKING, ClassVar, cast, overload
 from weakref import WeakSet, WeakValueDictionary
 
 from apptk.application.application import Application, _CombinedRegistry
@@ -43,6 +43,7 @@ from apptk.styles.base import DynamicStyle
 from apptk.styles.style import PaletteStyle
 from apptk.utils import Event
 from apptk.widgets.base import Shadow
+from euporie.core import settings as core_settings
 from euporie.core.app.base import ConfigurableApp
 from euporie.core.app.cursor import CursorConfig
 from euporie.core.format import CliFormatter
@@ -64,7 +65,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from pathlib import Path
     from types import FrameType
-    from typing import Any, ClassVar, TypeVar
+    from typing import Any, TypeVar
 
     # from apptk.application import _AppResult
     from apptk.clipboard.base import Clipboard
@@ -74,7 +75,7 @@ if TYPE_CHECKING:
     from apptk.layout.layout import FocusableElement
     from apptk.widgets.toolbars import CommandBar
     from euporie.core.bars.search import SearchBar
-    from euporie.core.config import Setting
+    from euporie.core.config._setting import Setting
     from euporie.core.format import Formatter
     from euporie.core.tabs import TabRegistryEntry
     from euporie.core.tabs.base import Tab
@@ -113,6 +114,53 @@ class BaseApp(ConfigurableApp, Application, ABC):
     """
 
     _config_defaults: ClassVar[dict[str, Any]] = {"log_level_stdout": "critical"}
+
+    states: ClassVar[list[Setting]] = [
+        core_settings.recent_files,
+    ]
+
+    settings: ClassVar[list[Setting]] = [
+        # Version
+        core_settings.version,
+        # Logging
+        core_settings.log_file,
+        core_settings.log_level,
+        core_settings.log_level_stdout,
+        core_settings.log_config,
+        # Files
+        core_settings.files,
+        core_settings.backup_on_save,
+        # Editor
+        core_settings.edit_mode,
+        core_settings.tab_size,
+        core_settings.formatters,
+        core_settings.clipboard,
+        core_settings.key_bindings,
+        core_settings.set_cursor_shape,
+        core_settings.cursor_blink,
+        core_settings.enable_language_servers,
+        core_settings.language_servers,
+        # Terminal
+        core_settings.terminal_polling_interval,
+        core_settings.color_depth,
+        core_settings.multiplexer_passthrough,
+        core_settings.graphics,
+        core_settings.force_graphics,
+        # Appearance
+        core_settings.syntax_highlighting,
+        core_settings.syntax_theme,
+        core_settings.color_scheme,
+        core_settings.custom_background_color,
+        core_settings.custom_foreground_color,
+        core_settings.accent_color,
+        core_settings.custom_styles,
+        # Kernel
+        core_settings.kernel_name,
+        core_settings.warn_venv,
+        # Cells
+        core_settings.wrap_cell_outputs,
+        core_settings.text_output_limit,
+    ]
 
     commands = (
         "quit",

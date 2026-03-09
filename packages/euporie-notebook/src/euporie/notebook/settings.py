@@ -1,11 +1,12 @@
-"""Define settings for the notebook app."""
+"""Notebook app settings definitions."""
 
-from euporie.core.config import add_setting
+from __future__ import annotations
+
+from euporie.core.config._setting import Setting
 from euporie.notebook.enums import TabMode
 
-add_setting(
+tab_mode = Setting(
     name="tab_mode",
-    group="euporie.notebook.app",
     flags=["--tab-mode"],
     type_=str,
     choices=[mode.value for mode in TabMode],
@@ -19,9 +20,8 @@ add_setting(
     """,
 )
 
-add_setting(
+always_show_tab_bar = Setting(
     name="always_show_tab_bar",
-    group="euporie.notebook.app",
     flags=["--always-show-tab-bar"],
     type_=bool,
     help_="Always show the tab bar",
@@ -32,9 +32,8 @@ add_setting(
     """,
 )
 
-add_setting(
+background_pattern = Setting(
     name="background_pattern",
-    group="euporie.notebook.app",
     flags=["--background-pattern", "--bg-pattern"],
     type_=int,
     choices={
@@ -72,9 +71,8 @@ add_setting(
     """,
 )
 
-add_setting(
+background_character = Setting(
     name="background_character",
-    group="euporie.notebook.app",
     flags=["--background-character", "--bg-char"],
     type_=str,
     help_="Character for background pattern",
@@ -86,12 +84,11 @@ add_setting(
         The character to use when drawing the background pattern.
 
         Recommended characters include: "·", "⬤", "╳", "╱", "╲", "░", "▒", "▓", "▞", "╬"
-    """,  # ,
+    """,
 )
 
-add_setting(
+run_after_external_edit = Setting(
     name="run_after_external_edit",
-    group="euporie.notebook.app",
     flags=["--run-after-external-edit"],
     type_=bool,
     help_="Run cells after editing externally",
@@ -101,9 +98,8 @@ add_setting(
     """,
 )
 
-add_setting(
+run = Setting(
     name="run",
-    group="euporie.notebook.app",
     flags=["--run"],
     type_=bool,
     help_="Run the notebook files when loaded",
@@ -114,9 +110,8 @@ add_setting(
     """,
 )
 
-add_setting(
+show_top_bar = Setting(
     name="show_top_bar",
-    group="euporie.notebook.app",
     flags=["--show-top-bar"],
     type_=bool,
     title="top bar",
@@ -129,9 +124,8 @@ add_setting(
     keys=["A-m"],
 )
 
-add_setting(
+show_side_bar = Setting(
     name="show_side_bar",
-    group="euporie.notebook.widgets.side_bar",
     flags=["--show-side-bar"],
     type_=bool,
     title="side-bar",
@@ -145,9 +139,8 @@ add_setting(
     """,
 )
 
-add_setting(
+side_bar_width = Setting(
     name="side_bar_width",
-    group="euporie.notebook.widgets.side_bar",
     flags=["--side-bar-width"],
     type_=int,
     help_="Width of the side-bar",
@@ -162,15 +155,26 @@ add_setting(
     """,
 )
 
-add_setting(
+side_bar_panel_index = Setting(
     name="side_bar_panel_index",
-    group="euporie.notebook.widgets.side_bar",
-    flags=[],
     type_=lambda x: int(x) if str(x).isdigit() else None,
     help_="Active side-bar panel index",
     default=0,
     schema={"type": ["integer", "null"], "minimum": 0},
     description="""
-        The index of the currently active side-bar panel, or None if no panel is active.
+        The index of the currently active side-bar panel, or None if no panel is
+        active.
+    """,
+)
+
+show_scroll_bar = Setting(
+    name="show_scroll_bar",
+    title="scroll bar",
+    flags=["--show-scroll-bar"],
+    type_=bool,
+    help_="Show the scroll bar",
+    default=True,
+    description="""
+        Whether the scroll bar should be shown on the right of the screen.
     """,
 )

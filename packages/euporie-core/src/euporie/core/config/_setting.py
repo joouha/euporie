@@ -75,7 +75,6 @@ class Setting:
     def __init__(
         self,
         name: str,
-        apps: str | Sequence[str] = "*",
         default: Any = None,
         help_: str = "",
         description: str = "",
@@ -90,15 +89,12 @@ class Setting:
         nullable: bool | None = None,
         hidden: FilterOrBool = False,
         hooks: list[Callable[[Setting], None]] | None = None,
-        # Accept but ignore legacy 'group' parameter for compatibility
-        group: str | Sequence[str] | None = None,
         **kwargs: Any,
     ) -> None:
         """Create a new configuration item.
 
         Args:
             name: The setting name.
-            apps: Which apps this applies to ("*" for all, or app names).
             default: Default value.
             help_: Short help text.
             description: Long description.
@@ -114,11 +110,9 @@ class Setting:
                 default when not specified.
             hidden: Whether to hide from help output.
             hooks: Change callbacks.
-            group: Deprecated, use apps instead.
             **kwargs: Additional arguments (e.g., version, const, filter, keys).
         """
         self.name = name
-        self._apps = {apps} if isinstance(apps, str) else set(apps)
         self.default = default
         self.title = title or self.name.replace("_", " ")
         self.help = help_
@@ -134,17 +128,6 @@ class Setting:
         self.hidden = to_filter(hidden)
         self.hooks = hooks or []
         self.kwargs = kwargs
-
-    def applies_to(self, app: str | None) -> bool:
-        """Check if this setting applies to the given app.
-
-        Args:
-            app: The application name to check.
-
-        Returns:
-            True if this setting applies to the app.
-        """
-        return "*" in self._apps or app in self._apps
 
     @cached_property
     def choices(self) -> list[Any] | dict | None:
@@ -254,4 +237,4 @@ class Setting:
     def __repr__(self) -> str:
         """Represent a Setting instance as a string."""
         nullable = " nullable" if self.nullable else ""
-        return f"<Setting {self.name}: {self.type}{nullable} apps={self._apps}>"
+        return f"<Setting {self.name}: {self.type}{nullable}>"

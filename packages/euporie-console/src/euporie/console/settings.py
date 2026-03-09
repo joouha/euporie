@@ -1,32 +1,24 @@
-"""Settings for the console app."""
+"""Console app settings definitions."""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-from euporie.core.config import add_setting
+from euporie.core.config._setting import Setting
 from upath import UPath
 
-if TYPE_CHECKING:
-    from typing import TypeVar
-
-    _AppResult = TypeVar("_AppResult")
-
-add_setting(
+mouse_support = Setting(
     name="mouse_support",
-    group="euporie.console.app",
     flags=["--mouse-support"],
     type_=bool,
     help_="Enable or disable mouse support",
     default=None,
     description="""
-            When set to True, mouse support is enabled. When set to False, mouse
-            support is disabled.
-        """,
+        When set to True, mouse support is enabled. When set to False, mouse
+        support is disabled.
+    """,
 )
-add_setting(
+
+max_stored_outputs = Setting(
     name="max_stored_outputs",
-    group="euporie.console.app",
     flags=["--max-stored-outputs"],
     type_=int,
     help_="The number of inputs / outputs to store in an in-memory notebook",
@@ -40,9 +32,8 @@ add_setting(
     """,
 )
 
-add_setting(
+connection_file = Setting(
     name="connection_file",
-    group="euporie.console.app",
     flags=["--connection-file", "--kernel-connection-file"],
     type_=UPath,
     help_="Attempt to connect to an existing kernel using a JSON connection info file",

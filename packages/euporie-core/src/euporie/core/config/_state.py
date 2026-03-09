@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING
 
 from euporie.core import __app_name__
 from euporie.core.config._layers import TomlFileLayer
@@ -30,13 +30,17 @@ class State(SettingStore):
         3. Programmatic overrides
     """
 
-    _registry: ClassVar[dict[str, Setting]] = {}
-
-    def __init__(self, app: str) -> None:
+    def __init__(
+        self,
+        app: str,
+        *,
+        settings: list[Setting] | None = None,
+    ) -> None:
         """Create a new State instance.
 
         Args:
             app: The application name.
+            settings: The list of settings this state manages.
         """
         state_dir = Path(user_data_dir(__app_name__, appauthor=None))
         state_dir.mkdir(exist_ok=True, parents=True)
@@ -44,7 +48,8 @@ class State(SettingStore):
 
         super().__init__(
             app=app,
+            settings=settings or [],
             layers=[
-                TomlFileLayer(self._state_path, namespace=app, writable=True),
+                TomlFileLayer(self._state_path, namespace=app, persistable=True),
             ],
         )

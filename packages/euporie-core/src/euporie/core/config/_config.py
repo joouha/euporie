@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any
 
 from euporie.core import __app_name__, __copyright__
 from euporie.core.config._layers import CliLayer, EnvironmentLayer, TomlFileLayer
@@ -13,7 +13,7 @@ from euporie.core.config._store import SettingStore
 from platformdirs import user_config_dir
 
 if TYPE_CHECKING:
-    from euporie.core.config._setting import Setting
+    from euporie.core.config._setting import Setting as Setting
 
 log = logging.getLogger(__name__)
 
@@ -34,13 +34,19 @@ class Config(SettingStore):
         parser: The argument parser for CLI arguments.
     """
 
-    _registry: ClassVar[dict[str, Setting]] = {}
-
-    def __init__(self, app: str | None = None, _help: str = "", **kwargs: Any) -> None:
+    def __init__(
+        self,
+        app: str | None = None,
+        *,
+        settings: list[Setting] | None = None,
+        _help: str = "",
+        **kwargs: Any,
+    ) -> None:
         """Create a new Config instance.
 
         Args:
             app: The application name.
+            settings: The list of settings this config manages.
             _help: Help text for the argument parser.
             **kwargs: Initial override values.
         """
@@ -63,9 +69,10 @@ class Config(SettingStore):
 
         super().__init__(
             app=app,
+            settings=settings or [],
             layers=[
                 TomlFileLayer(self._config_path),
-                TomlFileLayer(self._config_path, namespace=app, writable=True),
+                TomlFileLayer(self._config_path, namespace=app, persistable=True),
                 EnvironmentLayer(__app_name__),
                 EnvironmentLayer(__app_name__, namespace=app),
                 CliLayer(self.parser),

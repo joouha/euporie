@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from typing import Any
 
     from euporie.core.config._config import Config
+    from euporie.core.config._setting import Setting
     from euporie.core.config._state import State
 
 
@@ -18,6 +19,10 @@ class ConfigurableApp(ABC):
 
     Each non-abstract subclass gets its own Config and AppState instances,
     created during class definition via __init_subclass__.
+
+    Subclasses declare their settings and states as class variables:
+        - ``settings``: list of Setting objects for Config
+        - ``states``: list of Setting objects for State
 
     Attributes:
         name: The application name (e.g., "notebook", "console").
@@ -28,6 +33,8 @@ class ConfigurableApp(ABC):
     name: str | None = None
     config: Config
     state: State
+    settings: ClassVar[list[Setting]] = []
+    states: ClassVar[list[Setting]] = []
     _config_defaults: ClassVar[dict[str, Any]] = {"log_level_stdout": "error"}
 
     def __init_subclass__(cls) -> None:
@@ -37,18 +44,22 @@ class ConfigurableApp(ABC):
             from euporie.core.config._migrate import migrate_json_to_toml
             from euporie.core.config._state import State
 
-            # Load settings from _settings.py modules
-            cls.load_settings()
+            # Load commands from _commands.py modules
+            cls.load_commands()
 
-            # Create config instance for this app
+            # Create config instance for this app from declared settings
             cls.config = Config(
                 app=cls.name,
+                settings=cls.settings,
                 _help=cls.__doc__ or "",
                 **cls._config_defaults,
             )
 
-            # Create state instance for this app
-            cls.state = State(app=cls.name)
+            # Create state instance for this app from declared states
+            cls.state = State(
+                app=cls.name,
+                settings=cls.states,
+            )
 
             # Migrate old JSON config, partitioning between config and state
             json_path = cls.config._config_path.with_name("config.json")
@@ -56,16 +67,15 @@ class ConfigurableApp(ABC):
                 json_path=json_path,
                 config_path=cls.config._config_path,
                 state_path=cls.state._state_path,
-                config_keys=set(Config._registry),
-                state_keys=set(State._registry),
+                config_keys=set(cls.config.settings),
+                state_keys=set(cls.state.settings),
             )
 
     @classmethod
-    def load_settings(cls) -> None:
-        """Load all known settings for this class.
+    def load_commands(cls) -> None:
+        """Load command modules for this class.
 
-        This imports all _settings.py and _commands.py modules from the
-        euporie package hierarchy.
+        This imports all _commands.py modules from the euporie package hierarchy.
         """
         from euporie.core.utils import import_submodules, root_module
 
@@ -75,7 +85,7 @@ class ConfigurableApp(ABC):
             if base.__module__.startswith("euporie.")
         }
         for root in roots:
-            import_submodules(root, ("_settings", "_commands"))
+            import_submodules(root, ("_commands",))
 
     @classmethod
     def launch(cls) -> None:

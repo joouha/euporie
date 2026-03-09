@@ -1,18 +1,12 @@
-"""Define settings for the preview app."""
+"""Preview app settings definitions."""
 
 from __future__ import annotations
 
-import logging
-
-from euporie.core.config import add_setting
+from euporie.core.config._setting import Setting
 from upath import UPath
 
-log = logging.getLogger(__name__)
-
-
-add_setting(
+output_file = Setting(
     name="output_file",
-    group="euporie.preview.app",
     flags=["--output-file"],
     nargs="?",
     default="-",
@@ -26,9 +20,8 @@ add_setting(
     """,
 )
 
-add_setting(
+page = Setting(
     name="page",
-    group="euporie.preview.app",
     flags=["--page"],
     type_=bool,
     help_="Pass output to pager",
@@ -38,10 +31,8 @@ add_setting(
     """,
 )
 
-
-add_setting(
+run = Setting(
     name="run",
-    group="euporie.preview.app",
     flags=["--run"],
     type_=bool,
     help_="Run the notebook files when loaded",
@@ -52,9 +43,8 @@ add_setting(
     """,
 )
 
-add_setting(
+save = Setting(
     name="save",
-    group="euporie.preview.app",
     flags=["--save"],
     type_=bool,
     help_="Save the notebook after running it",
@@ -65,9 +55,8 @@ add_setting(
     """,
 )
 
-add_setting(
+show_filenames = Setting(
     name="show_filenames",
-    group="euporie.preview.app",
     flags=["--show-filenames"],
     type_=bool,
     help_="Show the notebook filenames when previewing multiple notebooks",
@@ -78,9 +67,8 @@ add_setting(
     """,
 )
 
-add_setting(
+cell_start = Setting(
     name="cell_start",
-    group="euporie.preview.app",
     flags=["--cell-start"],
     type_=int,
     help_="The first cell to include in the preview",
@@ -90,9 +78,8 @@ add_setting(
     """,
 )
 
-add_setting(
+cell_stop = Setting(
     name="cell_stop",
-    group="euporie.preview.app",
     flags=["--cell-stop"],
     type_=int,
     help_="The last cell to include in the preview",

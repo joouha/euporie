@@ -9,18 +9,20 @@ from collections.abc import Mapping
 from functools import partial
 from pathlib import Path
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any
 
 import fastjsonschema
 from apptk.commands import add_cmd
 from apptk.filters.base import Condition
 from apptk.utils import Event
+from euporie.core.config._layers import TomlFileLayer
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     from euporie.core.config._layers import Layer
     from euporie.core.config._setting import Setting
+
 
 log = logging.getLogger(__name__)
 
@@ -100,7 +102,8 @@ class SettingStore:
     """Base class for typed, validated setting stores.
 
     Subclasses configure which layers to use for value resolution.
-    Each subclass maintains its own setting registry via ``_registry``.
+    The setting registry is built from an explicit list of settings
+    passed at construction time.
 
     Attributes:
         events: Namespace of events for each setting.
@@ -110,12 +113,11 @@ class SettingStore:
         menus: Namespace providing menu items for each setting.
     """
 
-    _registry: ClassVar[dict[str, Setting]]
-
     def __init__(
         self,
         app: str,
         *,
+        settings: list[Setting],
         layers: list[Layer],
         overrides: dict[str, Any] | None = None,
     ) -> None:
@@ -123,13 +125,14 @@ class SettingStore:
 
         Args:
             app: The application name.
+            settings: The list of settings this store manages.
             layers: Middle layers (between defaults and overrides).
             overrides: Initial programmatic override values.
         """
-        from euporie.core.config._layers import DefaultsLayer, OverridesLayer, TomlFileLayer
+        from euporie.core.config._layers import DefaultsLayer, OverridesLayer
 
         self._app = app
-        self._settings_cache: dict[str, Setting] | None = None
+        self.settings: dict[str, Setting] = {s.name: s for s in settings}
         self._resolved_cache: dict[str, Any] = {}
 
         # Build full layer stack: defaults (bottom) -> middle -> overrides (top)
@@ -151,35 +154,22 @@ class SettingStore:
 
         # Create event/filter/etc namespaces
         self.events = DefaultNamespace(
-            lambda name: Event(self._registry.get(name), self._on_change)
+            lambda name: Event(self.settings.get(name), self._on_change)
         )
         self.filters = DefaultNamespace(
             lambda name: Condition(lambda: bool(self._resolve(name)))
         )
         self.defaults = DefaultNamespace(lambda name: self._defaults.get(name))
         self.choices = DefaultNamespace(
-            lambda name: (
-                self._registry[name].choices if name in self._registry else None
-            )
+            lambda name: self.settings[name].choices if name in self.settings else None
         )
         self.menus = DefaultNamespace(
-            lambda name: self._registry[name].menu if name in self._registry else None
+            lambda name: self.settings[name].menu if name in self.settings else None
         )
 
         # Schema validation
         self._valid_config = True
         self._schema_validate = fastjsonschema.compile(self._schema, use_default=False)
-
-    @property
-    def settings(self) -> dict[str, Setting]:
-        """Return settings applicable to this app."""
-        if self._settings_cache is None:
-            self._settings_cache = {
-                name: setting
-                for name, setting in self._registry.items()
-                if setting.applies_to(self._app)
-            }
-        return self._settings_cache
 
     @property
     def _schema(self) -> dict[str, Any]:
@@ -250,7 +240,7 @@ class SettingStore:
                         value,
                         error.message.replace("data.", ""),
                     )
-            elif name not in self._registry:
+            elif name not in self.settings:
                 if not isinstance(value, dict):
                     log.warning("Option '%s' not recognised in %s", name, source)
         return validated
@@ -364,7 +354,7 @@ class SettingStore:
         Args:
             name: The setting name.
         """
-        setting = self._registry[name]
+        setting = self.settings[name]
         value = self._resolve(name)
 
         if setting.type is bool:
@@ -394,12 +384,13 @@ class SettingStore:
         try:
             return super().__getattribute__(name)
         except AttributeError as exc:
-            if name in self.settings:
+            registry = super().__getattribute__("__dict__").get("settings", {})
+            if name in registry:
                 cache = super().__getattribute__("_resolved_cache")
                 if name in cache:
                     return cache[name]
 
-                setting = self.settings[name]
+                setting = registry[name]
                 value = self._resolve(name)
 
                 # Convert choice aliases
@@ -428,29 +419,16 @@ class SettingStore:
             raise exc
 
     def __contains__(self, key: str) -> bool:
-        """Check if a key exists in the store for the current app."""
-        return key in self.settings and key in self._chain and self._chain[key] is not None
-
-    @classmethod
-    def register(cls, name: str, *args: Any, **kwargs: Any) -> None:
-        """Register a new setting in this store's registry.
-
-        Args:
-            name: The setting name.
-            *args: Positional arguments for Setting.
-            **kwargs: Keyword arguments for Setting.
-        """
-        from euporie.core.config._setting import Setting
-
-        if name in cls._registry:
-            log.warning("Setting '%s' already registered, overwriting", name)
-        setting = Setting(name, *args, **kwargs)
-        cls._registry[name] = setting
+        """Check if a key exists in the store."""
+        return (
+            key in self.settings and key in self._chain and self._chain[key] is not None
+        )
 
     def __setattr__(self, name: str, value: Any) -> None:
         """Set a setting value via the overrides layer."""
-        if name in self._registry and name in self.settings:
-            setting = self.settings[name]
+        registry = self.__dict__.get("settings", {})
+        if name in registry:
+            setting = registry[name]
             if isinstance(choices := setting.choices, Mapping):
                 for k, v in choices.items():
                     if v == value:

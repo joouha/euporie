@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import os
 from functools import partial
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, ClassVar, cast
 from weakref import WeakKeyDictionary
 
 from apptk.border import OuterHalfGrid
@@ -32,6 +32,7 @@ from apptk.widgets.toolbars import (
     SearchToolbar,
     StatusBar,
 )
+from euporie.core import settings as core_settings
 from euporie.core.app.app import BaseApp
 from euporie.core.filters import has_tabs
 from euporie.core.widgets.dialog import (
@@ -53,6 +54,7 @@ from euporie.core.widgets.minimap import MiniMap
 from euporie.core.widgets.pager import Pager
 from euporie.core.widgets.palette import CommandPalette
 from euporie.core.widgets.toc import TableOfContents
+from euporie.notebook import settings as notebook_settings
 from euporie.notebook.enums import TabMode
 from euporie.notebook.widgets.side_bar import SideBar
 
@@ -64,6 +66,7 @@ if TYPE_CHECKING:
     from apptk.application.application import Application
     from apptk.formatted_text import StyleAndTextTuples
     from apptk.layout.containers import AnyContainer
+    from euporie.core.config._setting import Setting
     from euporie.core.tabs import TabRegistryEntry
     from euporie.core.tabs.base import Tab
     from euporie.core.widgets.cell import Cell
@@ -86,6 +89,47 @@ class NotebookApp(BaseApp):
     new_tab: NewTab
 
     name = "notebook"
+
+    states: ClassVar[list[Setting]] = [
+        *BaseApp.states,
+        notebook_settings.side_bar_width,
+        notebook_settings.side_bar_panel_index,
+    ]
+
+    settings: ClassVar[list[Setting]] = [
+        *BaseApp.settings,
+        # Editor
+        core_settings.line_numbers,
+        core_settings.relative_line_numbers,
+        core_settings.autoformat,
+        core_settings.autocomplete,
+        core_settings.autosuggest,
+        core_settings.autoinspect,
+        core_settings.external_editor,
+        # Appearance
+        core_settings.show_status_bar,
+        core_settings.show_shadows,
+        core_settings.show_cell_borders,
+        core_settings.max_notebook_width,
+        core_settings.expand,
+        core_settings.show_icons,
+        core_settings.show_hidden_files,
+        # Kernel
+        core_settings.record_cell_timing,
+        core_settings.show_remote_inputs,
+        core_settings.show_remote_outputs,
+        core_settings.save_widget_state,
+        # Notebook-specific
+        notebook_settings.tab_mode,
+        notebook_settings.always_show_tab_bar,
+        notebook_settings.background_pattern,
+        notebook_settings.background_character,
+        notebook_settings.run_after_external_edit,
+        notebook_settings.run,
+        notebook_settings.show_top_bar,
+        notebook_settings.show_side_bar,
+        notebook_settings.show_scroll_bar,
+    ]
 
     commands = (
         *BaseApp.commands,
@@ -276,7 +320,7 @@ class NotebookApp(BaseApp):
                             on_chdir=os.chdir,
                             on_open=self.open_file,
                             show_hidden=self.config.filters.show_hidden_files,
-                            show_icons=self.config.filters.show_file_icons,
+                            show_icons=self.config.filters.show_icons,
                         ),
                     ),
                     ("Table of Contents", "", TableOfContents()),
@@ -289,10 +333,10 @@ class NotebookApp(BaseApp):
             titles,
             icons,
             panels,
-            width=self.config.side_bar_width,
-            index=self.config.side_bar_panel_index,
-            on_resize=lambda s: setattr(self.config, "side_bar_width", s.width),
-            on_change=lambda s: setattr(self.config, "side_bar_panel_index", s.index),
+            width=self.state.side_bar_width,
+            index=self.state.side_bar_panel_index,
+            on_resize=lambda s: setattr(self.state, "side_bar_width", s.width),
+            on_change=lambda s: setattr(self.state, "side_bar_panel_index", s.index),
         )
 
         self.container = FloatContainer(

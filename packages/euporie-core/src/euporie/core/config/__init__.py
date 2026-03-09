@@ -10,9 +10,4 @@ __all__ = [
     "Config",
     "Setting",
     "State",
-    "add_setting",
-    "add_state",
 ]
-
-add_setting = Config.register
-add_state = State.register

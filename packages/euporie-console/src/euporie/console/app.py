@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, ClassVar, cast
 
 from apptk.application.current import get_app as ptk_get_app
 from apptk.filters.app import (
@@ -28,7 +28,9 @@ from apptk.widgets.toolbars import (
     SearchToolbar,
     StatusBar,
 )
+from euporie.console import settings as console_settings
 from euporie.console.tabs.console import Console
+from euporie.core import settings as core_settings
 from euporie.core.app.app import BaseApp
 from euporie.core.filters import has_dialog
 from euporie.core.widgets.dialog import (
@@ -47,6 +49,7 @@ if TYPE_CHECKING:
     from typing import Any, TypeVar
 
     from apptk.application.application import Application
+    from euporie.core.config._setting import Setting
 
     _AppResult = TypeVar("_AppResult")
 
@@ -67,6 +70,33 @@ class ConsoleApp(BaseApp):
     """
 
     name = "console"
+
+    states: ClassVar[list[Setting]] = [
+        *BaseApp.states,
+    ]
+
+    settings: ClassVar[list[Setting]] = [
+        *BaseApp.settings,
+        # Editor
+        core_settings.line_numbers,
+        core_settings.relative_line_numbers,
+        core_settings.autoformat,
+        core_settings.autocomplete,
+        core_settings.autosuggest,
+        core_settings.autoinspect,
+        # Appearance
+        core_settings.show_status_bar,
+        core_settings.show_shadows,
+        # Kernel
+        core_settings.record_cell_timing,
+        core_settings.show_remote_inputs,
+        core_settings.show_remote_outputs,
+        core_settings.save_widget_state,
+        # Console-specific
+        console_settings.mouse_support,
+        console_settings.max_stored_outputs,
+        console_settings.connection_file,
+    ]
 
     def __init__(self, **kwargs: Any) -> None:
         """Create a new euporie text user interface application instance."""
