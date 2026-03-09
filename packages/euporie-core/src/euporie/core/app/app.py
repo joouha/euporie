@@ -377,11 +377,11 @@ class BaseApp(ConfigurableApp, Application, ABC):
         super()._on_resize()
 
     @classmethod
-    def launch(cls) -> None:
+    def launch(cls, args: list[str] | None = None) -> None:
         """Launch the app."""
         from apptk.utils import in_main_thread
 
-        super().launch()
+        super().launch(args)
         # Run the application
         with create_app_session():
             # Create an instance of the app and run it

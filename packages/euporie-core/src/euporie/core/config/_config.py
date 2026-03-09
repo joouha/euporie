@@ -88,13 +88,18 @@ class Config(SettingStore):
             overrides=kwargs,
         )
 
-    def load(self) -> None:
-        """Load configuration."""
+    def load(self, args: list[str] | None = None) -> None:
+        """Load configuration.
+
+        Args:
+            args: Explicit CLI argument list. When provided, the CLI
+                layer parses from this list instead of ``sys.argv``.
+        """
         from euporie.core.log import BufferedLogs, setup_logs
 
         with BufferedLogs(logger=logging.getLogger("euporie")):
             try:
-                super().load()
+                super().load(args=args)
             finally:
                 setup_logs(self)
 

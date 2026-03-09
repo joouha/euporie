@@ -196,11 +196,21 @@ class SettingStore:
         """
         return self._chain.get(name)
 
-    def load(self) -> None:
-        """Load values from all layers."""
+    def load(self, args: list[str] | None = None) -> None:
+        """Load values from all layers.
+
+        Args:
+            args: Explicit CLI argument list. When provided, this is
+                forwarded to any :class:`CliLayer` so it parses from
+                this list instead of ``sys.argv``.
+        """
+        from euporie.core.config._layers import CliLayer
+
         self._resolved_cache.clear()
         applicable = self.settings
         for layer in self._layers:
+            if args is not None and isinstance(layer, CliLayer):
+                layer._args = args
             layer.load(applicable)
             validated = self._validate(layer, type(layer).__name__)
             # Replace contents in-place so the ChainMap sees new values
@@ -208,6 +218,21 @@ class SettingStore:
             layer.update(validated)
 
         self._register_all_commands()
+
+    @property
+    def remaining_args(self) -> list[str]:
+        """Return unconsumed CLI arguments from the :class:`CliLayer`.
+
+        Returns:
+            List of argument strings not consumed by this store's CLI
+            layer, or an empty list if no CLI layer is present.
+        """
+        from euporie.core.config._layers import CliLayer
+
+        for layer in self._layers:
+            if isinstance(layer, CliLayer):
+                return layer.remaining_args
+        return []
 
     def _validate(self, data: dict[str, Any], source: str) -> dict[str, Any]:
         """Validate setting values against the schema.

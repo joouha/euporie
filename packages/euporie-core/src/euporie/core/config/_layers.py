@@ -506,6 +506,7 @@ class CliLayer(Layer):
         description: str = "",
         epilog: str = "",
         syntax_theme: Callable[[], str] | None = None,
+        args: list[str] | None = None,
     ) -> None:
         """Initialize the CLI layer.
 
@@ -514,6 +515,7 @@ class CliLayer(Layer):
             description: Help text for the argument parser.
             epilog: Epilog text for the argument parser.
             syntax_theme: Callable returning the syntax theme name.
+            args: Explicit argument list to parse instead of ``sys.argv``.
         """
         from euporie.core.config._parser import ArgumentParser, MetavarTypeHelpFormatter
 
@@ -528,6 +530,8 @@ class CliLayer(Layer):
         )
         self._validate = validate
         self._loaded = False
+        self._args = args
+        self.remaining_args: list[str] = []
 
     def load(self, settings: dict[str, Setting]) -> None:
         """Parse CLI arguments in two passes and load values.
@@ -549,11 +553,12 @@ class CliLayer(Layer):
         """
         if self._loaded:
             # Parser is already fully populated — single pass is enough.
-            namespace, _ = self.parser.parse_known_intermixed_args()
+            namespace, remaining = self.parser.parse_known_intermixed_args(self._args)
             self.clear()
             self.update(
                 {k: v for k, v in vars(namespace).items() if v is not argparse.SUPPRESS}
             )
+            self.remaining_args = remaining
             return
 
         _all_settings = set(settings)
@@ -564,7 +569,7 @@ class CliLayer(Layer):
                 _all_settings.remove(name)
                 self.parser.add_argument(*args, **kwargs)
 
-        namespace, remaining = self.parser.parse_known_intermixed_args()
+        namespace, remaining = self.parser.parse_known_intermixed_args(self._args)
         self.clear()
         self.update(
             self._validate(
@@ -586,7 +591,8 @@ class CliLayer(Layer):
             help="show this help message and exit",
         )
 
-        namespace, _ = self.parser.parse_known_intermixed_args(remaining)
+        namespace, final_remaining = self.parser.parse_known_intermixed_args(remaining)
         self.update({k: v for k, v in vars(namespace).items() if v is not None})
+        self.remaining_args = final_remaining
 
         self._loaded = True

@@ -32,8 +32,10 @@ class LaunchApp(ConfigurableApp):
         super().launch()
         # Detect selected app
         chosen_app = cls.config.app
-        # Run the application's entry-point
-        chosen_app()
+        # Pass only the args the launcher did not consume so the child
+        # app doesn't misinterpret the launcher's positional "app"
+        # argument as its own (e.g. a file path).
+        chosen_app(args=cls.config.remaining_args)
 
 
 if __name__ == "__main__":

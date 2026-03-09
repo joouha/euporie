@@ -77,10 +77,16 @@ class ConfigurableApp(ABC):
             import_submodules(root, ("_commands",))
 
     @classmethod
-    def launch(cls) -> None:
+    def launch(cls, args: list[str] | None = None) -> None:
         """Launch the app.
 
         Loads configuration and state, then starts the application.
+
+        Args:
+            args: Explicit CLI argument list. When ``None``, ``sys.argv``
+                is used. Pass an explicit list to avoid re-parsing args
+                that were already consumed by a parent app (e.g. the
+                launcher).
         """
-        cls.config.load()
+        cls.config.load(args=args)
         cls.state.load()
