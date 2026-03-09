@@ -41,7 +41,6 @@ class ConfigurableApp(ABC):
         """Create config and state instances for each non-abstract subclass."""
         if not isabstract(cls):
             from euporie.core.config._config import Config
-            from euporie.core.config._migrate import migrate_json_to_toml
             from euporie.core.config._state import State
 
             # Load commands from _commands.py modules
@@ -59,16 +58,6 @@ class ConfigurableApp(ABC):
             cls.state = State(
                 app=cls.name,
                 settings=cls.states,
-            )
-
-            # Migrate old JSON config, partitioning between config and state
-            json_path = cls.config._config_path.with_name("config.json")
-            migrate_json_to_toml(
-                json_path=json_path,
-                config_path=cls.config._config_path,
-                state_path=cls.state._state_path,
-                config_keys=set(cls.config.settings),
-                state_keys=set(cls.state.settings),
             )
 
     @classmethod

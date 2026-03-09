@@ -49,7 +49,5 @@ class State(SettingStore):
         super().__init__(
             app=app,
             settings=settings or [],
-            layers=[
-                TomlFileLayer(self._state_path, namespace=app, persistable=True),
-            ],
+            layers=[TomlFileLayer(self._state_path, namespace=app, persistable=True)],
         )

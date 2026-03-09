@@ -7,12 +7,18 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from euporie.core import __app_name__, __copyright__
-from euporie.core.config._layers import CliLayer, EnvironmentLayer, TomlFileLayer
+from euporie.core.config._layers import (
+    CliLayer,
+    EnvironmentLayer,
+    JsonFileLayer,
+    TomlFileLayer,
+)
 from euporie.core.config._parser import ArgumentParser, MetavarTypeHelpFormatter
 from euporie.core.config._store import SettingStore
 from platformdirs import user_config_dir
 
 if TYPE_CHECKING:
+    from euporie.core.config._layers import Layer
     from euporie.core.config._setting import Setting as Setting
 
 log = logging.getLogger(__name__)
@@ -56,6 +62,7 @@ class Config(SettingStore):
         config_dir = Path(user_config_dir(__app_name__, appauthor=None))
         config_dir.mkdir(exist_ok=True, parents=True)
         self._config_path = config_dir / "config.toml"
+        self._json_config_path = config_dir / "config.json"
 
         # Build argument parser
         self.parser = ArgumentParser(
@@ -67,16 +74,22 @@ class Config(SettingStore):
             argument_default=None,
         )
 
+        # Add read-only JSON layers for legacy config if JSON exists
+        # but TOML has not yet been created
+        layers: list[Layer] = [
+            JsonFileLayer(self._json_config_path),
+            JsonFileLayer(self._json_config_path, namespace=app),
+            TomlFileLayer(self._config_path),
+            TomlFileLayer(self._config_path, namespace=app, persistable=True),
+            EnvironmentLayer(__app_name__),
+            EnvironmentLayer(__app_name__, namespace=app),
+            CliLayer(self.parser),
+        ]
+
         super().__init__(
             app=app,
             settings=settings or [],
-            layers=[
-                TomlFileLayer(self._config_path),
-                TomlFileLayer(self._config_path, namespace=app, persistable=True),
-                EnvironmentLayer(__app_name__),
-                EnvironmentLayer(__app_name__, namespace=app),
-                CliLayer(self.parser),
-            ],
+            layers=layers,
             overrides=kwargs,
         )
 
@@ -89,3 +102,11 @@ class Config(SettingStore):
                 super().load()
             finally:
                 setup_logs(self)
+
+        if self._json_config_path.exists():
+            log.warning(
+                "Legacy JSON configuration file found at '%s'. "
+                "Please migrate your settings to '%s' and remove the JSON file.",
+                self._json_config_path,
+                self._config_path,
+            )

@@ -15,7 +15,6 @@ import fastjsonschema
 from apptk.commands import add_cmd
 from apptk.filters.base import Condition
 from apptk.utils import Event
-from euporie.core.config._layers import TomlFileLayer
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -140,11 +139,11 @@ class SettingStore:
         self._overrides_layer = OverridesLayer(overrides or {})
         self._layers = [self._defaults_layer, *layers, self._overrides_layer]
 
-        # Find the writable layer for persisting changes
-        self._writable_layer: TomlFileLayer | None = None
+        # Find the persistable layer for saving changes
+        self._persist_layer: Layer | None = None
         for layer in layers:
-            if isinstance(layer, TomlFileLayer) and layer._writable:
-                self._writable_layer = layer
+            if layer.persistable:
+                self._persist_layer = layer
                 break
 
         # ChainMap over the layer dicts: highest-priority first
@@ -254,11 +253,11 @@ class SettingStore:
         if not self._valid_config:
             return
 
-        if self._writable_layer is None:
+        if self._persist_layer is None:
             return
 
         value = self._resolve(setting.name)
-        self._writable_layer.save(setting.name, value)
+        self._persist_layer.save(setting.name, value)
         log.debug("Saved `%s = %r`", setting.name, value)
 
     def _register_all_commands(self) -> None:
