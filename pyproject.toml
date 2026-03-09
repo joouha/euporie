@@ -40,6 +40,9 @@ managed = true
 members = ["packages/*"]
 exclude = []
 
+[project.scripts]
+euporie = "euporie.launch.app:LaunchApp.launch"
+
 [tool.hatch.version]
 path = "VERSION"
 pattern = "(?P<version>.+)"
@@ -48,7 +51,7 @@ pattern = "(?P<version>.+)"
 packages = ["src/euporie"]
 
 [tool.hatch.build.targets.sdist]
-include = ["src/euporie/meta"]
+include = ["src/euporie/launch"]
 
 [build-system]
 requires = ["hatchling"]

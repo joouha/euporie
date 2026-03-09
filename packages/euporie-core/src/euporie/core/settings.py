@@ -11,18 +11,11 @@ from apptk.filters.app import buffer_has_focus, is_read_only
 from apptk.filters.environment import in_mplex
 from apptk.output.color_depth import ColorDepth
 from euporie.core import __version__
+from euporie.core.app.current import available_apps
 from euporie.core.config._setting import Setting
 from euporie.core.filters import tab_type_has_focus
 from pygments.styles import STYLE_MAP as pygments_styles
 from upath import UPath
-
-
-def _available_apps() -> list[str]:
-    """List known euporie-apps."""
-    from euporie.core.__main__ import available_apps
-
-    return sorted(entry.name for entry in available_apps().values())
-
 
 # App
 
@@ -30,8 +23,9 @@ app = Setting(
     name="app",
     flags=["app"],
     type_=str,
+    validate=resolve_name,
     help_="The application to launch",
-    choices=_available_apps,
+    choices=available_apps,
     description="""
         The name of the application to launch.
     """,

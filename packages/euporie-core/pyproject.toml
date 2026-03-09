@@ -31,9 +31,6 @@ pattern = "(?P<version>.+)"
 [tool.hatch.build.targets.wheel]
 packages = ["src/euporie"]
 
-[project.scripts]
-euporie = "euporie.core.app.launch:LaunchApp.launch"
-
 [project.entry-points."pygments.lexers"]
 argparse = 'euporie.core.pygments:ArgparseLexer'
 
