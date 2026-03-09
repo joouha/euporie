@@ -59,15 +59,12 @@ class Layer(ABC, dict[str, Any]):
 
 
 class DefaultsLayer(Layer):
-    """Provides default values from setting definitions."""
+    """Provides default values from setting definitions.
 
-    def load(self, settings: dict[str, Setting]) -> None:
-        """Load default values into the layer.
+    Loaded at initialization as setting defaults are already known.
+    """
 
-        Args:
-            settings: The settings to get defaults for.
-        """
-        self.clear()
+    def __init__(self, settings: dict[str, Setting]) -> None:
         self.update({name: s.default for name, s in settings.items()})
 
 

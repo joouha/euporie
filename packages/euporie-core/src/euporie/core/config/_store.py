@@ -135,7 +135,7 @@ class SettingStore:
         self._resolved_cache: dict[str, Any] = {}
 
         # Build full layer stack: defaults (bottom) -> middle -> overrides (top)
-        self._defaults_layer = DefaultsLayer()
+        self._defaults_layer = DefaultsLayer(self.settings)
         self._overrides_layer = OverridesLayer(overrides or {})
         self._layers = [self._defaults_layer, *layers, self._overrides_layer]
 
