@@ -79,7 +79,7 @@ class Setting:
         help_: str = "",
         description: str = "",
         type_: Callable[[Any], Any] | None = None,
-        validate: Callable[[Any], Any] | None = None,
+        transform: Callable[[Any], Any] | None = None,
         title: str | None = None,
         choices: list[Any] | dict | Callable[[], list[Any] | dict] | None = None,
         action: argparse.Action | str | None = None,
@@ -99,7 +99,7 @@ class Setting:
             help_: Short help text.
             description: Long description.
             type_: Type for casting values.
-            validate: Validation/transformation function.
+            transform: Transformation function applied when resolving values.
             title: Human-readable title.
             choices: Available choices.
             action: argparse action.
@@ -119,7 +119,7 @@ class Setting:
         self.description = description
         self._choices = choices
         self.type = type_ or type(default)
-        self.validate = validate
+        self.transform = transform
         self.action = action or TYPE_ACTIONS.get(self.type)
         self.flags = flags if flags is not None else [f"--{name.replace('_', '-')}"]
         self.nullable = nullable if nullable is not None else default is None

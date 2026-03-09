@@ -23,7 +23,7 @@ app = Setting(
     name="app",
     flags=["app"],
     type_=str,
-    validate=resolve_name,
+    transform=resolve_name,
     help_="The application to launch",
     choices=available_apps,
     description="""
@@ -332,7 +332,7 @@ clipboard = Setting(
         "terminal": "apptk.clipboard.osc52:Osc52Clipboard",
     },
     type_=str,
-    validate=resolve_name,
+    transform=resolve_name,
     default="external",
     help_="The preferred clipboard access method",
     description="""
@@ -538,7 +538,7 @@ graphics = Setting(
         "none": "apptk.layout.graphics:DisabledGraphicControl",
     },
     type_=str,
-    validate=resolve_name,
+    transform=resolve_name,
     default="auto",
     help_="The preferred graphics protocol",
     description="""
@@ -885,7 +885,7 @@ recent_files = Setting(
     flags=[],
     nargs="*",
     type_=str,
-    validate=UPath,
+    transform=UPath,
     help_="List of recently opened files",
     schema={
         "type": "array",

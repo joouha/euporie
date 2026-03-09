@@ -401,15 +401,15 @@ class SettingStore:
                     # Cast to native list
                     value = list(value)
                     for i, item in enumerate(value):
-                        if setting.validate:
+                        if setting.transform:
                             try:
-                                value[i] = setting.validate(item)
+                                value[i] = setting.transform(item)
                             except (ValueError, TypeError) as e:
                                 raise e
                 else:
-                    if setting.validate:
+                    if setting.transform:
                         try:
-                            value = setting.validate(value)
+                            value = setting.transform(value)
                         except (ValueError, TypeError):
                             pass
 
