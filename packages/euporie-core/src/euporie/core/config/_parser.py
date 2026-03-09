@@ -6,6 +6,7 @@ import argparse
 from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
     from typing import TextIO
 
     from _typeshed import SupportsWrite
@@ -25,19 +26,40 @@ class ArgumentParser(argparse.ArgumentParser):
     """An argument parser that formats help with syntax highlighting."""
 
     def __init__(
-        self, *args: Any, syntax_theme: str = "euporie", **kwargs: Any
+        self,
+        *args: Any,
+        syntax_theme: str | Callable[[], str] = "euporie",
+        **kwargs: Any,
     ) -> None:
         """Initialize the parser.
 
         Args:
             *args: Positional arguments for ArgumentParser.
-            syntax_theme: Pygments theme for help formatting.
+            syntax_theme: Pygments theme for help formatting. Can be a string
+                or a callable that returns the current theme name.
+            validate: function which can validate passed arguments
             **kwargs: Keyword arguments for ArgumentParser.
         """
         super().__init__(*args, **kwargs)
-        self.syntax_theme = syntax_theme
+        self._syntax_theme = syntax_theme
         # Prevent coloring in the help message on 3.14+ (we do it ourselves)
         self.color = False
+
+    @property
+    def syntax_theme(self) -> str:
+        """Return the current syntax theme name."""
+        if callable(self._syntax_theme):
+            return self._syntax_theme()
+        return self._syntax_theme
+
+    @syntax_theme.setter
+    def syntax_theme(self, value: str | Callable[[], str]) -> None:
+        """Set the syntax theme.
+
+        Args:
+            value: A theme name string or callable returning one.
+        """
+        self._syntax_theme = value
 
     def _print_message(
         self, message: str, file: SupportsWrite[str] | None = None

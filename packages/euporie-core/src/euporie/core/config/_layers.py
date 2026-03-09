@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import logging
 import os
@@ -13,7 +14,7 @@ import tomlkit
 from tomlkit.items import Table
 
 if TYPE_CHECKING:
-    from argparse import ArgumentParser
+    from collections.abc import Callable
     from pathlib import Path
 
     from euporie.core.config._setting import Setting
@@ -66,6 +67,13 @@ class DefaultsLayer(Layer):
 
     def __init__(self, settings: dict[str, Setting]) -> None:
         self.update({name: s.default for name, s in settings.items()})
+
+    def load(self, settings: dict[str, Setting]) -> None:
+        """No-op: default are loaded at initialization.
+
+        Args:
+            settings: The settings (unused, overrides are freeform).
+        """
 
 
 class OverridesLayer(Layer):
@@ -475,40 +483,110 @@ class EnvironmentLayer(Layer):
 class CliLayer(Layer):
     """Read values from command-line arguments.
 
+    Performs a two-pass parse so that settings like ``syntax_theme`` are
+    available to the argument parser before ``--help`` is processed:
+
+    1. First pass: populate the parser **without** help and parse all known
+       args.  The resulting values are loaded into the layer so that lazily
+       evaluated references (e.g. the parser's ``syntax_theme`` callable)
+       resolve correctly.
+    2. Second pass: enable help on the parser and parse the remaining args.
+       If ``--help`` was given it will now trigger with the correct theme.
+
     Args:
-        parser: The argument parser to use.
+        validate: Function to validate the passed CLI arguments.
+        description: Help text for the argument parser.
+        epilog: Epilog text for the argument parser.
+        syntax_theme: Callable returning the syntax theme name.
     """
 
-    def __init__(self, parser: ArgumentParser) -> None:
+    def __init__(
+        self,
+        validate: Callable[[dict[str, Any]], dict[str, Any]],
+        description: str = "",
+        epilog: str = "",
+        syntax_theme: Callable[[], str] | None = None,
+    ) -> None:
         """Initialize the CLI layer.
 
         Args:
-            parser: The argument parser.
+            validate: Function to validate the passed CLI arguments.
+            description: Help text for the argument parser.
+            epilog: Epilog text for the argument parser.
+            syntax_theme: Callable returning the syntax theme name.
         """
-        self._parser = parser
-        self._populated = False
+        from euporie.core.config._parser import ArgumentParser, MetavarTypeHelpFormatter
+
+        self.parser = ArgumentParser(
+            description=description,
+            epilog=epilog,
+            allow_abbrev=True,
+            formatter_class=MetavarTypeHelpFormatter,
+            argument_default=argparse.SUPPRESS,
+            add_help=False,
+            syntax_theme=syntax_theme,
+        )
+        self._validate = validate
+        self._loaded = False
 
     def load(self, settings: dict[str, Setting]) -> None:
-        """Parse CLI arguments and load non-None values into the layer.
+        """Parse CLI arguments in two passes and load values.
+
+        On first load, settings are added to the parser in two phases:
+
+        1. Optional (non-required) settings are added and parsed without
+           help so that values like ``syntax_theme`` become available
+           before help is rendered.
+        2. Required settings and the help action are added, then the
+           remaining args are parsed.  If ``--help`` is present it now
+           renders with the correct theme.
+
+        On subsequent loads the parser is already fully populated, so a
+        single parse pass is sufficient.
 
         Args:
             settings: Settings to add to the parser before parsing.
         """
-        if not self._populated:
-            self._populate(settings)
-            self._populated = True
+        if self._loaded:
+            # Parser is already fully populated — single pass is enough.
+            namespace, _ = self.parser.parse_known_intermixed_args()
+            self.clear()
+            self.update(
+                {k: v for k, v in vars(namespace).items() if v is not argparse.SUPPRESS}
+            )
+            return
 
-        namespace, _remainder = self._parser.parse_known_intermixed_args()
+        _all_settings = set(settings)
+        # First pass: add only optional settings, parse without help
+        for name, setting in settings.items():
+            args, kwargs = setting.parser_args
+            if not kwargs.get("required") and all(x.startswith("-") for x in args):
+                _all_settings.remove(name)
+                self.parser.add_argument(*args, **kwargs)
+
+        namespace, remaining = self.parser.parse_known_intermixed_args()
         self.clear()
+        self.update(
+            self._validate(
+                {k: v for k, v in vars(namespace).items() if v is not argparse.SUPPRESS}
+            )
+        )
+
+        # Second pass: add required settings and help, parse remaining
+        for name in _all_settings:
+            args, kwargs = settings[name].parser_args
+            self.parser.add_argument(*args, **kwargs)
+
+        # Add help parameter
+        self.parser.add_argument(
+            "-h",
+            "--help",
+            action="help",
+            default=argparse.SUPPRESS,
+            help="show this help message and exit",
+        )
+
+        namespace, _ = self.parser.parse_known_intermixed_args(remaining)
         self.update({k: v for k, v in vars(namespace).items() if v is not None})
 
-    def _populate(self, settings: dict[str, Setting]) -> None:
-        """Add settings to the argument parser.
-
-        Args:
-            settings: Settings to register as CLI arguments.
-        """
-        for setting in settings.values():
-            args, kwargs = setting.parser_args
-            if args:
-                self._parser.add_argument(*args, **kwargs)
+        self._loaded = True

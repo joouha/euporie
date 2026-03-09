@@ -28,7 +28,6 @@ class LaunchApp(ConfigurableApp):
     @classmethod
     def launch(cls) -> None:
         """Launch an app."""
-        cls.config.parser.add_help = False
         # Load settings, including cli
         super().launch()
         # Detect selected app

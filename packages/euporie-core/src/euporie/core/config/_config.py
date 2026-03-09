@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -13,7 +14,6 @@ from euporie.core.config._layers import (
     JsonFileLayer,
     TomlFileLayer,
 )
-from euporie.core.config._parser import ArgumentParser, MetavarTypeHelpFormatter
 from euporie.core.config._store import SettingStore
 from platformdirs import user_config_dir
 
@@ -64,16 +64,6 @@ class Config(SettingStore):
         self._config_path = config_dir / "config.toml"
         self._json_config_path = config_dir / "config.json"
 
-        # Build argument parser
-        self.parser = ArgumentParser(
-            description=_help,
-            epilog=__copyright__,
-            allow_abbrev=True,
-            formatter_class=MetavarTypeHelpFormatter,
-            syntax_theme=kwargs.get("syntax_theme", "euporie"),
-            argument_default=None,
-        )
-
         # Add read-only JSON layers for legacy config if JSON exists
         # but TOML has not yet been created
         layers: list[Layer] = [
@@ -83,7 +73,12 @@ class Config(SettingStore):
             TomlFileLayer(self._config_path, namespace=app, persistable=True),
             EnvironmentLayer(__app_name__),
             EnvironmentLayer(__app_name__, namespace=app),
-            CliLayer(self.parser),
+            CliLayer(
+                validate=partial(self._validate, source="Command line"),
+                description=_help,
+                epilog=__copyright__,
+                syntax_theme=partial(getattr, self, "syntax_theme"),
+            ),
         ]
 
         super().__init__(
