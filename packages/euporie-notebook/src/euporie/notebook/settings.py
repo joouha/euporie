@@ -160,10 +160,14 @@ side_bar_panel_index = Setting(
     type_=lambda x: int(x) if str(x).isdigit() else None,
     help_="Active side-bar panel index",
     default=0,
-    schema={"type": ["integer", "null"], "minimum": 0},
+    choices={
+        -1: None,
+        **{i: i for i in range(99)},
+    },
+    schema={"type": ["integer"], "minimum": -1},
     description="""
-        The index of the currently active side-bar panel, or None if no panel is
-        active.
+        The index of the currently active side-bar panel, or ``None`` if no panel is
+        active. The default "-1" selects the first panel on initial startup.
     """,
 )
 

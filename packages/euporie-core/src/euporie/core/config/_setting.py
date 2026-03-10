@@ -159,18 +159,13 @@ class Setting:
 
         # Add choices/enum constraints
         if self.choices:
-            choices_list = (
-                list(self.choices.keys())
-                if isinstance(self.choices, dict)
-                else list(self.choices)
-            )
+            choices_list = list(self.choices)
             if self.nargs == "*" or "items" in schema:
                 schema.setdefault("items", {})["enum"] = choices_list
             else:
-                enum_values = list(choices_list)
                 if self.nullable:
-                    enum_values.append(None)
-                schema["enum"] = enum_values
+                    choices_list.append(None)
+                schema["enum"] = choices_list
 
         return schema
 
