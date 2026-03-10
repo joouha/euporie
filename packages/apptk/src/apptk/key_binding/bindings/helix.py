@@ -917,6 +917,7 @@ def helix_undo(event: KeyPressEvent) -> None:
     keys=["U"],
     filter=helix_normal_mode,
     hidden=True,
+    save_before=(lambda e: False),
     name="helix-redo",
 )
 def helix_redo(event: KeyPressEvent) -> None:
