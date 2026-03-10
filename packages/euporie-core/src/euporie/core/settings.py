@@ -844,20 +844,22 @@ save_widget_state = Setting(
 
 show_icons = Setting(
     name="show_icons",
-    flags=["--show-file-icons"],
+    flags=["--show-icons"],
     type_=bool,
-    title="File icons",
-    help_="Show file icons in the file manager",
+    title="Icons",
+    help_="Show icons throughout the UI",
     default=False,
     schema={
         "type": "boolean",
     },
     description="""
-        Whether file icons should be shown in the file manager.
+        Whether icons should be shown throughout the UI, including menus, tabs,
+        the status bar, and the file manager.
 
         These icons exist in the unicode private use area, and may require custom
         fonts such as ``awesome-terminal-fonts`` or ``nerdfonts`` to be installed.
     """,
+    hooks=[lambda x: get_app().refresh()],
 )
 
 show_hidden_files = Setting(

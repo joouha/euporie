@@ -115,8 +115,6 @@ class MenuItem(PtkMenuItem):
         separator: bool | None = None,
         hidden: FilterOrBool = False,
         toggled: Filter | None = None,
-        collapse_prefix: bool = False,
-        collapse_suffix: bool = True,
         icon: AnyFormattedText = "",
     ) -> None:
         """Initialize enhanced menu item.
@@ -131,8 +129,6 @@ class MenuItem(PtkMenuItem):
             separator: If True, render as separator line
             hidden: Filter to hide this item
             toggled: Filter for toggle state (shows checkmark when True)
-            collapse_prefix: If True, don't pad prefixes to equal width
-            collapse_suffix: If True, don't pad suffixes to equal width
             icon: Icon to display before the menu item text
         """
         # Store the formatted text, falling back to plain text
@@ -150,10 +146,6 @@ class MenuItem(PtkMenuItem):
         self._disabled = to_filter(disabled) | to_filter(self.separator)
         self.hidden = to_filter(hidden)
         self.toggled = toggled
-        self.collapse_prefix = collapse_prefix
-        self.collapse_suffix = collapse_suffix
-        self._prefix_width: int | None = None
-        self._suffix_width: int | None = None
 
         self.handler = handler
         self.children = children or []
@@ -168,6 +160,13 @@ class MenuItem(PtkMenuItem):
             self._shortcut = ""
 
         self.selected_item = 0
+
+    @property
+    def icon(self) -> StyleAndTextTuples:
+        """Get icon as formatted text."""
+        if self._icon:
+            return to_formatted_text(self._icon)
+        return []
 
     @property
     def formatted_text(self) -> StyleAndTextTuples:
@@ -231,89 +230,6 @@ class MenuItem(PtkMenuItem):
             icon=cmd.icon,
         )
 
-    @property
-    def prefix(self) -> StyleAndTextTuples:
-        """Prefix text (icon and/or checkmark for toggled items)."""
-        prefix: StyleAndTextTuples = []
-        if self.toggled is not None:
-            prefix.append(("class:prefix", "✓ " if self.toggled() else "  "))
-        elif self._icon:
-            prefix.extend(to_formatted_text(self._icon))
-            prefix.append(("", " "))
-        return prefix
-
-    @property
-    def prefix_width(self) -> int:
-        """Maximum width of children's prefixes."""
-        if self._prefix_width is None:
-            self._prefix_width = max(
-                [
-                    fragment_list_width(c.prefix)
-                    for c in self.children
-                    if isinstance(c, MenuItem)
-                ]
-                + [0]
-            )
-        return self._prefix_width or 0
-
-    @property
-    def suffix(self) -> StyleAndTextTuples:
-        """Suffix text (submenu arrow or shortcut)."""
-        suffix: StyleAndTextTuples = []
-        if self.children:
-            suffix.append(("", "›"))
-        elif self._shortcut:
-            shortcut_text = self.shortcut
-            if shortcut_text:
-                suffix += [("", "  ")]
-                suffix += to_formatted_text(shortcut_text, style="class:shortcut")
-        return suffix
-
-    @property
-    def suffix_width(self) -> int:
-        """Maximum width of children's suffixes."""
-        if self._suffix_width is None:
-            self._suffix_width = max(
-                [
-                    fragment_list_width(c.suffix)
-                    for c in self.children
-                    if isinstance(c, MenuItem)
-                ]
-                + [0]
-            )
-        return self._suffix_width or 0
-
-    @property
-    def width(self) -> int:
-        """Maximum width needed for children."""
-        # Start with base width (max text width of children)
-        base_width = super().width
-        if not self.children:
-            return base_width
-
-        # Calculate additional width from prefix/suffix
-        max_extra = 0
-        for child in self.children:
-            extra = 0
-            if self.collapse_prefix:
-                extra += fragment_list_width(child.prefix)
-            else:
-                extra += self.prefix_width
-            if self.collapse_suffix:
-                extra += fragment_list_width(child.suffix)
-            else:
-                extra += self.suffix_width
-            max_extra = max(max_extra, extra)
-
-        return base_width + max_extra
-
-    @property
-    def has_toggles(self) -> bool:
-        """Whether any children have toggle state."""
-        return any(
-            isinstance(c, MenuItem) and c.toggled is not None for c in self.children
-        )
-
 
 class MenuContainer(PtkMenuContainer):
     """Enhanced menu container with extended MenuItem support.
@@ -334,6 +250,9 @@ class MenuContainer(PtkMenuContainer):
         grid: type[GridStyle] | None = None,
         padding: int = 1,
         max_depth: int = 4,
+        icons: FilterOrBool = True,
+        collapse_prefix: bool = False,
+        collapse_suffix: bool = True,
     ) -> None:
         """Initialize the menu container.
 
@@ -345,12 +264,18 @@ class MenuContainer(PtkMenuContainer):
             grid: Grid style class for menu borders
             padding: Padding around menu items
             max_depth: Maximum depth of nested submenus
+            icons: Whether to show icons in menu items
+            collapse_prefix: If True, don't pad prefixes to equal width
+            collapse_suffix: If True, don't pad suffixes to equal width
         """
         self.body = body
         self.menu_items = menu_items or []
         self.grid = grid or self.__class__.grid
         self.padding = padding
         self.max_depth = max_depth
+        self._show_icons = to_filter(icons)
+        self.collapse_prefix = collapse_prefix
+        self.collapse_suffix = collapse_suffix
         self.selected_menu: list[int] = []
         self.last_focused: UIControl | None = None
 
@@ -402,7 +327,11 @@ class MenuContainer(PtkMenuContainer):
         @kb.add("down", filter=in_main_menu)
         def _down(event: KeyPressEvent) -> None:
             menu = self._get_menu(len(self.selected_menu) - 2)
-            indices = [i for i, item in enumerate(menu.children) if not item.disabled]
+            indices = [
+                i
+                for i, item in enumerate(menu.children)
+                if not item.disabled and not item.hidden()
+            ]
             if indices:
                 self.selected_menu.append(indices[0])
                 self.refocus()
@@ -600,6 +529,117 @@ class MenuContainer(PtkMenuContainer):
             floats=menu_floats + (floats or []),
         )
 
+    def _render_prefix(self, item: PtkMenuItem) -> StyleAndTextTuples:
+        """Build prefix fragments for a menu item.
+
+        Renders the toggle checkmark or icon depending on item state
+        and the container's icon visibility filter.
+
+        Args:
+            item: The menu item to render a prefix for.
+
+        Returns:
+            Formatted text fragments for the prefix.
+        """
+        if item.toggled is not None:
+            return [("class:prefix", "✓ " if item.toggled() else "  ")]
+        elif item.icon and self._show_icons():
+            return [*item.icon, ("", " ")]
+        return []
+
+    def _render_suffix(self, item: PtkMenuItem) -> StyleAndTextTuples:
+        """Build suffix fragments for a menu item.
+
+        Renders the submenu arrow or keyboard shortcut hint.
+
+        Args:
+            item: The menu item to render a suffix for.
+
+        Returns:
+            Formatted text fragments for the suffix.
+        """
+        if item.children:
+            return [("", "›")]
+        shortcut_text = item.shortcut
+        if shortcut_text:
+            return [
+                ("", "  "),
+                *to_formatted_text(shortcut_text, style="class:shortcut"),
+            ]
+        return []
+
+    def _compute_prefix_width(self, menu: PtkMenuItem) -> int:
+        """Compute max prefix width across a menu's visible children.
+
+        Args:
+            menu: The parent menu item whose children to measure.
+
+        Returns:
+            Maximum prefix width in characters.
+        """
+        return max(
+            [
+                fragment_list_width(self._render_prefix(c))
+                for c in menu.children
+                if not c.hidden()
+            ]
+            + [0]
+        )
+
+    def _compute_suffix_width(self, menu: PtkMenuItem) -> int:
+        """Compute max suffix width across a menu's visible children.
+
+        Args:
+            menu: The parent menu item whose children to measure.
+
+        Returns:
+            Maximum suffix width in characters.
+        """
+        return max(
+            [
+                fragment_list_width(self._render_suffix(c))
+                for c in menu.children
+                if not c.hidden()
+            ]
+            + [0]
+        )
+
+    def _compute_menu_width(self, menu: PtkMenuItem) -> int:
+        """Compute total width needed for a menu's children.
+
+        Includes text width plus prefix and suffix contributions,
+        respecting collapse settings.
+
+        Args:
+            menu: The parent menu item whose children to measure.
+
+        Returns:
+            Total menu width in characters.
+        """
+        base_width = menu.width
+        if not menu.children:
+            return base_width
+
+        prefix_w = self._compute_prefix_width(menu)
+        suffix_w = self._compute_suffix_width(menu)
+
+        max_extra = 0
+        for child in menu.children:
+            if child.hidden():
+                continue
+            extra = 0
+            if self.collapse_prefix:
+                extra += fragment_list_width(self._render_prefix(child))
+            else:
+                extra += prefix_w
+            if self.collapse_suffix:
+                extra += fragment_list_width(self._render_suffix(child))
+            else:
+                extra += suffix_w
+            max_extra = max(max_extra, extra)
+
+        return base_width + max_extra
+
     def refocus(self) -> None:
         """Focus the appropriate container based on menu selection state.
 
@@ -747,6 +787,10 @@ class MenuContainer(PtkMenuContainer):
                     except IndexError:
                         selected_item = -1
 
+                    menu_width = self._compute_menu_width(menu)
+                    prefix_width = self._compute_prefix_width(menu)
+                    suffix_width = self._compute_suffix_width(menu)
+
                     def one_item(
                         i: int, item: MenuItem
                     ) -> Iterable[OneStyleAndTextTuple]:
@@ -791,17 +835,24 @@ class MenuContainer(PtkMenuContainer):
 
                             return NotImplemented
 
-                        if item.separator:
+                        is_separator = item.separator
+
+                        if is_separator:
                             # Show a connected line with no mouse handler
                             yield (
                                 "class:menu-border",
                                 grid.SPLIT_LEFT
-                                + (grid.SPLIT_MID * (menu.width + self.padding * 2))
+                                + (grid.SPLIT_MID * (menu_width + self.padding * 2))
                                 + grid.SPLIT_RIGHT,
                             )
 
                         else:
-                            # Show the right edge
+                            item_prefix = self._render_prefix(item)
+                            item_suffix = self._render_suffix(item)
+                            item_prefix_width = fragment_list_width(item_prefix)
+                            item_suffix_width = fragment_list_width(item_suffix)
+
+                            # Show the left edge
                             style = ""
                             # Set the style if disabled
                             if item.disabled:
@@ -813,41 +864,43 @@ class MenuContainer(PtkMenuContainer):
                             if i == selected_item:
                                 yield ("[SetCursorPosition]", "")
                             # Construct the menu item contents
-                            prefix_padding = " " * (
+                            item_text: StyleAndTextTuples = item.formatted_text
+                            item_text_width = fragment_list_width(item_text)
+                            prefix_pad = " " * (
                                 0
-                                if menu.collapse_prefix
-                                else menu.prefix_width
-                                - fragment_list_width(item.prefix)
+                                if self.collapse_prefix
+                                else prefix_width - item_prefix_width
                             )
-                            suffix_padding = " " * (
-                                menu.width
-                                - fragment_list_width(item.prefix)
-                                - len(prefix_padding)
-                                - fragment_list_width(item.formatted_text)
-                                - (
-                                    fragment_list_width(item.suffix)
-                                    if menu.collapse_suffix
-                                    else menu.suffix_width
-                                )
+                            effective_suffix_width = (
+                                item_suffix_width
+                                if self.collapse_suffix
+                                else suffix_width
                             )
-                            text_padding = " " * (
-                                menu.width
-                                - fragment_list_width(item.prefix)
-                                - len(prefix_padding)
-                                - fragment_list_width(item.formatted_text)
-                                - fragment_list_width(item.suffix)
-                                - len(suffix_padding)
+                            suffix_pad = " " * (
+                                menu_width
+                                - item_prefix_width
+                                - len(prefix_pad)
+                                - item_text_width
+                                - effective_suffix_width
+                            )
+                            text_pad = " " * (
+                                menu_width
+                                - item_prefix_width
+                                - len(prefix_pad)
+                                - item_text_width
+                                - item_suffix_width
+                                - len(suffix_pad)
                                 - self.padding * 2
                             )
                             menu_formatted_text: StyleAndTextTuples = to_formatted_text(
                                 [
                                     ("", " " * self.padding),
-                                    *item.prefix,
-                                    ("", prefix_padding),
-                                    *item.formatted_text,
-                                    ("", text_padding),
-                                    ("", suffix_padding),
-                                    *item.suffix,
+                                    *item_prefix,
+                                    ("", prefix_pad),
+                                    *item_text,
+                                    ("", text_pad),
+                                    ("", suffix_pad),
+                                    *item_suffix,
                                     ("", " " * self.padding),
                                 ],
                                 style=style,
@@ -911,7 +964,4 @@ class MenuContainer(PtkMenuContainer):
     def __pt_status__(self) -> StatusBarFields:
         """Return the description of the currently selected menu item."""
         selected_item = self._get_menu(len(self.selected_menu) - 1)
-        if isinstance(selected_item, MenuItem):
-            return ([selected_item.description], [])
-        else:
-            return ([], [])
+        return ([selected_item.description], [])

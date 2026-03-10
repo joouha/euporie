@@ -300,7 +300,10 @@ class NotebookApp(BaseApp):
         }
 
         menu_bar = MenuContainer(
-            menu_items=self.load_menu_items(), grid=OuterHalfGrid, padding=0
+            menu_items=self.load_menu_items(),
+            grid=OuterHalfGrid,
+            padding=0,
+            icons=self.config.filters.show_icons,
         )
         top_bar = ConditionalContainer(
             content=VSplit([logo_micro, menu_bar, title_bar]),
