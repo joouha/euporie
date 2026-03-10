@@ -13,6 +13,9 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from prompt_toolkit.widgets.base import Frame as PtkFrame
+from prompt_toolkit.widgets.base import Shadow as PtkShadow
+
 from apptk.border import ThinGrid, ThinLine
 from apptk.data_structures import DiStr
 from apptk.filters import to_filter
@@ -27,19 +30,18 @@ from apptk.layout.containers import (
 from apptk.layout.decor import DropShadow
 from apptk.layout.dimension import Dimension
 from apptk.widgets.base import Label
-from prompt_toolkit.widgets.base import Frame as PtkFrame
-from prompt_toolkit.widgets.base import Shadow as PtkShadow
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+
+    from prompt_toolkit.formatted_text import AnyFormattedText
+    from prompt_toolkit.key_binding.key_bindings import KeyBindings
+    from prompt_toolkit.layout.dimension import AnyDimension
 
     from apptk.border import GridStyle
     from apptk.filters.core import FilterOrBool
     from apptk.layout.containers import AnyContainer
     from apptk.mouse_events import MouseEvent
-    from prompt_toolkit.formatted_text import AnyFormattedText
-    from prompt_toolkit.key_binding.key_bindings import KeyBindings
-    from prompt_toolkit.layout.dimension import AnyDimension
 
     MouseHandler = Callable[[MouseEvent], object]
 
