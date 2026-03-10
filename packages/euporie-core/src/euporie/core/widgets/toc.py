@@ -271,6 +271,8 @@ class TocControl(UIControl):
                 buffer.cursor_position = buffer.document.translate_row_col_to_index(
                     entry.lines.start, 0
                 )
+                # Signal buffer that we've changed it's cursor's position
+                buffer.on_cursor_position_changed()
                 # Focus the buffer's window
                 get_app().layout.current_window = entry.window
                 return None
