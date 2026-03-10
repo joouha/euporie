@@ -334,7 +334,10 @@ class BaseApp(ConfigurableApp, Application, ABC):
         self.update_palette()
         # Load completions menu.
         self.menus["completions"] = Float(
-            content=Shadow(CompletionsMenu(extra_filter=~has_toolbar)),
+            content=Shadow(
+                CompletionsMenu(extra_filter=~has_toolbar),
+                filter=self.config.filters.show_shadows,
+            ),
             xcursor=True,
             ycursor=True,
             z_index=1000,

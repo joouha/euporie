@@ -1531,6 +1531,7 @@ class Dropdown(SelectableWidget):
         disabled: FilterOrBool = False,
         width: int | None = None,
         expand: FilterOrBool = True,
+        show_shadows: FilterOrBool = True,
     ) -> None:
         """Create a new drop-down widget instance.
 
@@ -1549,11 +1550,13 @@ class Dropdown(SelectableWidget):
                 widget to be disabled
             width: The width of the button
             expand: Whether to expand to fill the available width
+            show_shadows: A filter to determine whether to show drop shadows
         """
         self.menu_visible: bool = False
         self.menu_hovered: bool = False
         self.arrow: str = arrow
         self.expand = to_filter(expand)
+        self.show_shadows = to_filter(show_shadows)
         self.width = width
         super().__init__(
             options=options,
@@ -1585,7 +1588,8 @@ class Dropdown(SelectableWidget):
                     menu_window := Window(
                         FormattedTextControl(self.menu_fragments),
                         style=f"class:dropdown,dropdown.menu {self.style}",
-                    )
+                    ),
+                    filter=self.show_shadows,
                 ),
                 filter=Condition(lambda: self.menu_visible) & self.has_focus,
             ),

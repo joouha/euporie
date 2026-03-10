@@ -176,7 +176,8 @@ class Notebook(BaseNotebook):
             self.rendered_cells, width=self.app.config.max_notebook_width
         )
 
-        expand = Condition(lambda: self.app.config.expand)
+        expand = self.app.config.filters.expand
+        show_shadows = self.app.config.filters.show_shadows
 
         pattern = Pattern(
             lambda: self.app.config.background_character,
@@ -190,11 +191,14 @@ class Notebook(BaseNotebook):
                         VSplit(
                             [
                                 pattern,
-                                Line(
-                                    char="▋",  # 5/8
-                                    width=1,
-                                    collapse=True,
-                                    style="class:drop-shadow,outer reverse",
+                                ConditionalContainer(
+                                    Line(
+                                        char="▋",  # 5/8
+                                        width=1,
+                                        collapse=True,
+                                        style="class:drop-shadow,outer reverse",
+                                    ),
+                                    filter=show_shadows,
                                 ),
                                 Line(
                                     char="▎",  # 2/8
@@ -219,11 +223,14 @@ class Notebook(BaseNotebook):
                                     collapse=True,
                                     style="class:drop-shadow,inner reverse",
                                 ),
-                                Line(
-                                    char="▍",  # 3/8
-                                    width=1,
-                                    collapse=True,
-                                    style="class:drop-shadow,outer",
+                                ConditionalContainer(
+                                    Line(
+                                        char="▍",  # 3/8
+                                        width=1,
+                                        collapse=True,
+                                        style="class:drop-shadow,outer",
+                                    ),
+                                    filter=show_shadows,
                                 ),
                                 pattern,
                             ]

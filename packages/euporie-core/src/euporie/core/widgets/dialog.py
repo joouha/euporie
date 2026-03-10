@@ -173,6 +173,7 @@ class Dialog(Float, metaclass=ABCMeta):
                     border=DialogGrid,
                     style="class:dialog,border",
                 ),
+                filter=self.app.config.filters.show_shadows,
             ),
             filter=self.visible,
         )
@@ -420,6 +421,7 @@ class OpenFileDialog(FileDialog):
             disabled=Condition(
                 lambda: getattr(self, "tab_dd", False) and not self.tab_dd.options
             ),
+            show_shadows=self.app.config.filters.show_shadows,
         )
 
         def _update_options(path: Path) -> None:

@@ -26,6 +26,7 @@ if TYPE_CHECKING:
     from collections.abc import Hashable, Iterable
 
     from apptk.buffer import Buffer
+    from apptk.filters import FilterOrBool
     from apptk.formatted_text import StyleAndTextTuples
     from apptk.key_binding.key_bindings import (
         KeyBindingsBase,
@@ -303,8 +304,12 @@ class TocControl(UIControl):
 class TableOfContents:
     """A table of contents widget, which allows switching between TOC types."""
 
-    def __init__(self) -> None:
-        """Construct the widget."""
+    def __init__(self, _shadows: FilterOrBool = True) -> None:
+        """Construct the widget.
+
+        Args:
+            show_shadows: A filter to determine whether to show drop shadows.
+        """
         control = TocControl()
         window = Window(control, style="class:input,list,face,row")
         self.container = HSplit(
@@ -313,6 +318,7 @@ class TableOfContents:
                     options=list(TOCs),
                     labels=[x.title() for x in TOCs],
                     on_change=lambda s: setattr(control, "kind", s.value),
+                    show_shadows=_shadows,
                 ),
                 Frame(
                     VSplit(

@@ -250,9 +250,10 @@ class MenuContainer(PtkMenuContainer):
         grid: type[GridStyle] | None = None,
         padding: int = 1,
         max_depth: int = 4,
-        icons: FilterOrBool = True,
         collapse_prefix: bool = False,
         collapse_suffix: bool = True,
+        icons: FilterOrBool = True,
+        shadows: FilterOrBool = True,
     ) -> None:
         """Initialize the menu container.
 
@@ -264,9 +265,10 @@ class MenuContainer(PtkMenuContainer):
             grid: Grid style class for menu borders
             padding: Padding around menu items
             max_depth: Maximum depth of nested submenus
-            icons: Whether to show icons in menu items
             collapse_prefix: If True, don't pad prefixes to equal width
             collapse_suffix: If True, don't pad suffixes to equal width
+            icons: Whether to show icons in menu items
+            shadows: Whether to show drop shadows under menus
         """
         self.body = body
         self.menu_items = menu_items or []
@@ -276,6 +278,7 @@ class MenuContainer(PtkMenuContainer):
         self._show_icons = to_filter(icons)
         self.collapse_prefix = collapse_prefix
         self.collapse_suffix = collapse_suffix
+        self._shadows = to_filter(shadows)
         self.selected_menu: list[int] = []
         self.last_focused: UIControl | None = None
 
@@ -507,7 +510,7 @@ class MenuContainer(PtkMenuContainer):
                     ycursor=True,
                     allow_cover_cursor=depth > 0,
                     content=ConditionalContainer(
-                        content=Shadow(body=submenu),
+                        content=Shadow(body=submenu, filter=self._shadows),
                         filter=Condition(lambda d=depth: len(self.selected_menu) > d)
                         & Condition(lambda d=depth: bool(self._get_menu(d).children)),
                     ),

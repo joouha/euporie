@@ -110,6 +110,7 @@ class NotebookApp(BaseApp):
         core_settings.show_status_bar,
         core_settings.show_shadows,
         core_settings.show_cell_borders,
+        core_settings.show_shadows,
         core_settings.max_notebook_width,
         core_settings.expand,
         core_settings.show_icons,
@@ -304,6 +305,7 @@ class NotebookApp(BaseApp):
             grid=OuterHalfGrid,
             padding=0,
             icons=self.config.filters.show_icons,
+            shadows=self.config.filters.show_shadows,
         )
         top_bar = ConditionalContainer(
             content=VSplit([logo_micro, menu_bar, title_bar]),
@@ -326,7 +328,11 @@ class NotebookApp(BaseApp):
                             show_icons=self.config.filters.show_icons,
                         ),
                     ),
-                    ("Table of Contents", "", TableOfContents()),
+                    (
+                        "Table of Contents",
+                        "",
+                        TableOfContents(_shadows=self.config.filters.show_shadows),
+                    ),
                     ("Mini Map", "", MiniMap()),
                 ]
             ),
