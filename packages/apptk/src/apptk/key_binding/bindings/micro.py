@@ -1090,6 +1090,7 @@ def micro_find_previous() -> None:
     keys=["escape"],
     filter=micro_mode & is_searching,
     name="micro-stop-search",
+    hidden=True,
 )
 def micro_stop_search() -> None:
     """Abort the search."""
@@ -1102,6 +1103,7 @@ def micro_stop_search() -> None:
     keys=["enter"],
     filter=micro_mode & is_searching,
     name="micro-accept-search",
+    hidden=True,
 )
 def micro_accept_search() -> None:
     """Accept the search input."""
