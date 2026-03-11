@@ -1,4 +1,4 @@
-"""Define an application menu."""
+"""Define a custom completion menu."""
 
 from __future__ import annotations
 
@@ -70,9 +70,9 @@ class CompletionsMenuControl(PtkCompletionsMenuControl):
 
                 style = "class:menu"
                 if selected_item:
-                    style += ",selection"
+                    style += " class:menu-bar.selected-item"
 
-                output.append((f"{style},border", grid.MID_LEFT))
+                output.append((f"{style} class:menu-border", grid.MID_LEFT))
                 if selected_item:
                     output.append(("[SetCursorPosition]", ""))
                 # Construct the menu item contents
@@ -87,14 +87,13 @@ class CompletionsMenuControl(PtkCompletionsMenuControl):
                         [
                             *c.display,
                             ("", padding),
-                            *to_formatted_text(
-                                c.display_meta, style=f"{style} {c.style}"
-                            ),
+                            *to_formatted_text(c.display_meta, style=c.style),
                         ],
                         style=style,
                     )
                 )
-                output.append((f"{style},border", grid.MID_RIGHT))
+                output.append((f"{style} class:menu-border", grid.MID_RIGHT))
+                log.debug(output)
 
                 # Apply mouse handler
                 return [
@@ -143,7 +142,7 @@ class CompletionsMenu(ConditionalContainer):
                             Window(char=grid.TOP_MID, height=1),
                             Window(char=grid.TOP_RIGHT, width=1, height=1),
                         ],
-                        style="class:border",
+                        style="class:menu-border",
                     ),
                     Window(
                         content=CompletionsMenuControl(),
@@ -160,7 +159,7 @@ class CompletionsMenu(ConditionalContainer):
                             Window(char=grid.BOTTOM_MID, height=1),
                             Window(char=grid.BOTTOM_RIGHT, width=1, height=1),
                         ],
-                        style="class:border",
+                        style="class:menu-border",
                     ),
                 ],
                 style="class:menu",

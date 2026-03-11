@@ -369,6 +369,9 @@ def completion_styles(cp: ColorPalette) -> dict[str, str]:
     for name, color in completion_colors.items():
         styles[f"menu completion-{name}"] = f"fg:{color}"
         styles[f"menu completion-{name} selection"] = f"bg:{color} fg:{cp.hl} reverse"
+        styles[f"menu completion-{name} menu-bar.selected-item"] = (
+            f"bg:{color} fg:{cp.hl} reverse"
+        )
     return styles
 
 
