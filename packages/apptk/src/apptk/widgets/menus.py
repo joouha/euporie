@@ -48,7 +48,6 @@ from apptk.layout.containers import (
     FloatContainer,
     HSplit,
     ScrollOffsets,
-    StatusContainer,
     VSplit,
     Window,
     to_container,
@@ -525,10 +524,7 @@ class MenuContainer(PtkMenuContainer):
             self.focused = self.focused | has_focus(container)
 
         self.container = FloatContainer(
-            content=StatusContainer(
-                body=HSplit([self.window, body]) if body else self.window,
-                status=self.__pt_status__,
-            ),
+            content=HSplit([self.window, body]) if body else self.window,
             floats=menu_floats + (floats or []),
         )
 
