@@ -37,6 +37,8 @@ def parse_keys(keys: AnyKeys) -> list[tuple[str | Keys, ...]]:
             output[(key,)] = None
         elif isinstance(key, tuple):
             output[tuple(_parse_key(k) for k in key)] = None
+        elif " " in key:
+            output[tuple(_parse_key(k) for k in key.split())] = None
         else:
             output[(_parse_key(key),)] = None
     return list(output.keys())

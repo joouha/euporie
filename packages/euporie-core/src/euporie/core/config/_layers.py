@@ -141,7 +141,7 @@ class TomlFileLayer(Layer):
         if self._namespace is not None:
             raw = self._get_app_values(doc)
         else:
-            raw = self._get_global_values(doc)
+            raw = self._get_global_values(doc, settings)
         self.clear()
         self.update(raw)
 
@@ -185,19 +185,27 @@ class TomlFileLayer(Layer):
         with self._path.open("w") as f:
             tomlkit.dump(doc, f)
 
-    def _get_global_values(self, doc: tomlkit.TOMLDocument) -> dict[str, Any]:
-        """Extract top-level scalar values from a TOML document.
+    def _get_global_values(
+        self, doc: tomlkit.TOMLDocument, settings: dict[str, Setting]
+    ) -> dict[str, Any]:
+        """Extract top-level values from a TOML document.
+
+        Top-level tables are included only when they correspond to a known
+        setting name (e.g. ``key_bindings``).  Other tables are assumed to
+        be app-namespace sections and are skipped.
 
         Args:
             doc: The TOML document.
+            settings: Known settings, used to distinguish setting tables
+                from namespace sections.
 
         Returns:
-            Dictionary of global (non-table) values.
+            Dictionary of global values.
         """
         return {
             key: value
             for key, value in doc.items()
-            if not isinstance(value, (dict, Table))
+            if not isinstance(value, (dict, Table)) or key in settings
         }
 
     def _get_app_values(self, doc: tomlkit.TOMLDocument) -> dict[str, Any]:
@@ -309,7 +317,7 @@ class JsonFileLayer(Layer):
         if self._namespace is not None:
             raw = self._get_app_values(doc)
         else:
-            raw = self._get_global_values(doc)
+            raw = self._get_global_values(doc, settings)
         self.clear()
         self.update(raw)
 
@@ -357,16 +365,28 @@ class JsonFileLayer(Layer):
             json.dump(doc, f, indent=2, default=self._to_json_value)
             f.write("\n")
 
-    def _get_global_values(self, doc: dict[str, Any]) -> dict[str, Any]:
-        """Extract top-level scalar values from a JSON document.
+    def _get_global_values(
+        self, doc: dict[str, Any], settings: dict[str, Setting]
+    ) -> dict[str, Any]:
+        """Extract top-level values from a JSON document.
+
+        Top-level dicts are included only when they correspond to a known
+        setting name (e.g. ``key_bindings``).  Other dicts are assumed to
+        be app-namespace sections and are skipped.
 
         Args:
             doc: The JSON data.
+            settings: Known settings, used to distinguish setting dicts
+                from namespace sections.
 
         Returns:
-            Dictionary of global (non-dict) values.
+            Dictionary of global values.
         """
-        return {key: value for key, value in doc.items() if not isinstance(value, dict)}
+        return {
+            key: value
+            for key, value in doc.items()
+            if not isinstance(value, dict) or key in settings
+        }
 
     def _get_app_values(self, doc: dict[str, Any]) -> dict[str, Any]:
         """Extract app-specific values from the JSON document.

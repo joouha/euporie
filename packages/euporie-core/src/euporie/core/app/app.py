@@ -16,6 +16,7 @@ from apptk.application.application import Application, _CombinedRegistry
 from apptk.application.current import create_app_session, set_app
 from apptk.clipboard.base import DynamicClipboard
 from apptk.color import Color, ColorPalette
+from apptk.commands import COMMANDS, get_cmd
 from apptk.filters import Condition
 from apptk.filters.app import has_toolbar
 from apptk.key_binding.key_bindings import KeyBindings
@@ -69,6 +70,7 @@ if TYPE_CHECKING:
 
     # from apptk.application import _AppResult
     from apptk.clipboard.base import Clipboard
+    from apptk.commands import Command
     from apptk.contrib.ssh import PromptToolkitSSHSession
     from apptk.filters import Filter, FilterOrBool
     from apptk.layout.containers import AnyContainer
@@ -140,6 +142,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
         core_settings.cursor_blink,
         core_settings.enable_language_servers,
         core_settings.language_servers,
+        core_settings.key_bindings,
         # Terminal
         core_settings.terminal_polling_interval,
         core_settings.color_depth,
@@ -200,6 +203,12 @@ class BaseApp(ConfigurableApp, Application, ABC):
 
         """
         self.color_palette = ColorPalette()
+
+        # Apply key binding configuration before Application.__init__ triggers
+        # lazy loading of editing-mode bindings (e.g. load_helix_bindings),
+        # which copies Command.bindings into KeyBindings objects. Config
+        # changes must be applied to Command objects before that copy occurs.
+        self.apply_key_binding_config()
 
         # Initialise the application
         super().__init__(
@@ -308,6 +317,113 @@ class BaseApp(ConfigurableApp, Application, ABC):
         # Load key-bindings
         self.key_bindings = KeyBindings.from_commands(self.commands)
         self.bindings_to_load = []
+
+    def _resolve_binding_entry(
+        self, cmd: Command, entry: str | dict[str, Any]
+    ) -> dict[str, Any] | None:
+        """Resolve a key binding config entry into arguments for ``add_keys``.
+
+        Copies binding parameters from an existing binding when ``like`` is
+        specified, then applies any explicit ``is_global``/``eager`` overrides.
+
+        Args:
+            cmd: The command the binding belongs to.
+            entry: A key string, or a dict with ``keys`` and optional
+                ``is_global``, ``eager``, and ``like`` fields.
+
+        Returns:
+            A dict of resolved keyword arguments for :py:meth:`Command.add_keys`,
+            or ``None`` if the entry is invalid.
+        """
+        if isinstance(entry, str):
+            keys, like, is_global, eager = entry, None, None, None
+        elif isinstance(entry, dict):
+            keys = entry["keys"]
+            like = entry.get("like")
+            is_global = entry.get("is_global")
+            eager = entry.get("eager")
+        else:
+            return None
+
+        # Start with command defaults or copy from an existing binding
+        kwargs: dict[str, Any] = {
+            "keys": keys,
+            "filter": cmd._default_filter,
+            "eager": cmd._default_eager,
+            "is_global": cmd._default_is_global,
+            "save_before": cmd._default_save_before,
+            "record_in_macro": cmd._default_record_in_macro,
+        }
+        if like:
+            if source := cmd.get_binding_for_keys(like):
+                kwargs.update(
+                    filter=source.filter,
+                    eager=source.eager,
+                    is_global=source.is_global,
+                    save_before=source.save_before,
+                    record_in_macro=source.record_in_macro,
+                )
+            else:
+                log.warning("Command %r has no binding %r to copy from", cmd.name, like)
+
+        # Apply explicit overrides
+        if is_global is not None:
+            kwargs["is_global"] = is_global
+        if eager is not None:
+            kwargs["eager"] = eager
+
+        return kwargs
+
+    def apply_key_binding_config(self) -> None:
+        """Apply key binding configuration from config to commands.
+
+        Reads the ``key_bindings`` configuration and applies additions,
+        removals, and replacements to the corresponding commands.
+
+        Configuration format:
+
+        - Simple list: replaces all bindings for the command
+        - Dict with ``add``: adds bindings (each entry can be a string or dict)
+        - Dict with ``remove``: removes specific bindings
+        - Dict with ``replace``: if true, clears all bindings first
+        - Dict with ``keys``: replaces all bindings with these keys
+        """
+        for cmd_name, config in self.config.key_bindings.items():
+            if cmd_name not in COMMANDS:
+                log.warning("Unknown command for key binding config: %r", cmd_name)
+                continue
+
+            cmd = get_cmd(cmd_name)
+
+            # Normalise all config formats into {replace, add, remove}
+            if isinstance(config, list):
+                config = {"replace": True, "add": config}
+            elif not isinstance(config, dict):
+                log.warning(
+                    "Invalid key binding config for %r: expected list or dict, got %s",
+                    cmd_name,
+                    type(config).__name__,
+                )
+                continue
+            elif "keys" in config:
+                config = {"replace": True, "add": config["keys"]}
+
+            # Resolve additions *before* clearing so "like" can find
+            # existing bindings that would be removed by "replace"
+            resolved = [
+                kwargs
+                for entry in config.get("add", [])
+                if (kwargs := self._resolve_binding_entry(cmd, entry)) is not None
+            ]
+
+            if config.get("replace"):
+                cmd.clear_keys()
+
+            for keys in config.get("remove", []):
+                cmd.remove_keys(keys)
+
+            for kwargs in resolved:
+                cmd.add_keys(**kwargs)
 
     def pause_rendering(self) -> None:
         """Block rendering, but allows input to be processed.

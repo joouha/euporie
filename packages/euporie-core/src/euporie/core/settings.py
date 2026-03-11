@@ -927,3 +927,218 @@ expand = Setting(
     filter=~buffer_has_focus,
     keys=["w"],
 )
+
+
+key_bindings = Setting(
+    name="key_bindings",
+    type_=dict,
+    default={},
+    flags=["--key-bindings"],
+    help_="Custom key binding overrides",
+    schema={
+        "type": "object",
+        "additionalProperties": {
+            "oneOf": [
+                {"type": "array", "items": {"type": "string"}},
+                {
+                    "type": "object",
+                    "properties": {
+                        "keys": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                        },
+                        "add": {
+                            "type": "array",
+                            "items": {
+                                "oneOf": [
+                                    {"type": "string"},
+                                    {
+                                        "type": "object",
+                                        "required": ["keys"],
+                                        "properties": {
+                                            "keys": {"type": "string"},
+                                            "is_global": {"type": "boolean"},
+                                            "eager": {"type": "boolean"},
+                                            "like": {"type": "string"},
+                                        },
+                                    },
+                                ]
+                            },
+                        },
+                        "remove": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                        },
+                        "replace": {
+                            "type": "boolean",
+                        },
+                    },
+                },
+            ]
+        },
+    },
+    description="""
+        Configure custom keyboard shortcuts for commands.
+
+        This setting allows you to add new key bindings to commands, remove
+        existing bindings, or completely replace a command's bindings.
+
+        Key Syntax
+        ----------
+
+        Keys are specified as strings using prompt_toolkit's key syntax:
+
+        - Single keys: ``a``, ``b``, ``1``, ``space``, ``enter``, ``tab``
+        - Control combinations: ``c-s`` (Ctrl+S), ``c-x`` (Ctrl+X)
+        - Alt combinations: ``A-x`` (Alt+X), ``A-enter`` (Alt+Enter)
+        - Shift combinations: ``s-tab`` (Shift+Tab), ``s-left`` (Shift+Left)
+        - Function keys: ``f1``, ``f2``, ..., ``f12``
+        - Special keys: ``escape``, ``backspace``, ``delete``, ``home``, ``end``
+        - Arrow keys: ``up``, ``down``, ``left``, ``right``
+        - Key sequences: ``c-x c-s`` (Ctrl+X followed by Ctrl+S)
+
+        Basic Usage
+        -----------
+
+        The simplest form replaces all bindings for a command with a new list:
+
+        .. code-block:: toml
+
+            [key_bindings]
+            save-notebook = ["c-s", "c-shift-s"]
+            quit = ["c-q", "A-F4"]
+            copy = ["c-c", "c-insert"]
+
+        This completely replaces any default bindings for these commands.
+
+        Adding Bindings
+        ---------------
+
+        To add bindings while keeping the defaults, use the ``add`` key:
+
+        .. code-block:: toml
+
+            [key_bindings.copy]
+            add = ["c-y"]
+
+            [key_bindings.save-notebook]
+            add = ["f2", "c-shift-s"]
+
+        Removing Bindings
+        -----------------
+
+        To remove specific bindings while keeping others:
+
+        .. code-block:: toml
+
+            [key_bindings.paste]
+            remove = ["c-v"]
+
+            [key_bindings.quit]
+            remove = ["c-q"]
+            add = ["c-shift-q"]
+
+        Replacing All Bindings
+        ----------------------
+
+        To remove all default bindings before adding new ones:
+
+        .. code-block:: toml
+
+            [key_bindings.some-command]
+            replace = true
+            add = ["c-x"]
+
+        Or equivalently, use the simple list form:
+
+        .. code-block:: toml
+
+            [key_bindings]
+            some-command = ["c-x"]
+
+        To disable a command entirely (remove all bindings):
+
+        .. code-block:: toml
+
+            [key_bindings]
+            dangerous-command = []
+
+        Advanced: Global and Eager Bindings
+        -----------------------------------
+
+        Some bindings need special flags:
+
+        - ``is_global``: The binding works regardless of which widget has focus
+        - ``eager``: The binding triggers immediately without waiting for longer matches
+
+        .. code-block:: toml
+
+            [key_bindings.activate-command-bar]
+            add = [
+                {keys = "c-;", is_global = true},
+                {keys = "c-p", is_global = true, eager = true},
+            ]
+
+        Advanced: Copying Filter Settings
+        ---------------------------------
+
+        Commands may have multiple bindings with different activation filters.
+        For example, a command might have one binding that works globally and
+        another that only works in a specific mode.
+
+        To add a new binding that behaves like an existing one, use ``like``:
+
+        .. code-block:: toml
+
+            [key_bindings.activate-command-bar]
+            add = [
+                {keys = "c-;", like = "A-:"},
+            ]
+
+        This copies the filter, eager, and global settings from the ``A-:``
+        binding to the new ``c-;`` binding.
+
+        Finding Command Names
+        ---------------------
+
+        To see available commands, use the command bar (press ``:`` or ``Alt+:``)
+        and start typing. Command names use kebab-case (e.g., ``save-notebook``,
+        ``run-cell``, ``copy-cell``).
+
+        You can also run ``euporie-notebook --help-all`` to see all commands.
+
+        Examples
+        --------
+
+        A complete example configuration:
+
+        .. code-block:: toml
+
+            [key_bindings]
+            # Replace all bindings for save
+            save-notebook = ["c-s"]
+
+            # Add alternative quit binding
+            [key_bindings.quit]
+            add = ["A-F4"]
+
+            # Swap copy/paste to different keys
+            [key_bindings.copy]
+            remove = ["c-c"]
+            add = ["c-shift-c"]
+
+            [key_bindings.paste]
+            remove = ["c-v"]
+            add = ["c-shift-v"]
+
+            # Add global command bar activation
+            [key_bindings.activate-command-bar]
+            add = [
+                {keys = "c-p", is_global = true},
+            ]
+
+            # Disable a command entirely
+            [key_bindings.delete-notebook]
+            replace = true
+    """,
+)

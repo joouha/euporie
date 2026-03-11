@@ -535,6 +535,34 @@ class Command:
                 )
             )
 
+    def remove_keys(self, keys: AnyKeys) -> None:
+        """Remove bindings matching the given keys.
+
+        Args:
+            keys: Key sequences to remove from this command
+        """
+        for key_seq in parse_keys(keys):
+            self.bindings = [b for b in self.bindings if b.keys != key_seq]
+
+    def clear_keys(self) -> None:
+        """Remove all key bindings from this command."""
+        self.bindings.clear()
+
+    def get_binding_for_keys(self, keys: AnyKeys) -> Binding | None:
+        """Find an existing binding matching the given keys.
+
+        Args:
+            keys: Key or key sequence to search for
+
+        Returns:
+            The matching Binding, or None if not found
+        """
+        for key_seq in parse_keys(keys):
+            for binding in self.bindings:
+                if binding.keys == key_seq:
+                    return binding
+        return None
+
     def bind(self, key_bindings: KeyBindingsBase) -> None:
         """Add the current command's bindings to a set of key bindings.
 
