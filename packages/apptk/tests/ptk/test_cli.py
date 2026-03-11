@@ -23,6 +23,8 @@ if TYPE_CHECKING:
     from apptk.application import Application
     from apptk.document import Document
 
+pytestmark = pytest.mark.e2e
+
 
 def _history() -> InMemoryHistory:
     """Create a history with sample entries."""

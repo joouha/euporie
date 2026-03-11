@@ -1,3 +1,4 @@
+fail_fast: true
 repos:
   - repo: https://github.com/prettier/pre-commit
     rev: 57f39166b5a5a504d6808b87ab98d41ebf095b46
@@ -80,7 +81,7 @@ repos:
         files: \.(md|txt|rst|py)$
       - id: tests
         name: tests
-        entry: uv run task test --exitfirst
+        entry: uv run task test-parallel --exitfirst
         language: system
         types: [python]
         pass_filenames: false

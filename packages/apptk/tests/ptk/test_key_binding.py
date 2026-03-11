@@ -6,7 +6,7 @@ from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator
+    from collections.abc import Generator
 
 import pytest
 from apptk.application import Application
@@ -26,13 +26,25 @@ class Handlers:
         """Initialize the handlers."""
         self.called: list[str] = []
 
-    def __getattr__(self, name: str) -> Callable[[Any], None]:
-        """Return a handler function for the given name."""
+    def controlx_controlc(self, event: Any) -> None:
+        """Handle control-x control-c."""
+        self.called.append("controlx_controlc")
 
-        def func(event: Any) -> None:
-            self.called.append(name)
+    def control_x(self, event: Any) -> None:
+        """Handle control-x."""
+        self.called.append("control_x")
 
-        return func
+    def control_d(self, event: Any) -> None:
+        """Handle control-d."""
+        self.called.append("control_d")
+
+    def controld(self, event: Any) -> None:
+        """Handle control-d (alternate name)."""
+        self.called.append("controld")
+
+    def control_square_close_any(self, event: Any) -> None:
+        """Handle control-square-close any."""
+        self.called.append("control_square_close_any")
 
 
 @contextmanager
@@ -56,7 +68,11 @@ def set_dummy_app() -> Generator[None, None, None]:
         # the `Application` should pass its task group to the constructor of
         # `KeyProcessor`. That way, it doesn't have to do a lookup using
         # `get_app()`.
-        app.create_background_task = lambda *_, **kw: None
+        def _cancel_background_task(coro: Any, **kw: Any) -> None:
+            """Close the coroutine to prevent 'was never awaited' warnings."""
+            coro.close()
+
+        app.create_background_task = _cancel_background_task
 
         with set_app(app):
             yield
