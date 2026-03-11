@@ -15,6 +15,7 @@ from apptk.layout.decor import FocusedStyle, Pattern
 from apptk.layout.dimension import Dimension
 from apptk.layout.display import Display
 from apptk.mouse_events import MouseButton, MouseEventType
+
 from euporie.core.tabs.base import Tab
 from euporie.core.widgets.file_browser import FileBrowser
 from euporie.core.widgets.forms import BaseButton, Button
@@ -29,6 +30,7 @@ if TYPE_CHECKING:
     from apptk.key_binding.key_bindings import NotImplementedOrNone
     from apptk.layout.containers import AnyContainer
     from apptk.mouse_events import MouseEvent
+
     from euporie.core.app.app import BaseApp
     from euporie.core.bars.status import StatusBarFields
 

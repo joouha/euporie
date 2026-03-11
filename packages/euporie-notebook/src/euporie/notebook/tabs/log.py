@@ -11,6 +11,7 @@ from apptk.layout.margins import ScrollbarMargin
 from apptk.path import parse_path
 from apptk.widgets import SearchToolbar
 from apptk.widgets.formatted_text_area import FormattedTextArea
+
 from euporie.core.log import LOG_QUEUE, QueueHandler
 from euporie.core.tabs.base import Tab
 
@@ -19,6 +20,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from apptk.formatted_text.base import FormattedText
+
     from euporie.core.app.app import BaseApp
 
 

@@ -15,6 +15,7 @@ from apptk.layout.containers import DummyContainer, DynamicContainer, HSplit
 from apptk.layout.decor import Line
 from apptk.layout.dimension import Dimension
 from apptk.layout.display import Display
+
 from euporie.core.filters import pager_has_focus
 from euporie.core.widgets.cell_outputs import CellOutput, CellOutputDataElement
 from euporie.core.widgets.layout import Box
@@ -24,6 +25,7 @@ if TYPE_CHECKING:
 
     from apptk.layout.containers import AnyContainer
     from apptk.layout.dimension import AnyDimension
+
     from euporie.core.widgets.cell_outputs import CellOutputElement, OutputParent
 
 log = logging.getLogger(__name__)

@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 
 from apptk.filters import Never
 from apptk.io import edit_in_editor
+
 from euporie.core.comm.registry import open_comm
 from euporie.core.kernel.base import MsgCallbacks
 from euporie.core.nbformat import from_dict, new_code_cell, new_notebook
@@ -25,6 +26,7 @@ if TYPE_CHECKING:
 
     from apptk.filters import Filter
     from apptk.layout.containers import AnyContainer, Window
+
     from euporie.core.app.app import BaseApp
     from euporie.core.comm.base import Comm
     from euporie.core.kernel.base import BaseKernel

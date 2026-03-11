@@ -2,6 +2,7 @@
 
 from apptk.convert.mime import MIME_FORMATS
 from apptk.filters.environment import have_modules
+
 from euporie.core.nbformat import NOTEBOOK_EXTENSIONS
 from euporie.core.tabs import _TAB_REGISTRY, TabRegistryEntry
 

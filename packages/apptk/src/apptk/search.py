@@ -17,6 +17,11 @@ import logging
 import re
 from typing import TYPE_CHECKING
 
+from apptk.application.current import get_app
+from apptk.commands import add_cmd
+from apptk.document import Document
+from apptk.filters.app import is_searching
+from apptk.key_binding.vi_state import InputMode
 from prompt_toolkit.search import (
     SearchDirection,
     accept_search,
@@ -24,12 +29,6 @@ from prompt_toolkit.search import (
     start_search,
     stop_search,
 )
-
-from apptk.application.current import get_app
-from apptk.commands import add_cmd
-from apptk.document import Document
-from apptk.filters.app import is_searching
-from apptk.key_binding.vi_state import InputMode
 
 if TYPE_CHECKING:
     from apptk.layout.controls import BufferControl, SearchBufferControl, UIControl

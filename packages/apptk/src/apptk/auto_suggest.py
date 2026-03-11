@@ -9,10 +9,9 @@ from difflib import SequenceMatcher
 from functools import lru_cache, partial
 from typing import TYPE_CHECKING, NamedTuple
 
-from prompt_toolkit.auto_suggest import AutoSuggest, ConditionalAutoSuggest, Suggestion
-
 from apptk.cache import SimpleCache
 from apptk.filters import to_filter
+from prompt_toolkit.auto_suggest import AutoSuggest, ConditionalAutoSuggest, Suggestion
 
 if TYPE_CHECKING:
     from apptk.buffer import Buffer

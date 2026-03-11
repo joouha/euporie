@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 
     from apptk.formatted_text.base import StyleAndTextTuples
     from apptk.layout.processors import TransformationInput
+
     from euporie.core.diagnostics import Report
 
 

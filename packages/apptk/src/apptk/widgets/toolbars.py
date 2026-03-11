@@ -17,8 +17,6 @@ from functools import lru_cache
 from math import ceil
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.widgets import toolbars as ptk_toolbars
-
 from apptk.application.current import get_app
 from apptk.buffer import Buffer
 from apptk.cache import FastDictCache
@@ -53,6 +51,7 @@ from apptk.layout.processors import BeforeInput, HighlightSelectionProcessor
 from apptk.lexers import SimpleLexer
 from apptk.utils import get_cwidth
 from apptk.validation import Validator
+from prompt_toolkit.widgets import toolbars as ptk_toolbars
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence

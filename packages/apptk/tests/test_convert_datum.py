@@ -9,8 +9,9 @@ from unittest.mock import PropertyMock, patch
 from apptk.application.current import set_app
 from apptk.convert.datum import Datum
 from apptk.data_structures import Size
-from euporie.core.app.dummy import DummyApp
 from PIL import Image
+
+from euporie.core.app.dummy import DummyApp
 
 
 def test_datum_new() -> None:

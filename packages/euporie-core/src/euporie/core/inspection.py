@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from typing import Any
 
     from apptk.document import Document
+
     from euporie.core.kernel.base import BaseKernel
     from euporie.core.lsp import LspClient
 

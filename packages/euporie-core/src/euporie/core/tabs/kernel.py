@@ -16,6 +16,7 @@ from apptk.commands import add_cmd
 from apptk.completion.base import DynamicCompleter, _MergedCompleter
 from apptk.completion.deduplicate import DeduplicateCompleter
 from apptk.history import DummyHistory, InMemoryHistory
+
 from euporie.core.comm.registry import open_comm
 from euporie.core.completion import KernelCompleter, LspCompleter
 from euporie.core.diagnostics import Report
@@ -35,6 +36,7 @@ if TYPE_CHECKING:
     from apptk.auto_suggest import AutoSuggest
     from apptk.completion.base import Completer
     from apptk.history import History
+
     from euporie.core.app.app import BaseApp
     from euporie.core.comm.base import Comm
     from euporie.core.format import Formatter

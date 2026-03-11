@@ -16,12 +16,6 @@ from functools import lru_cache, partial
 from typing import TYPE_CHECKING, NamedTuple
 from weakref import WeakKeyDictionary
 
-from prompt_toolkit.layout import containers as ptk_containers
-from prompt_toolkit.layout.containers import (
-    Container,
-    ScrollOffsets,
-)
-
 from apptk.application.current import get_app
 from apptk.cache import SimpleCache
 from apptk.convert.datum import Datum
@@ -43,6 +37,11 @@ from apptk.layout.screen import _CHAR_CACHE, WritePosition
 from apptk.layout.utils import explode_text_fragments
 from apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
 from apptk.utils import get_cwidth, take_using_weights, to_str
+from prompt_toolkit.layout import containers as ptk_containers
+from prompt_toolkit.layout.containers import (
+    Container,
+    ScrollOffsets,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence

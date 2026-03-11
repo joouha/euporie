@@ -278,11 +278,10 @@ async def latex_to_ansi_py_sympy(
     **kwargs: Any,
 ) -> str:
     """Convert LaTeX to ANSI using :py:mod:`sympy`."""
+    from apptk.logging import stdout_to_log
     from sympy import pretty
     from sympy.parsing.latex import parse_latex
     from sympy.parsing.latex.errors import LaTeXParsingError
-
-    from apptk.logging import stdout_to_log
 
     with stdout_to_log(log):
         try:

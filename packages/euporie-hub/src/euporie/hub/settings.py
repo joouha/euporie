@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from euporie.core.config._setting import Setting
 from upath import UPath
+
+from euporie.core.config._setting import Setting
 
 
 def _euporie_hub_app_choices() -> list[str]:

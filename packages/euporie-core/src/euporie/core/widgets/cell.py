@@ -31,6 +31,7 @@ from apptk.layout.containers import (
 from apptk.layout.controls import FormattedTextControl
 from apptk.layout.dimension import Dimension
 from apptk.utils import Event
+
 from euporie.core.completion import LspCompleter
 from euporie.core.diagnostics import Report
 from euporie.core.filters import multiple_cells_selected
@@ -52,6 +53,7 @@ if TYPE_CHECKING:
     from apptk.buffer import Buffer
     from apptk.completion.base import Completer
     from apptk.formatted_text.base import StyleAndTextTuples
+
     from euporie.core.format import Formatter
     from euporie.core.inspection import Inspector
     from euporie.core.lsp import LspClient

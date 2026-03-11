@@ -11,8 +11,9 @@ from apptk.layout.containers import Window, WindowAlign
 from apptk.layout.controls import FormattedTextControl
 from apptk.path import parse_path
 from apptk.utils import Event
-from euporie.core.path import UntitledPath
 from upath import UPath
+
+from euporie.core.path import UntitledPath
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -20,6 +21,7 @@ if TYPE_CHECKING:
     from typing import Any
 
     from apptk.layout.containers import AnyContainer
+
     from euporie.core.app.app import BaseApp
     from euporie.core.bars.status import StatusBarFields
 

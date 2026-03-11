@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, Mock
 
 from apptk.completion import CompleteEvent, Completion
 from apptk.document import Document
+
 from euporie.core.completion import KernelCompleter
 from euporie.core.kernel.base import BaseKernel
 

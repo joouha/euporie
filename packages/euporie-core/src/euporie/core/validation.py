@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from apptk.document import Document
+
     from euporie.core.kernel.base import BaseKernel
 
 log = logging.getLogger(__name__)

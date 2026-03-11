@@ -10,12 +10,13 @@ from apptk.enums import EditingMode
 from apptk.filters.app import buffer_has_focus, is_read_only
 from apptk.filters.environment import in_mplex
 from apptk.output.color_depth import ColorDepth
+from pygments.styles import STYLE_MAP as pygments_styles
+from upath import UPath
+
 from euporie.core import __version__
 from euporie.core.app.current import available_apps
 from euporie.core.config._setting import Setting
 from euporie.core.filters import tab_type_has_focus
-from pygments.styles import STYLE_MAP as pygments_styles
-from upath import UPath
 
 # App
 

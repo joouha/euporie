@@ -7,6 +7,7 @@ from unittest.mock import Mock, call, patch
 
 import pytest
 from apptk.layout.display import Display
+
 from euporie.core.comm.ipywidgets import (
     WIDGET_MODELS,
     IpyWidgetComm,

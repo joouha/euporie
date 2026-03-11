@@ -25,6 +25,7 @@ from apptk.layout.controls import UIContent, UIControl
 from apptk.layout.decor import FocusedStyle
 from apptk.layout.margins import ScrollbarMargin
 from apptk.mouse_events import MouseEvent, MouseEventType
+
 from euporie.core.widgets.dialog import Dialog
 from euporie.core.widgets.forms import Text
 
@@ -34,6 +35,7 @@ if TYPE_CHECKING:
     from apptk.key_binding.key_bindings import NotImplementedOrNone
     from apptk.key_binding.key_processor import KeyPressEvent
     from apptk.layout.controls import GetLinePrefixCallable
+
     from euporie.core.app.app import BaseApp
     from euporie.core.bars.status import StatusBarFields
 

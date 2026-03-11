@@ -11,6 +11,7 @@ from apptk.filters import (
 )
 from apptk.filters.app import display_has_focus
 from apptk.filters.buffer import buffer_is_code, buffer_is_empty
+
 from euporie.core.filters import (
     kernel_tab_has_focus,
     tab_can_save,

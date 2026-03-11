@@ -10,9 +10,8 @@ from apptk.filters.environment import have_modules
 if TYPE_CHECKING:
     from typing import Any
 
-    from rich.markdown import Markdown
-
     from apptk.convert.datum import Datum
+    from rich.markdown import Markdown
 
 
 @register(

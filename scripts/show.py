@@ -10,6 +10,7 @@ from apptk.convert.datum import Datum
 from apptk.convert.mime import get_format
 from apptk.layout.containers import DummyContainer
 from apptk.path import parse_path
+
 from euporie.core.app.app import BaseApp
 
 if TYPE_CHECKING:

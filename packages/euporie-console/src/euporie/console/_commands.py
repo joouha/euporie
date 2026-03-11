@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 async def _convert_to_notebook() -> None:
     """Convert the current console session to a notebook."""
     from apptk.application.run_in_terminal import in_terminal
+
     from euporie.console.app import get_app
     from euporie.console.tabs.console import Console
     from euporie.notebook.app import NotebookApp

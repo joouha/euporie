@@ -13,6 +13,7 @@ from apptk.layout.containers import (
 )
 from apptk.layout.dimension import Dimension
 from apptk.layout.print import PrintingContainer
+
 from euporie.core.tabs.notebook import BaseNotebook
 from euporie.core.widgets.cell import Cell
 from euporie.core.widgets.layout import Box
@@ -25,6 +26,7 @@ if TYPE_CHECKING:
     from apptk.application.application import Application
     from apptk.formatted_text.base import StyleAndTextTuples
     from apptk.layout.containers import AnyContainer
+
     from euporie.core.app.app import BaseApp
     from euporie.core.comm.base import Comm
     from euporie.core.kernel.base import BaseKernel

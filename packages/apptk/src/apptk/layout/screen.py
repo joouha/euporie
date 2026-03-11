@@ -5,11 +5,10 @@ from __future__ import annotations
 import logging
 from collections import ChainMap, defaultdict
 
+from apptk.data_structures import DiInt
 from prompt_toolkit.layout.screen import _CHAR_CACHE
 from prompt_toolkit.layout.screen import Screen as PtkScreen
 from prompt_toolkit.layout.screen import WritePosition as PtkWritePosition
-
-from apptk.data_structures import DiInt
 
 log = logging.getLogger(__name__)
 

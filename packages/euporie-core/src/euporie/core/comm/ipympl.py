@@ -19,6 +19,7 @@ from apptk.mouse_events import (
     MouseModifier,
     RelativePosition,
 )
+
 from euporie.core.comm.base import CommView
 from euporie.core.comm.ipywidgets import IpyWidgetComm
 from euporie.core.widgets.forms import Button, Label, ToggleButton
@@ -30,6 +31,7 @@ if TYPE_CHECKING:
 
     from apptk.key_binding.key_bindings import NotImplementedOrNone
     from apptk.mouse_events import MouseEvent as PtkMouseEvent
+
     from euporie.core.tabs.kernel import KernelTab
     from euporie.core.widgets.cell_outputs import OutputParent
 log = logging.getLogger(__name__)

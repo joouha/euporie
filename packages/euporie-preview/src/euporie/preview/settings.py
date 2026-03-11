@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from euporie.core.config._setting import Setting
 from upath import UPath
+
+from euporie.core.config._setting import Setting
 
 output_file = Setting(
     name="output_file",

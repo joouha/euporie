@@ -72,6 +72,7 @@ from apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
 from apptk.utils import Event
 from apptk.validation import Validator
 from apptk.widgets.base import Frame, Shadow
+
 from euporie.core.widgets.layout import Box, ConditionalSplit
 
 if TYPE_CHECKING:

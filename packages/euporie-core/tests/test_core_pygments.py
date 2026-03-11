@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from euporie.core.pygments import ArgparseLexer, EuporiePygmentsStyle
 from pygments.lexers import PythonLexer
 from pygments.token import Generic, Keyword, Name
+
+from euporie.core.pygments import ArgparseLexer, EuporiePygmentsStyle
 
 
 def test_argparse_lexer_tokenizes_usage_line() -> None:

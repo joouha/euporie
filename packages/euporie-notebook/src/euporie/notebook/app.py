@@ -32,6 +32,7 @@ from apptk.widgets.toolbars import (
     SearchToolbar,
     StatusBar,
 )
+
 from euporie.core import settings as core_settings
 from euporie.core.app.app import BaseApp
 from euporie.core.filters import has_tabs
@@ -66,6 +67,7 @@ if TYPE_CHECKING:
     from apptk.application.application import Application
     from apptk.formatted_text import StyleAndTextTuples
     from apptk.layout.containers import AnyContainer
+
     from euporie.core.config._setting import Setting
     from euporie.core.tabs import TabRegistryEntry
     from euporie.core.tabs.base import Tab

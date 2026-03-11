@@ -14,6 +14,7 @@ from apptk.io import PseudoTTY
 from apptk.layout.containers import DynamicContainer, FloatContainer, Window
 from apptk.output.defaults import create_output
 from apptk.output.vt100 import Vt100_Output
+
 from euporie.core import settings as core_settings
 from euporie.core.app.app import BaseApp
 from euporie.preview import settings as preview_settings
@@ -26,6 +27,7 @@ if TYPE_CHECKING:
     from apptk.application.application import _AppResult
     from apptk.layout.containers import Float
     from apptk.output import Output
+
     from euporie.core.config._setting import Setting
     from euporie.core.tabs.base import Tab
 

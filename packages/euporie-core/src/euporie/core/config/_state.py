@@ -6,10 +6,11 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from platformdirs import user_data_dir
+
 from euporie.core import __app_name__
 from euporie.core.config._layers import TomlFileLayer
 from euporie.core.config._store import SettingStore
-from platformdirs import user_data_dir
 
 if TYPE_CHECKING:
     from euporie.core.config._setting import Setting

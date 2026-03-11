@@ -11,9 +11,8 @@ from apptk.filters.environment import have_modules
 if TYPE_CHECKING:
     from typing import Any
 
-    from PIL.Image import Image as PilImage
-
     from apptk.convert.datum import Datum
+    from PIL.Image import Image as PilImage
 
 
 log = logging.getLogger(__name__)

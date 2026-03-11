@@ -11,6 +11,7 @@ from apptk.layout.containers import MarginContainer, VSplit
 from apptk.layout.dimension import Dimension
 from apptk.layout.margins import ScrollbarMargin
 from apptk.layout.scroll import ScrollingContainer
+
 from euporie.core.tabs.base import Tab
 from euporie.core.widgets.tree import JsonView
 
@@ -18,6 +19,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from apptk.layout.containers import AnyContainer
+
     from euporie.core.app.app import BaseApp
     from euporie.core.bars.status import StatusBarFields
 

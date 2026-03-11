@@ -19,6 +19,7 @@ from apptk.layout.containers import (
     to_container,
 )
 from apptk.layout.display import Display
+
 from euporie.core.widgets.layout import Box
 from euporie.core.widgets.tree import JsonView
 
@@ -27,6 +28,7 @@ if TYPE_CHECKING:
     from weakref import ReferenceType
 
     from apptk.layout.containers import AnyContainer, Window
+
     from euporie.core.config import Setting
     from euporie.core.tabs.kernel import KernelTab
 

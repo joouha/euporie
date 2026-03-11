@@ -12,9 +12,8 @@ from apptk.lexers.utils import detect_lexer
 if TYPE_CHECKING:
     from typing import Any
 
-    from markdown_it import MarkdownIt
-
     from apptk.convert.datum import Datum
+    from markdown_it import MarkdownIt
 
 log = logging.getLogger(__name__)
 

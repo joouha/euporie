@@ -42,6 +42,7 @@ from apptk.layout.decor import FocusedStyle
 from apptk.layout.dimension import Dimension
 from apptk.layout.mouse import MouseHandlerWrapper
 from apptk.widgets.base import Frame, Label, Shadow
+
 from euporie.core.widgets.file_browser import FileBrowser
 from euporie.core.widgets.forms import Button, LabelledWidget, Select, Text
 from euporie.core.widgets.layout import Box
@@ -57,6 +58,7 @@ if TYPE_CHECKING:
     from apptk.key_binding.key_processor import KeyPressEvent
     from apptk.layout.containers import AnyContainer
     from apptk.layout.layout import FocusableElement
+
     from euporie.core.app.app import BaseApp
     from euporie.core.kernel.base import KernelInfo
     from euporie.core.tabs.base import Tab
@@ -637,6 +639,7 @@ class ErrorDialog(Dialog):
         from apptk.layout.containers import MarginContainer
         from apptk.layout.margins import ScrollbarMargin
         from apptk.widgets.formatted_text_area import FormattedTextArea
+
         from euporie.core.widgets.forms import Checkbox
 
         if exception is None:

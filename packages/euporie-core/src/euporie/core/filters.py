@@ -33,6 +33,7 @@ def has_dialog() -> bool:
 def has_menus() -> bool:
     """Determine if a menu is being displayed."""
     from apptk.layout.containers import ConditionalContainer
+
     from euporie.notebook.current import get_app
 
     app = get_app()

@@ -25,6 +25,7 @@ from apptk.layout.margins import ScrollbarMargin
 from apptk.layout.mouse import MouseHandlerWrapper
 from apptk.layout.scroll import ScrollingContainer
 from apptk.mouse_events import MouseEventType
+
 from euporie.core.filters import (
     multiple_cells_selected,
 )
@@ -42,6 +43,7 @@ if TYPE_CHECKING:
     from apptk.key_binding.key_bindings import NotImplementedOrNone
     from apptk.layout.containers import AnyContainer
     from apptk.mouse_events import MouseEvent
+
     from euporie.core.app.app import BaseApp
     from euporie.core.bars.status import StatusBarFields
     from euporie.core.comm.base import Comm

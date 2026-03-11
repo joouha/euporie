@@ -74,6 +74,7 @@ class ArgumentParser(argparse.ArgumentParser):
         from apptk.lexers.pygments import _token_cache
         from apptk.shortcuts.utils import print_formatted_text
         from apptk.styles.pygments import style_from_pygments_cls
+
         from euporie.core.pygments import ArgparseLexer
         from euporie.core.style import get_style_by_name
 

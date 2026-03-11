@@ -27,11 +27,10 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any, ClassVar
 
-    from PIL.Image import Image as PilImage
-    from rich.console import ConsoleRenderable
-
     from apptk.data_structures import DiInt
     from apptk.formatted_text.base import StyleAndTextTuples
+    from PIL.Image import Image as PilImage
+    from rich.console import ConsoleRenderable
 
 
 T = TypeVar("T", bytes, str, "StyleAndTextTuples", "PilImage", "ConsoleRenderable")

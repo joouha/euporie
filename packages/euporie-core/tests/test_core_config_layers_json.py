@@ -6,6 +6,7 @@ import json
 from typing import TYPE_CHECKING, Any
 
 import pytest
+
 from euporie.core.config._layers import JsonFileLayer
 
 if TYPE_CHECKING:

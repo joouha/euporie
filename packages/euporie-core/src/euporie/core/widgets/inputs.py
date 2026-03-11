@@ -65,9 +65,10 @@ from apptk.lexers import DynamicLexer, PygmentsLexer, SimpleLexer
 from apptk.validation import DynamicValidator, Validator
 from apptk.widgets import TextArea
 from apptk.widgets.toolbars import SearchToolbar
+from pygments.lexers import ClassNotFound, get_lexer_by_name
+
 from euporie.core.diagnostics import Report
 from euporie.core.processors import DiagnosticProcessor
-from pygments.lexers import ClassNotFound, get_lexer_by_name
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -84,6 +85,7 @@ if TYPE_CHECKING:
     from apptk.layout.layout import FocusableElement
     from apptk.layout.margins import Margin
     from apptk.lexers.base import Lexer
+
     from euporie.core.bars.status import StatusBarFields
     from euporie.core.format import Formatter
     from euporie.core.inspection import Inspector
@@ -470,6 +472,7 @@ class KernelInput(TextArea):
     def _reformat_input() -> None:
         """Format the contents of the current input field."""
         from apptk.application.current import get_app
+
         from euporie.core.tabs.kernel import KernelTab
 
         if (

@@ -7,6 +7,8 @@ from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from platformdirs import user_config_dir
+
 from euporie.core import __app_name__, __copyright__
 from euporie.core.config._layers import (
     CliLayer,
@@ -15,7 +17,6 @@ from euporie.core.config._layers import (
     TomlFileLayer,
 )
 from euporie.core.config._store import SettingStore
-from platformdirs import user_config_dir
 
 if TYPE_CHECKING:
     from euporie.core.config._layers import Layer

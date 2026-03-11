@@ -77,9 +77,10 @@ def _toggle_side_bar_pane() -> None:
 @add_cmd(title="Open Configuration File")
 def _open_config_file() -> None:
     """Open the configuration file in a new tab."""
+    from upath import UPath
+
     from euporie.notebook.current import get_app
     from euporie.notebook.tabs.edit import EditorTab
-    from upath import UPath
 
     app = get_app()
     config_path = UPath(app.config._config_file_path)

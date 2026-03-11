@@ -11,6 +11,7 @@ from apptk.key_binding.key_bindings import KeyBindings
 from apptk.layout.containers import HSplit
 from apptk.layout.dimension import Dimension
 from apptk.lexers.utils import detect_lexer
+
 from euporie.core.kernel.base import BaseKernel, MsgCallbacks
 from euporie.core.tabs.kernel import KernelTab
 from euporie.core.widgets.inputs import KernelInput
@@ -20,6 +21,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from apptk.layout.containers import AnyContainer, Window
+
     from euporie.core.app.app import BaseApp
     from euporie.core.bars.status import StatusBarFields
     from euporie.core.comm.base import Comm

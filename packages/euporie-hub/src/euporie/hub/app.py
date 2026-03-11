@@ -15,6 +15,7 @@ except ModuleNotFoundError as err:
     ) from err
 
 from apptk.contrib.ssh import PromptToolkitSSHSession
+
 from euporie.core.app import APP_ALIASES
 from euporie.core.app.base import ConfigurableApp
 from euporie.hub import settings as hub_settings

@@ -180,6 +180,10 @@ ignore = [
     "SIM108",
 ]
 
+[tool.ruff.lint.isort]
+known-first-party = ["euporie"]
+known-third-party = ["apptk"]
+
 [tool.ruff.lint.per-file-ignores]
 "scripts/*.py" = ["T201"]
 

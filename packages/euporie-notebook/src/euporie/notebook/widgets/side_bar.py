@@ -25,6 +25,7 @@ from apptk.layout.mouse import MouseHandlerWrapper
 from apptk.layout.screen import WritePosition
 from apptk.mouse_events import MouseButton, MouseEventType
 from apptk.utils import Event
+
 from euporie.core.widgets.forms import ToggleButton, ToggleButtons
 
 if TYPE_CHECKING:

@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, Mock, NonCallableMock
 import pytest
 from apptk.document import Document
 from apptk.validation import ValidationError
+
 from euporie.core.validation import KernelValidator
 
 if TYPE_CHECKING:

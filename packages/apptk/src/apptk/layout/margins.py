@@ -23,14 +23,14 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from typing import Protocol
 
-    from euporie.core.diagnostics import Report
-
     from apptk.formatted_text import StyleAndTextTuples
     from apptk.key_binding.key_bindings import (
         NotImplementedOrNone,
     )
     from apptk.layout.containers import Window, WindowRenderInfo
     from apptk.layout.controls import UIContent
+
+    from euporie.core.diagnostics import Report
 
     class ScrollableContainer(Protocol):
         """Protocol for a scrollable container."""

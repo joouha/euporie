@@ -14,10 +14,11 @@ from apptk.layout.containers import HSplit, MarginContainer, VSplit, Window
 from apptk.layout.decor import FocusedStyle
 from apptk.layout.dimension import Dimension
 from apptk.layout.margins import ScrollbarMargin
+from upath import UPath
+
 from euporie.core.tabs.base import Tab
 from euporie.core.widgets.forms import Button, Text
 from euporie.core.widgets.webview import WebViewControl
-from upath import UPath
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -25,6 +26,7 @@ if TYPE_CHECKING:
     from typing import Any, ClassVar
 
     from apptk.layout.containers import AnyContainer
+
     from euporie.core.app.app import BaseApp
     from euporie.core.bars.status import StatusBarFields
 

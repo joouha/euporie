@@ -22,6 +22,7 @@ from apptk.layout.containers import (
 from apptk.layout.controls import FormattedTextControl
 from apptk.layout.layout import Layout
 from apptk.layout.print import PrintingContainer
+
 from euporie.core.format import LspFormatter
 from euporie.core.nbformat import new_code_cell, new_output
 from euporie.core.tabs.console import BaseConsole
@@ -37,6 +38,7 @@ if TYPE_CHECKING:
     from apptk.buffer import Buffer
     from apptk.formatted_text import AnyFormattedText
     from apptk.layout.containers import Container, Float
+
     from euporie.core.app.app import BaseApp
     from euporie.core.lsp import LspClient
     from euporie.core.nbformat import NotebookNode

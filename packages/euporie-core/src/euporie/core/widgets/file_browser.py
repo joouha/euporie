@@ -29,6 +29,7 @@ from apptk.layout.screen import WritePosition
 from apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
 from apptk.utils import Event
 from apptk.widgets.base import Frame
+
 from euporie.core.widgets.forms import Button, Text
 
 if TYPE_CHECKING:
@@ -41,6 +42,7 @@ if TYPE_CHECKING:
     from apptk.key_binding.key_processor import KeyPressEvent
     from apptk.layout.containers import AnyContainer
     from apptk.layout.dimension import AnyDimension
+
     from euporie.core.bars.status import StatusBarFields
 
 log = logging.getLogger(__name__)

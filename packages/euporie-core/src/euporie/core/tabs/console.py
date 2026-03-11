@@ -20,6 +20,8 @@ from apptk.io import edit_in_editor
 from apptk.key_binding.key_bindings import KeyBindings
 from apptk.mouse_events import MouseEventType
 from apptk.utils import Event
+from upath import UPath
+
 from euporie.core.diagnostics import Report
 from euporie.core.kernel.base import MsgCallbacks
 from euporie.core.lsp import LspCell
@@ -28,7 +30,6 @@ from euporie.core.style import KERNEL_STATUS_REPR
 from euporie.core.tabs.kernel import KernelTab
 from euporie.core.validation import KernelValidator
 from euporie.core.widgets.inputs import KernelInput, StdInput
-from upath import UPath
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -39,6 +40,7 @@ if TYPE_CHECKING:
     from apptk.key_binding.key_bindings import NotImplementedOrNone
     from apptk.key_binding.key_processor import KeyPressEvent
     from apptk.mouse_events import MouseEvent
+
     from euporie.core.app.app import BaseApp
     from euporie.core.lsp import LspClient
 

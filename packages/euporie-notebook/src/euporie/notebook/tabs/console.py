@@ -20,6 +20,7 @@ from apptk.layout.decor import FocusedStyle
 from apptk.layout.dimension import Dimension
 from apptk.layout.margins import ScrollbarMargin
 from apptk.layout.scroll import ScrollingContainer
+
 from euporie.core.nbformat import new_code_cell
 from euporie.core.tabs.console import BaseConsole
 from euporie.core.widgets.cell_outputs import CellOutputArea
@@ -31,6 +32,7 @@ if TYPE_CHECKING:
 
     from apptk.buffer import Buffer
     from apptk.layout.containers import Container
+
     from euporie.core.app.app import BaseApp
 
 log = logging.getLogger(__name__)

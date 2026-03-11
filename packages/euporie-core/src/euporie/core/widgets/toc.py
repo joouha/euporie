@@ -20,6 +20,7 @@ from apptk.layout.margins import ScrollbarMargin
 from apptk.mouse_events import MouseButton, MouseEventType
 from apptk.selection import SelectionState
 from apptk.widgets.base import Frame
+
 from euporie.core.widgets.forms import Dropdown
 
 if TYPE_CHECKING:
@@ -36,6 +37,7 @@ if TYPE_CHECKING:
     from apptk.layout.controls import GetLinePrefixCallable
     from apptk.mouse_events import MouseEvent
     from apptk.utils import Event
+
     from euporie.core.tabs.base import Tab
 
 

@@ -28,6 +28,7 @@ from apptk.widgets.toolbars import (
     SearchToolbar,
     StatusBar,
 )
+
 from euporie.console import settings as console_settings
 from euporie.console.tabs.console import Console
 from euporie.core import settings as core_settings
@@ -49,6 +50,7 @@ if TYPE_CHECKING:
     from typing import Any, TypeVar
 
     from apptk.application.application import Application
+
     from euporie.core.config._setting import Setting
 
     _AppResult = TypeVar("_AppResult")

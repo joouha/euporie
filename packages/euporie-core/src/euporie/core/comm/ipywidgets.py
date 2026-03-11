@@ -20,6 +20,7 @@ from apptk.layout.containers import HSplit, VSplit
 from apptk.layout.decor import FocusedStyle
 from apptk.layout.processors import BeforeInput
 from apptk.widgets.base import Frame
+
 from euporie.core.comm.base import Comm, CommView
 from euporie.core.kernel.jupyter import MsgCallbacks
 from euporie.core.widgets.forms import (
@@ -51,6 +52,7 @@ if TYPE_CHECKING:
     from apptk.buffer import Buffer
     from apptk.formatted_text.base import AnyFormattedText
     from apptk.layout.containers import AnyContainer, _Split
+
     from euporie.core.tabs.kernel import KernelTab
     from euporie.core.widgets.cell_outputs import OutputParent
     from euporie.core.widgets.forms import SelectableWidget, ToggleableWidget

@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from euporie.core.config._setting import Setting
 from upath import UPath
+
+from euporie.core.config._setting import Setting
 
 mouse_support = Setting(
     name="mouse_support",

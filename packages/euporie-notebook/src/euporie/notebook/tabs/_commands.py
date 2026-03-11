@@ -15,6 +15,7 @@ from apptk.filters.buffer import (
 from apptk.filters.modes import (
     exitable_mode,
 )
+
 from euporie.core.filters import (
     kernel_tab_has_focus,
     multiple_cells_selected,

@@ -1,6 +1,7 @@
 """Define a dummy application."""
 
 from apptk.layout.containers import DummyContainer
+
 from euporie.core.app.app import BaseApp
 
 

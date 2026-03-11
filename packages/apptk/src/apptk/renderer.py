@@ -6,13 +6,12 @@ import logging
 from hashlib import md5
 from typing import TYPE_CHECKING
 
-from prompt_toolkit.renderer import Renderer as PtkRenderer
-from prompt_toolkit.renderer import _StyleStringHasStyleCache, _StyleStringToAttrsCache
-
 from apptk.data_structures import Point, Size
 from apptk.filters import to_filter
 from apptk.layout.mouse_handlers import MouseHandlers
 from apptk.layout.screen import Char, Screen, WritePosition
+from prompt_toolkit.renderer import Renderer as PtkRenderer
+from prompt_toolkit.renderer import _StyleStringHasStyleCache, _StyleStringToAttrsCache
 
 if TYPE_CHECKING:
     from collections.abc import Callable

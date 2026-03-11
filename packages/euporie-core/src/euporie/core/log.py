@@ -21,6 +21,7 @@ from apptk.renderer import (
 from apptk.shortcuts.utils import print_formatted_text
 from apptk.styles.pygments import style_from_pygments_cls
 from apptk.styles.style import Style, merge_styles
+
 from euporie.core.style import LOG_STYLE, get_style_by_name
 from euporie.core.utils import dict_merge
 
@@ -31,6 +32,7 @@ if TYPE_CHECKING:
 
     from apptk.formatted_text.base import StyleAndTextTuples
     from apptk.styles.base import BaseStyle
+
     from euporie.core.config._config import Config
 
 log = logging.getLogger(__name__)

@@ -6,9 +6,10 @@ import logging
 import os
 from typing import TYPE_CHECKING
 
-from euporie.core.tabs.base import Tab
 from ptterm import Terminal
 from upath import UPath
+
+from euporie.core.tabs.base import Tab
 
 if TYPE_CHECKING:
     from pathlib import Path

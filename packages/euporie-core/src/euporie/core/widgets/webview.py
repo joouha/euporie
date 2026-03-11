@@ -561,6 +561,7 @@ if __name__ == "__main__":
     from apptk.key_binding.key_bindings import KeyBindings
     from apptk.layout.layout import Layout
     from apptk.output.color_depth import ColorDepth
+
     from euporie.web.widgets.webview import WebViewControl
 
     kb = KeyBindings()

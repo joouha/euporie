@@ -26,6 +26,7 @@ from apptk.mouse_events import MouseButton, MouseEventType
 from apptk.utils import Event
 from apptk.widgets.base import Label
 from code_minimap import render as render_minimap
+
 from euporie.core.widgets.forms import Button
 from euporie.core.widgets.layout import Box
 
@@ -41,6 +42,7 @@ if TYPE_CHECKING:
     from apptk.layout.containers import AnyContainer
     from apptk.layout.controls import GetLinePrefixCallable
     from apptk.mouse_events import MouseEvent
+
     from euporie.core.tabs.base import Tab
 
 

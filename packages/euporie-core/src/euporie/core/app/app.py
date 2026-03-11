@@ -44,6 +44,7 @@ from apptk.styles.base import DynamicStyle
 from apptk.styles.style import PaletteStyle
 from apptk.utils import Event
 from apptk.widgets.base import Shadow
+
 from euporie.core import settings as core_settings
 from euporie.core.app.base import ConfigurableApp
 from euporie.core.app.cursor import CursorConfig
@@ -76,6 +77,7 @@ if TYPE_CHECKING:
     from apptk.layout.containers import AnyContainer
     from apptk.layout.layout import FocusableElement
     from apptk.widgets.toolbars import CommandBar
+
     from euporie.core.bars.search import SearchBar
     from euporie.core.config._setting import Setting
     from euporie.core.format import Formatter
