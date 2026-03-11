@@ -26,6 +26,7 @@ log = logging.getLogger(__name__)
 _COLOR_NAMES: dict[str, str] = {
     "10": "fg",
     "11": "bg",
+    "12": "cu",
     "4;0": "ansiblack",
     "4;1": "ansired",
     "4;2": "ansigreen",

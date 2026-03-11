@@ -56,7 +56,10 @@ class Color(str):
         self.hue, self.brightness, self.saturation = rgb_to_hls(
             self.red, self.green, self.blue
         )
-        self.is_light = self.brightness > 0.5
+        self.perceived_brightness = (
+            0.2126 * self.red + 0.7152 * self.green + 0.0722 * self.blue
+        )
+        self.is_light = self.perceived_brightness > 0.5
 
     @classmethod
     def from_rgb(

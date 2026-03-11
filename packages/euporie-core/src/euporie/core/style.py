@@ -250,7 +250,7 @@ def menu_styles(cp: ColorPalette) -> dict[str, str]:
         "menu selection": f"bg:{cp.hl.more(1)} fg:{cp.hl} reverse",
         "menu menu-bar.selected-item": f"bg:{cp.hl.more(1)} fg:{cp.hl} reverse",
         "menu menu-bar.selected-item shortcut": f"bg:{cp.hl.more(1).more(0.05)} fg:{cp.hl} reverse",
-        "menu menu-bar.selected-item prefix": f"bg:{cp.hl.more(1).more(0.05)} fg:{cp.hl} reverse",
+        "menu menu-bar.selected-item prefix": f"bg:{cp.hl.more(1).less(0.05)} fg:{cp.hl} reverse",
         "menu-border": f"fg:{cp.bg.more(0.15)} bg:{cp.bg.more(0.05)}",
         "menu-border disabled": f"fg:{cp.bg.more(0.15)} bg:{cp.bg.more(0.05)}",
         "menu-border menu-bar.selected-item": f"fg:{cp.bg.more(0.15)} bg:{cp.hl} noreverse",
@@ -325,7 +325,7 @@ def scrollbar_styles(cp: ColorPalette) -> dict[str, str]:
 def dialog_styles(cp: ColorPalette) -> dict[str, str]:
     """Generate dialog styles."""
     return {
-        "dialog dialog-title": f"bg:white fg:{cp.hl.darker(0.25)} bold reverse",
+        "dialog dialog-title": f"bg:{cp.hl.more(1)} fg:{cp.hl.darker(0.25)} bold reverse",
         "dialog": f"fg:{cp.fg} bg:{cp.bg.darker(0.1)}",
         "dialog text-area": f"bg:{cp.bg.lighter(0.05)}",
         "dialog input text text-area": f"fg:default bg:{cp.bg.less(0.1)}",
@@ -345,7 +345,7 @@ def toolbar_styles(cp: ColorPalette) -> dict[str, str]:
         "search-toolbar": f"fg:{cp.fg.more(0.05)} bg:{cp.bg.more(0.05)}",
         "toolbar menu": f"fg:{cp.fg.more(0.05)} bg:{cp.bg.more(0.05)}",
         "toolbar menu completion": f"fg:{cp.fg.more(0.1)} bg:{cp.bg.more(0.1)}",
-        "toolbar menu completion current": f"fg:{cp.hl} bg:{cp.fg} reverse",
+        "toolbar menu completion current": f"fg:{cp.hl} bg:{cp.hl.more(1)} reverse",
         "toolbar menu overflow": f"fg:{cp.fg.more(0.5)}",
         "toolbar menu meta": f"bg:{cp.bg.more(0.25)} bold",
     }
@@ -354,24 +354,21 @@ def toolbar_styles(cp: ColorPalette) -> dict[str, str]:
 def completion_styles(cp: ColorPalette) -> dict[str, str]:
     """Generate completion menu styles."""
     completion_colors = {
-        "keyword": "#d700af",
-        "function": "#005faf",
-        "class": "#008700",
-        "statement": "#5f0000",
-        "instance": "#d75f00",
-        "module": "#d70000",
-        "magic": "#9841bb",
-        "path": "#aa8800",
-        "dict-key": "#ddbb00",
+        "keyword": Color("#d700af"),
+        "function": Color("#005faf"),
+        "class": Color("#008700"),
+        "statement": Color("#5f0000"),
+        "instance": Color("#d75f00"),
+        "module": Color("#d70000"),
+        "magic": Color("#9841bb"),
+        "path": Color("#aa8800"),
+        "dict-key": Color("#ddbb00"),
     }
 
     styles = {}
-    for name, color_hex in completion_colors.items():
-        styles[f"menu completion-{name}"] = f"fg:{color_hex}"
-        color = Color(color_hex)
-        styles[f"menu completion-{name} selection"] = (
-            f"bg:{color.lighter(0.75)} fg:{cp.hl} reverse"
-        )
+    for name, color in completion_colors.items():
+        styles[f"menu completion-{name}"] = f"fg:{color}"
+        styles[f"menu completion-{name} selection"] = f"bg:{color} fg:{cp.hl} reverse"
     return styles
 
 
@@ -431,7 +428,7 @@ def sidebar_styles(cp: ColorPalette) -> dict[str, str]:
         "side_bar buttons": f"bg:{cp.bg.less(0.15)}",
         "side_bar buttons focused": f"fg:{cp.hl}",
         "side_bar buttons separator": f"bg:{cp.bg.less(0.15)} fg:{cp.bg.less(0.15)}",
-        "side_bar buttons selection": f"bg:{cp.fg.hex} fg:{cp.hl} reverse",
+        "side_bar buttons selection": f"bg:{cp.hl.more(1)} fg:{cp.hl} reverse",
         "side_bar buttons separator selection before": (
             f"bg:{cp.bg.less(0.15)} fg:{cp.hl} reverse"
         ),
@@ -615,18 +612,18 @@ def input_widget_styles(
         "input slider handle focused": f"fg:{cp.fg}",
         "input slider handle selection focused": f"fg:{cp.hl}",
         "input dropdown dropdown.menu": f"bg:{cp.bg.more(0.05)}",
-        "input dropdown dropdown.menu hovered": f"bg:{cp.hl}",
+        "input dropdown dropdown.menu hovered": f"bg:{cp.hl.more(1)} fg:{cp.hl} reverse",
         "input select face": f"bg:{cp.bg.lighter(0.1)}",
         "input select face selection": f"fg:white bg:{cp.hl}",
         "input select face hovered": f"bg:{cp.bg.more(0.2)}",
-        "input select face hovered selection": f"fg:white bg:{cp.hl}",
+        "input select face hovered selection": f"bg:{cp.hl.more(1)} fg:{cp.hl} reverse",
         "input list border": f"fg:{cp.bg.more(0.5)}",
         "input list face": f"bg:{cp.bg.lighter(0.1)}",
         "input list face placeholder": f"fg:{cp.fg.more(0.5)}",
         "input list face row alt": f"bg:{cp.bg.lighter(0.1).more(0.01)}",
         "input list face row hovered": f"bg:{cp.bg.more(0.2)}",
         "input list face row selection": f"bg:{cp.bg.more(0.3)}",
-        "input list face row selection focused": f"bg:{cp.fg.hex} fg:{cp.hl} reverse",
+        "input list face row selection focused": f"bg:{cp.hl.more(1)} fg:{cp.hl} reverse",
     }
 
 

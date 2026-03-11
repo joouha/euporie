@@ -791,11 +791,21 @@ class BaseApp(ConfigurableApp, Application, ABC):
             cp["fg"] = Color("#FFFFFF")
             cp["bg"] = Color("#000000")
         elif scheme == "custom":
-            # TODO - use config.custom_colors
-            cp["fg"] = Color(self.config.custom_foreground_color)
-            cp["bg"] = Color(self.config.custom_background_color)
-        # Add highlight color (allowing ansicolors to be used)
-        cp["hl"] = cp.get(self.config.accent_color, self.config.accent_color)
+            cp["fg"] = cp.get(self.config.custom_foreground_color) or Color(
+                self.config.custom_foreground_color
+            )
+            cp["bg"] = cp.get(self.config.custom_background_color) or Color(
+                self.config.custom_background_color
+            )
+        accent_color = self.config.accent_color
+        if accent_color == "default":
+            cp["hl"] = Color("#0D73CC")
+        elif accent_color == "auto":
+            cp["hl"] = Color.from_rgb(*TERMINAL_COLORS_TO_RGB["cu"])
+        else:
+            cp["hl"] = cp.get(self.config.accent_color) or Color(
+                self.config.accent_color
+            )
 
     def _create_merged_style(
         self, include_default_pygments_style: Filter | None = None

@@ -37,8 +37,9 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 TERMINAL_COLORS_TO_RGB = {
-    "fg": (255, 255, 255),
+    "fg": (0xFF, 0xFF, 0xFF),
     "bg": (0, 0, 0),
+    "cu": (0xAA, 0xAA, 0xAA),
 }
 
 
@@ -339,7 +340,7 @@ class Vt100_Output(PtkVt100_Output):
         """Query terminal colors."""
         self.write_raw(
             self.mplex_passthrough(
-                ("\x1b]10;?\x1b\\\x1b]11;?\x1b\\")
+                "\x1b]10;?\x1b\\\x1b]11;?\x1b\\\x1b]12;?\x1b\\"
                 + "".join(f"\x1b]4;{i};?\x1b\\" for i in range(16))
             )
         )

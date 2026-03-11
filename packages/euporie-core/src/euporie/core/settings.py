@@ -640,9 +640,11 @@ accent_color = Setting(
     flags=["--accent-color"],
     type_=str,
     help_="Accent color to use in the app",
-    default="ansiblue",
+    default="default",
     description="""
         The hex code of a color to use for the accent color in the application.
+        When set to "auto", the terminal's cursor color will be used.
+        When set to "default", euporie's default color scheme will be used.
     """,
 )
 
