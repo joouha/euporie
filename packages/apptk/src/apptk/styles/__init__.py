@@ -1,0 +1,1 @@
+"""Application toolkit styles module."""

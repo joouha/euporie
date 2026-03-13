@@ -8,16 +8,16 @@ import logging
 import os
 from typing import TYPE_CHECKING, Generic
 
+from apptk.application.current import set_app
 from apptk.data_structures import Point
 from apptk.enums import EditingMode
 from apptk.filters import to_filter
+from apptk.input.vt100 import Vt100Input
 from apptk.key_binding.helix_state import HelixState
 from apptk.key_binding.key_bindings import (
     KeyBindingsBase,
 )
 from apptk.key_binding.micro_state import MicroState
-from apptk.layout.containers import Window
-from apptk.layout.controls import UIControl
 from apptk.output.vt100 import Vt100_Output
 from apptk.utils import Event
 from prompt_toolkit.application.application import (
@@ -27,8 +27,7 @@ from prompt_toolkit.application.application import _AppResult
 from prompt_toolkit.application.application import (
     _CombinedRegistry as _PtkCombinedRegistry,
 )
-from prompt_toolkit.application.current import set_app
-from prompt_toolkit.input.vt100 import Vt100Input
+from prompt_toolkit.enums import EditingMode as PtkEditingMode
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -38,8 +37,6 @@ if TYPE_CHECKING:
     from apptk.filters import FilterOrBool
     from apptk.input.base import Input
     from apptk.key_binding.key_bindings import KeyBindingsBase
-    from apptk.layout.containers import Window
-    from apptk.layout.controls import UIControl
     from apptk.layout.layout import Layout
     from apptk.layout.screen import WritePosition
     from apptk.output import ColorDepth, Output
@@ -48,6 +45,9 @@ if TYPE_CHECKING:
         StyleTransformation,
     )
     from prompt_toolkit.application.application import ApplicationEventHandler
+    from prompt_toolkit.key_binding import KeyBindingsBase as PtkKeyBindingsBase
+    from prompt_toolkit.layout import UIControl as PtkUIControl
+    from prompt_toolkit.layout.containers import Window as PtkWindow
 
 log = logging.getLogger(__name__)
 
@@ -109,7 +109,7 @@ class Application(PtkApplication, Generic[_AppResult]):
             mouse_support=mouse_support,
             enable_page_navigation_bindings=enable_page_navigation_bindings,
             paste_mode=paste_mode,
-            editing_mode=editing_mode,
+            editing_mode=PtkEditingMode(editing_mode.value),
             erase_when_done=erase_when_done,
             reverse_vi_search_direction=reverse_vi_search_direction,
             min_redraw_interval=min_redraw_interval,
@@ -246,8 +246,8 @@ class _CombinedRegistry(_PtkCombinedRegistry):
         self.handler_keys = {}
 
     def _create_key_bindings(
-        self, current_window: Window, other_controls: list[UIControl]
-    ) -> KeyBindingsBase:
+        self, current_window: PtkWindow, other_controls: list[PtkUIControl]
+    ) -> PtkKeyBindingsBase:
         key_bindings = super()._create_key_bindings(current_window, other_controls)
         for binding in key_bindings.bindings:
             self.handler_keys.setdefault(binding.handler, []).append(binding.keys)

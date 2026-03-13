@@ -21,7 +21,6 @@ __all__ = [
     "helix_navigation_mode",
     "helix_replace_mode",
     "insert_mode",
-    "is_searching",
     "micro_insert_mode",
     "micro_mode",
     "micro_recording_macro",
@@ -123,14 +122,3 @@ exitable_mode = (
     | (micro_mode & ~micro_insert_mode)
     | (emacs_mode & ~emacs_insert_mode)
 )
-
-
-@Condition
-def is_searching() -> bool:
-    """Determine if the app is in search mode."""
-    from apptk.application.current import get_app
-
-    app = get_app()
-    return (
-        app.search_bar is not None and app.search_bar.control in app.layout.search_links
-    )

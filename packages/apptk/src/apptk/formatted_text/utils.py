@@ -24,6 +24,9 @@ if TYPE_CHECKING:
         OneStyleAndTextTuple,
         StyleAndTextTuples,
     )
+    from prompt_toolkit.formatted_text.utils import (
+        to_formatted_text as to_formatted_text,
+    )
 
 _ZERO_WIDTH_FRAGMENTS = {"[ZeroWidthEscape]", "[ReverseOverwrite]"}
 

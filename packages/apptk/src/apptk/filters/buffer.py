@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from functools import cache
 
-from prompt_toolkit.filters.base import Condition
+from apptk.filters.base import Condition
 
 __all__ = [
     "at_end_of_buffer",

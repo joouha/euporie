@@ -11,7 +11,7 @@ from prompt_toolkit.clipboard.pyperclip import (
 )
 
 if TYPE_CHECKING:
-    from apptk.clipboard.base import ClipboardData
+    from prompt_toolkit.clipboard.base import ClipboardData as PtkClipboardData
 
 log = logging.getLogger(__name__)
 
@@ -19,7 +19,7 @@ log = logging.getLogger(__name__)
 class PyperclipClipboard(PtkPyperclipClipboard):
     """Pyperclip clipboard which suppresses pyperclip exceptions."""
 
-    def set_data(self, data: ClipboardData) -> None:
+    def set_data(self, data: PtkClipboardData) -> None:
         """Set the clipboard data, ignoring any clipboard errors."""
         self._data = data
         try:

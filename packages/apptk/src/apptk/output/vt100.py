@@ -55,7 +55,6 @@ def _have_termios_tty_fcntl() -> bool:
         return True
 
 
-# TODO - move to output
 def _tiocgwinsz() -> tuple[int, int, int, int]:
     """Get the size and pixel dimensions of the terminal with `termios`."""
     import array

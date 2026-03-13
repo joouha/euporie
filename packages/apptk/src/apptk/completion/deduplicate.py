@@ -7,18 +7,13 @@ from typing import TYPE_CHECKING
 from prompt_toolkit.completion.deduplicate import (
     DeduplicateCompleter as PtkDeduplicateCompleter,
 )
-from prompt_toolkit.document import Document
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
 
-    from apptk.completion.base import CompleteEvent, Completion
-    from apptk.document import Document
-
-if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator
-
-    from apptk.document import Document
+    from prompt_toolkit.completion.base import CompleteEvent as PtkCompleteEvent
+    from prompt_toolkit.completion.base import Completion as PtkCompletion
+    from prompt_toolkit.document import Document as PtkDocument
 
 __all__ = ["DeduplicateCompleter"]
 
@@ -31,8 +26,8 @@ class DeduplicateCompleter(PtkDeduplicateCompleter):
     """
 
     async def get_completions_async(
-        self, document: Document, complete_event: CompleteEvent
-    ) -> AsyncGenerator[Completion]:
+        self, document: PtkDocument, complete_event: PtkCompleteEvent
+    ) -> AsyncGenerator[PtkCompletion]:
         """Get completions from wrapped completer."""
         # Keep track of the document strings we'd get after applying any completion.
         found_so_far: set[str] = set()

@@ -13,7 +13,8 @@ from html.parser import HTMLParser
 from itertools import zip_longest
 from math import ceil
 from operator import eq, ge, gt, le, lt
-from typing import TYPE_CHECKING, NamedTuple, cast, overload
+from pathlib import Path
+from typing import TYPE_CHECKING, NamedTuple, TypedDict, cast, overload
 
 from apptk.application.current import get_app, get_app_session
 from apptk.border import (
@@ -70,7 +71,6 @@ from upath import UPath
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Iterator
-    from pathlib import Path
     from typing import Any
 
     from apptk.filters.base import Filter, FilterOrBool
@@ -652,6 +652,7 @@ def match_css_selector(
                 element_attrs.get("class", "").split(), key=len, reverse=True
             ):
                 # IF CLASS NAME SUBSTRING
+                class_name = str(class_name)
                 if selector[1:].startswith(class_name):
                     selector = selector = selector[1 + len(class_name) :]
                     break
@@ -807,11 +808,7 @@ def css_dimension(
         return number / 100 * available
 
     # Get cell pixel dimensions
-    app = get_app()
-    if hasattr(app, "cell_size_px"):
-        cell_px, cell_py = get_app().output.cell_pixel_size
-    else:
-        cell_px, cell_py = 10, 20
+    cell_px, cell_py = get_app().output.cell_pixel_size
 
     if units == "px":
         cols = number / cell_px
@@ -1536,12 +1533,12 @@ class Theme(Mapping):
                 css_dimension(left, vertical=True, available=container_width)
                 if left not in {"auto", "unset"}
                 else 0
-            )
+            ) or 0
             right_offset = (
                 css_dimension(right, vertical=True, available=container_width)
                 if right not in {"auto", "unset"}
                 else 0
-            )
+            ) or 0
             return round(container_width - left_offset - right_offset)
 
         return None
@@ -1654,12 +1651,12 @@ class Theme(Mapping):
                 css_dimension(top, vertical=True, available=container_height)
                 if top not in {"auto", "unset"}
                 else 0
-            )
+            ) or 0
             bottom_offset = (
                 css_dimension(bottom, vertical=True, available=container_height)
                 if bottom not in {"auto", "unset"}
                 else 0
-            )
+            ) or 0
             return round(container_height - top_offset - bottom_offset)
 
         return None
@@ -2972,6 +2969,34 @@ _BROWSER_CSS: dict[Filter, CssRuleSet] = {
     )
 }
 
+NodeAttrs = TypedDict(
+    "NodeAttrs",
+    {
+        "class": str,
+        "data": str | bytes,
+        "href": str,
+        "rel": str,
+        "as": str,
+        "src": str,
+        "colspan": int,
+        "size": str,
+        "id": str,
+        "type": str,
+        "color": str,
+        "bgcolor": str,
+        "height": str,
+        "width": str,
+        "border": str,
+        "alt": str,
+        "title": str,
+        "linkpath": Path,
+        "style": str,
+        "halign": str,
+        "valign": str,
+    },
+    total=False,
+)
+
 
 class Node:
     """Represent an node in the DOM."""
@@ -2982,7 +3007,7 @@ class Node:
         name: str,
         parent: Node | None,
         text: str = "",
-        attrs: list[tuple[str, str | None]] | None = None,
+        attrs: NodeAttrs | None = None,
         contents: list[Node] | None = None,
     ) -> None:
         """Create a new page element."""
@@ -2990,7 +3015,7 @@ class Node:
         self.name = name
         self.parent = parent
         self._text = text
-        self.attrs: dict[str, Any] = {k: v for k, v in (attrs or []) if v is not None}
+        self.attrs: NodeAttrs = {k: v for k, v in (attrs or []) if v is not None}
         self.contents: list[Node] = contents or []
         self.closed = False
         self.marker: Node | None = None
@@ -3752,12 +3777,11 @@ class RichHTML:
                         groups = match.groupdict()
                         before = groups["beginning"]
                         latex = groups["display_bracket"] or groups["display_dollar"]
-                        b_attrs: list[tuple[str, str | None]] | None
+                        b_attrs: list[tuple[str, str | None]] | None = []
                         if latex:
-                            b_attrs = [("style", "display: block")]
+                            b_attrs.append(("style", "display: block"))
                         else:
                             latex = groups["inline_bracket"] or groups["inline_dollar"]
-                            b_attrs = []
                         text = groups["end"]
                     else:
                         break
@@ -4600,6 +4624,7 @@ class RichHTML:
         if not element.attrs.get("_missing") and (data := element.attrs.get("_data")):
             # Display it graphically
             format_ = get_format(path, default="png")
+            assert isinstance(data, (str, bytes))
             ft = await self._render_datum(data, format_, theme, path)
 
         else:
@@ -5227,9 +5252,9 @@ class RichHTML:
             # Inline elements inherit from parents
             if d_inline and (parent := element.parent):
                 p_attrs = parent.attrs
-                attrs.setdefault("href", p_attrs.get("href"))
-                attrs.setdefault("title", p_attrs.get("title"))
-                attrs.setdefault("alt", p_attrs.get("alt"))
+                for attr in ("html", "title", "alt"):
+                    if attr in p_attrs and attr not in attrs:
+                        attrs[attr] = p_attrs[attr]
             # Resolve link paths
             if href := attrs.get("href"):
                 attrs["_link_path"] = self.base.joinuri(href)

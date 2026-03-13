@@ -26,10 +26,10 @@ class LaunchApp(ConfigurableApp):
     ]
 
     @classmethod
-    def launch(cls) -> None:
+    def launch(cls, args: list[str] | None = None) -> None:
         """Launch an app."""
         # Load settings, including cli
-        super().launch()
+        super().launch(args=args)
         # Detect selected app
         chosen_app = cls.config.app
         # Pass only the args the launcher did not consume so the child

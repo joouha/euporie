@@ -11,6 +11,7 @@ if TYPE_CHECKING:
 
     from apptk.document import Document
     from prompt_toolkit.formatted_text.base import StyleAndTextTuples
+    from prompt_toolkit.lexers.pygments import _token_cache as _token_cache
 
 
 class PygmentsLexer(PtkPygmentsLexer):
