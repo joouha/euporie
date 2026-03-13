@@ -25,38 +25,6 @@ classifiers = [
 ]
 dependencies = ["euporie-notebook", "euporie-preview", "euporie-console"]
 
-[tool.uv.sources]
-apptk = { workspace = true }
-euporie-core = { workspace = true }
-euporie-notebook = { workspace = true }
-euporie-preview = { workspace = true }
-euporie-console = { workspace = true }
-euporie-hub = { workspace = true }
-
-[tool.uv]
-managed = true
-
-[tool.uv.workspace]
-members = ["packages/*"]
-exclude = []
-
-[project.scripts]
-euporie = "euporie.launch.app:LaunchApp.launch"
-
-[tool.hatch.version]
-path = "VERSION"
-pattern = "(?P<version>.+)"
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/euporie"]
-
-[tool.hatch.build.targets.sdist]
-include = ["src/euporie/launch"]
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
 [dependency-groups]
 dev = [
     "taskipy>=1.14.1",
@@ -91,19 +59,49 @@ type = [
     "typing-extensions>=4.15.0",
 ]
 
+[project.scripts]
+euporie = "euporie.launch.app:LaunchApp.launch"
 
 ## Tool configuration #########################################################
 
+[tool.uv.sources]
+apptk = { workspace = true }
+euporie-core = { workspace = true }
+euporie-notebook = { workspace = true }
+euporie-preview = { workspace = true }
+euporie-console = { workspace = true }
+euporie-hub = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+managed = true
+
+[tool.uv.workspace]
+members = ["packages/*"]
+exclude = []
+
+[tool.hatch.version]
+path = "VERSION"
+pattern = "(?P<version>.+)"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/euporie"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/euporie/launch"]
 
 [tool.towncrier]
 name = "euporie"
-directory = "changelog.d"
+directory = "changelog"
 filename = "CHANGELOG.rst"
-template = "changelog.d/_template.rst"
+template = "changelog/_template.rst"
 title_format = false
 underlines = ["*", "=", "-"]
 issue_format = "`#{issue} <https://github.com/joouha/euporie/issues/{issue}>`_"
-package = "euporie.meta"
+package = "euporie.launch"
 package_dir = "src"
 
 [[tool.towncrier.type]]
