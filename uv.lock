@@ -211,7 +211,7 @@ requires-dist = [
     { name = "linkify-it-py", specifier = ">=2.0.3" },
     { name = "markdown-it-py", specifier = ">=4.0.0" },
     { name = "mdit-py-plugins", specifier = ">=0.5.0" },
-    { name = "modshim", specifier = ">=0.5.0" },
+    { name = "modshim", specifier = ">=0.5.1" },
     { name = "pillow", specifier = ">=12.1.1" },
     { name = "prompt-toolkit", specifier = "==3.0.52" },
     { name = "pygments", specifier = ">=2.19.2" },
@@ -1259,11 +1259,11 @@ wheels = [
 
 [[package]]
 name = "modshim"
-version = "0.5.0"
+version = "0.5.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/bd/5f/e4dbb4606975f3736f5277b416f9bead29ed52961cd63f3b73546c071aec/modshim-0.5.0.tar.gz", hash = "sha256:63a8be1decca1535d7e8bc968a350cd80c726c67f25a53de0a024fcd070a175b", size = 60367, upload-time = "2026-02-03T16:09:19.759Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a1/96/c0f6111c8d61e9eb74a377dcfa0e2b3962dffd78d57eb32f84affc84097b/modshim-0.5.1.tar.gz", hash = "sha256:c6b5173be63b436163274fe19747edf4021970d96f38ab22f3cd6c24c4e6dca1", size = 60958, upload-time = "2026-03-13T11:02:42.234Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b1/84/a50e782bb3f8c5b5411fe87733c659305cc147153304195375428ac503ed/modshim-0.5.0-py3-none-any.whl", hash = "sha256:600014ec40f3c95590e8a70895262d7654a03ba152fcddf9afefbb78fbc73a22", size = 19155, upload-time = "2026-02-03T16:09:18.648Z" },
+    { url = "https://files.pythonhosted.org/packages/d1/18/c7bf46c2648155fcd8e7976e506a068f011b9cdccfcecbaa58b4809502cf/modshim-0.5.1-py3-none-any.whl", hash = "sha256:2d7ec9ad85dd81f1f5ac748f3546cb689b85ac91d171e8fc4497539d6ace217e", size = 19205, upload-time = "2026-03-13T11:02:41.238Z" },
 ]
 
 [[package]]
