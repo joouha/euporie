@@ -16,6 +16,7 @@ dependencies = [
     "sixelcrop>=0.1.9",
     "timg>=1.1.6",
     "universal-pathlib>=0.3.10",
+    "pygments>=2.19.2",
 ]
 
 [tool.uv.sources]
