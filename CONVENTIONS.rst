@@ -479,12 +479,13 @@ Version Control
 Changelog Management
 --------------------
 
-The project uses `towncrier <https://towncrier.readthedocs.io/>`_ to manage changelog entries. Instead of editing ``CHANGELOG.rst`` directly, create news fragment files in the ``changelog.d/`` directory.
+The project uses `towncrier <https://towncrier.readthedocs.io/>`_ to manage changelog entries. Instead of editing ``CHANGELOG.rst`` directly, create news fragment files in the ``changelog/`` directory.
 
 **Creating a changelog entry:**
 
-1. Create a file in ``changelog.d/`` named ``<issue_number>.<type>.rst``
+1. Create a file in ``changelog/`` named ``<issue_number>.<type>.rst``
 2. Write a brief description of the change in the file
+3. Keep the entries end-user accessible: do not go into technical detail or reference the code
 
 Fragment types:
 
@@ -500,13 +501,13 @@ Example:
 .. code-block:: bash
 
     # For a new feature related to issue #123
-    echo "Added support for custom color schemes" > changelog.d/123.added.rst
+    echo "Added support for custom color schemes" > changelog/123.added.rst
 
     # For a bug fix related to issue #456
-    echo "Fixed crash when opening empty notebooks" > changelog.d/456.fixed.rst
+    echo "Fixed crash when opening empty notebooks" > changelog/456.fixed.rst
 
     # For changes without an issue number, use a unique identifier
-    echo "Improved startup performance" > changelog.d/+perf-startup.changed.rst
+    echo "Improved startup performance" > changelog/+perf-startup.changed.rst
 
 **Compiling the changelog:**
 
@@ -587,5 +588,5 @@ Key points for contributors:
 3. Use type annotations on all function signatures
 4. Write Google-style docstrings
 5. Run ``uv run ruff format`` and ``uv run ruff check --fix`` before committing
-6. **ALWAYS** create changelog entries in ``changelog.d/`` for user-visible changes
+6. **ALWAYS** create changelog entries in ``changelog/`` for user-visible changes
 7. Write tests for new functionality
