@@ -151,7 +151,6 @@ backup_on_save = Setting(
 edit_mode = Setting(
     name="edit_mode",
     flags=["--edit-mode"],
-    type_=EditingMode,
     choices={
         "micro": EditingMode.MICRO,
         "emacs": EditingMode.EMACS,
