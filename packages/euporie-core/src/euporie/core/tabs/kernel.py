@@ -104,7 +104,7 @@ class KernelTab(Tab, metaclass=ABCMeta):
         self.completer = DeduplicateCompleter(
             DynamicCompleter(lambda: _MergedCompleter(self.completers))
         )
-        self.formatters: list[Formatter] = self.app.formatters
+        self.formatters: list[Formatter] = []
         self.reports: WeakKeyDictionary[LspClient, Report] = WeakKeyDictionary()
 
         # The client-side comm states
@@ -259,7 +259,9 @@ class KernelTab(Tab, metaclass=ABCMeta):
             return autosuggest_factory(self.app.config.autosuggest, self.history)
 
         self.suggester = DynamicAutoSuggest(_get_suggester)
-
+        self.formatters: list[Formatter] = self.app.get_language_formatters(
+            self.language
+        )
         self.app.create_background_task(self.load_lsps())
 
         self.post_init_kernel()

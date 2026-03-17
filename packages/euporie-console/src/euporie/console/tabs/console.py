@@ -291,10 +291,8 @@ class Console(BaseConsole):
 
     def reset(self) -> None:
         """Reset the state of the tab."""
-        from euporie.core.bars.search import stop_search
-
         self.live_output.reset()
-        stop_search()
+        get_cmd("stop-search").run()
 
     def lang_file_ext(self) -> str:
         """Return the file extension for scripts in the notebook's language."""

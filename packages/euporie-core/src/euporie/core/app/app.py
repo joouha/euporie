@@ -7,6 +7,7 @@ import logging
 import signal
 import sys
 from abc import ABC, abstractmethod
+from copy import deepcopy
 from functools import cache, partial
 from pathlib import PurePath
 from typing import TYPE_CHECKING, ClassVar, cast, overload
@@ -48,9 +49,8 @@ from apptk.widgets.base import Shadow
 from euporie.core import settings as core_settings
 from euporie.core.app.base import ConfigurableApp
 from euporie.core.app.cursor import CursorConfig
-from euporie.core.format import CliFormatter
+from euporie.core.languages import KNOWN_FORMATTERS, KNOWN_LANGUAGES, KNOWN_LSP_SERVERS
 from euporie.core.log import setup_logs
-from euporie.core.lsp import KNOWN_LSP_SERVERS, LspClient
 from euporie.core.style import (
     DIAGNOSTIC_STYLE,
     IPYWIDGET_STYLE,
@@ -80,7 +80,8 @@ if TYPE_CHECKING:
 
     from euporie.core.bars.search import SearchBar
     from euporie.core.config._setting import Setting
-    from euporie.core.format import Formatter
+    from euporie.core.format import CliFormatter
+    from euporie.core.lsp import LspClient
     from euporie.core.tabs import TabRegistryEntry
     from euporie.core.tabs.base import Tab
     from euporie.core.widgets.dialog import Dialog
@@ -308,13 +309,13 @@ class BaseApp(ConfigurableApp, Application, ABC):
         self.config.events.log_file += lambda x: setup_logs(self.config)
         self.config.events.log_config += lambda x: setup_logs(self.config)
 
-        # Store LSP client instances
-        self.lsp_clients: WeakValueDictionary[str, LspClient] = WeakValueDictionary()
+        # Build merged language configurations
+        self.languages = self._build_languages()
+        self.lsp_server_configs = self._build_lsp_server_configs()
+        self.formatter_configs = self._build_formatter_configs()
 
-        # Build list of configured external formatters
-        self.formatters: list[Formatter] = [
-            CliFormatter(**info) for info in self.config.formatters
-        ]
+        # Store LSP client instances (WeakValueDictionary for auto-cleanup)
+        self.lsp_clients: WeakValueDictionary[str, LspClient] = WeakValueDictionary()
 
         # Load key-bindings
         self.key_bindings = KeyBindings.from_commands(self.commands)
@@ -613,40 +614,234 @@ class BaseApp(ConfigurableApp, Application, ABC):
             return tabs[0].tab_class
         return None
 
-    def get_language_lsps(self, language: str) -> list[LspClient]:
-        """Return the approprrate LSP clients for a given language."""
-        clients = []
-        if self.config.enable_language_servers:
-            from shutil import which
+    def _build_languages(self) -> dict[str, dict[str, Any]]:
+        """Build language definitions by merging known languages with config.
 
-            lsps = {**KNOWN_LSP_SERVERS, **self.config.language_servers}
-            for name, kwargs in lsps.items():
-                if kwargs:
-                    client = None
-                    if (
-                        (
-                            not (lsp_langs := kwargs.get("languages"))
-                            or language in lsp_langs
+        Returns:
+            A dictionary mapping language names to their configuration,
+            with LSP server and formatter references updated based on
+            user configuration.
+        """
+        # Deep copy to avoid mutating the global
+        languages = deepcopy(KNOWN_LANGUAGES)
+
+        # Update language->server mappings based on language_servers config
+        for name, server_config in self.config.language_servers.items():
+            if not server_config:
+                # Empty config: remove server from all languages
+                for lang_info in languages.values():
+                    servers = lang_info.get("language_servers", [])
+                    if name in servers:
+                        servers.remove(name)
+            elif server_languages := server_config.get("languages"):
+                # Add server to specified languages
+                for language in server_languages:
+                    if language in languages:
+                        servers = languages[language].setdefault("language_servers", [])
+                        if name not in servers:
+                            servers.insert(0, name)
+                    else:
+                        log.warning(
+                            "Language %r not found for server %r", language, name
                         )
-                        and not (client := self.lsp_clients.get(name))
-                        and which(kwargs["command"][0])
-                    ):
-                        client = LspClient(name, **kwargs)
-                        self.lsp_clients[name] = client
-                        client.start()
-                    if client:
-                        clients.append(client)
+
+        # Update language->formatter mappings based on formatters config
+        for name, fmt_config in self.config.formatters.items():
+            if not fmt_config:
+                # Empty config: remove formatter from all languages
+                for lang_info in languages.values():
+                    formatters = lang_info.get("formatters", [])
+                    if name in formatters:
+                        formatters.remove(name)
+            elif fmt_languages := fmt_config.get("languages"):
+                # Add formatter to specified languages
+                for language in fmt_languages:
+                    if language in languages:
+                        formatters = languages[language].setdefault("formatters", [])
+                        if name not in formatters:
+                            formatters.insert(0, name)
+                    else:
+                        log.warning(
+                            "Language %r not found for formatter %r", language, name
+                        )
+
+        return languages
+
+    def _build_lsp_server_configs(self) -> dict[str, dict[str, Any]]:
+        """Build LSP server configs by merging known servers with config.
+
+        Returns:
+            A dictionary mapping server names to their configuration.
+            Empty configs in user config disable the server.
+        """
+        # Deep copy to avoid mutating the global
+        configs = deepcopy(KNOWN_LSP_SERVERS)
+
+        for name, server_config in self.config.language_servers.items():
+            if not server_config:
+                # Empty config disables the server
+                if name in configs:
+                    log.debug("Disabling language server %r", name)
+                    del configs[name]
+            else:
+                # Add or update server configuration
+                log.debug("Configuring language server %r", name)
+                configs[name] = server_config
+
+        return configs
+
+    def _build_formatter_configs(self) -> dict[str, dict[str, Any]]:
+        """Build formatter configs by merging known formatters with config.
+
+        Returns:
+            A dictionary mapping formatter names to their configuration.
+            Empty configs in user config disable the formatter.
+        """
+        # Deep copy to avoid mutating the global
+        configs = deepcopy(KNOWN_FORMATTERS)
+
+        for name, fmt_config in self.config.formatters.items():
+            if not fmt_config:
+                # Empty config disables the formatter
+                if name in configs:
+                    log.debug("Disabling formatter %r", name)
+                    del configs[name]
+            else:
+                # Add or update formatter configuration
+                log.debug("Configuring formatter %r", name)
+                configs[name] = fmt_config
+
+        return configs
+
+    def _create_lsp_client(self, name: str) -> LspClient | None:
+        """Create an LSP client from config.
+
+        Args:
+            name: The name of the LSP server to create a client for.
+
+        Returns:
+            A new LSP client instance, or None if config is missing/invalid.
+        """
+        from euporie.core.lsp import LspClient
+
+        if not (config := self.lsp_server_configs.get(name)):
+            log.debug("No LSP server config for %r", name)
+            return None
+
+        if not (command := config.get("command")):
+            log.debug("LSP server %r has no command defined", name)
+            return None
+
+        settings: dict[str, Any] = config.get("settings", {})
+
+        try:
+            client = LspClient(
+                name=name,
+                command=command,
+                settings=settings,
+            )
+            client.start()
+            return client
+        except Exception:
+            log.exception("Failed to start LSP client %r", name)
+            return None
+
+    def get_language_lsps(self, language: str) -> list[LspClient]:
+        """Return the appropriate LSP clients for a given language.
+
+        Looks up server names from the merged language configuration,
+        then gets or creates clients from the cache.
+
+        Args:
+            language: The programming language name (e.g. ``"python"``).
+
+        Returns:
+            A list of LSP client instances for the language.
+        """
+        if not self.config.enable_language_servers:
+            return []
+
+        # Get server names from merged language config
+        lang_info = self.languages.get(language, {})
+        server_names: list[str] = lang_info.get("language_servers", [])
+
+        clients: list[LspClient] = []
+        for name in server_names:
+            # Reuse an existing client if available
+            if name in self.lsp_clients:
+                clients.append(self.lsp_clients[name])
+                continue
+
+            # Create a new client
+            if client := self._create_lsp_client(name):
+                self.lsp_clients[name] = client
+                clients.append(client)
+
         return clients
+
+    def _create_formatter(self, name: str) -> CliFormatter | None:
+        """Create a CLI formatter from config.
+
+        Args:
+            name: The name of the formatter to create.
+
+        Returns:
+            A new CLI formatter instance, or None if config is missing/invalid.
+        """
+        from euporie.core.format import CliFormatter
+
+        if not (config := self.formatter_configs.get(name)):
+            log.debug("No formatter config for %r", name)
+            return None
+
+        if not (command := config.get("command")):
+            log.debug("Formatter %r has no command defined", name)
+            return None
+
+        languages: set[str] = set(config.get("languages", []))
+
+        return CliFormatter(command=command, languages=languages)
+
+    def get_language_formatters(self, language: str) -> list[CliFormatter]:
+        """Return CLI formatters for a given language.
+
+        Looks up formatter names from the merged language configuration,
+        then creates formatter instances.
+
+        Args:
+            language: The programming language name (e.g. ``"python"``).
+
+        Returns:
+            A list of CLI formatter instances for the language.
+        """
+        # Get formatter names from merged language config
+        lang_info = self.languages.get(language, {})
+        formatter_names: list[str] = lang_info.get("formatters", [])
+
+        formatters: list[CliFormatter] = []
+        for name in formatter_names:
+            if formatter := self._create_formatter(name):
+                formatters.append(formatter)
+
+        return formatters
 
     def shutdown_lsps(self) -> None:
         """Shut down all the remaining LSP servers."""
-        # Wait for all LSP exit calls to complete
-        # The exit calls occur in the LSP event loop thread
-        for lsp in list(self.lsp_clients.values()):
-            try:
-                lsp.exit().result()  # block until exit completes
-            except Exception:
-                log.exception("Error shutting down LSP client %s", lsp)
+        if not (clients := self.lsp_clients.values()):
+            return
+
+        from apptk.eventloop.utils import get_or_create_loop, run_coro_sync
+
+        async def _shutdown_all() -> None:
+            await asyncio.gather(
+                *(client.exit_() for client in clients), return_exceptions=True
+            )
+
+        loop = get_or_create_loop("lsp")
+        try:
+            run_coro_sync(_shutdown_all(), loop)
+        except Exception:
+            log.exception("Error shutting down LSP clients")
 
     def open_file(
         self, path: Path, read_only: bool = False, tab_class: type[Tab] | None = None

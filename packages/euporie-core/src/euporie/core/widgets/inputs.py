@@ -366,7 +366,7 @@ class KernelInput(TextArea):
         original_text = new_text = self.buffer.text
         language = self.language
         for formatter in self.formatters:
-            new_text = formatter._format(original_text, language)
+            new_text = formatter._format(new_text, language)
         # Do not trigger a text-changed event if the reformatting results in no change
         if new_text != original_text:
             self.buffer.text = new_text

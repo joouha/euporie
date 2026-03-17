@@ -180,49 +180,6 @@ tab_size = Setting(
         The number of spaces to use per indentation level. Should be set to 4.
     """,
 )
-
-formatters = Setting(
-    name="formatters",
-    flags=["--formatters"],
-    type_=json.loads,
-    help_="List of external code formatters",
-    default=[],
-    action="append",
-    schema={
-        "type": "array",
-        "items": {
-            "type": "object",
-            "properties": {
-                "command": {
-                    "type": "array",
-                    "items": [{"type": "string"}],
-                },
-                "languages": {
-                    "type": "array",
-                    "items": [{"type": "string", "unique": True}],
-                },
-            },
-            "required": ["command", "languages"],
-        },
-    },
-    description="""
-        An array listing languages and commands of formatters to use for
-        reformatting code cells. The command is an array of the command any any
-        arguments. Code to be formatted is pass in via the standard input, and
-        replaced with the standard output.
-
-        e.g.
-
-        .. code-block:: json
-
-           [
-             {"command": ["ruff", "format", "-"], "languages": ["python"]},
-             {"command": ["black", "-"], "languages": ["python"]},
-             {"command": ["isort", "-"], "languages": ["python"]}
-           ]
-    """,
-)
-
 line_numbers = Setting(
     name="line_numbers",
     flags=["--line-numbers"],
@@ -426,6 +383,9 @@ language_servers = Setting(
                             "type": "array",
                             "items": [{"type": "string", "unique": True}],
                         },
+                        "settings": {
+                            "type": "object",
+                        },
                     },
                     "required": ["command"],
                 }
@@ -439,8 +399,8 @@ language_servers = Setting(
 
            {
             "ruff": {"command": ["ruff-lsp"], "languages": ["python"]},
-            "pylsp": {"command": ["pylsp"], "languages": ["python"]},
-            "typos": {"command": ["typos-lsp"], "languages": []}
+            "pylsp": {"command": ["pylsp"], "languages": ["python"], "settings": {}},
+            "typos": {"command": ["typos-lsp"], "languages": ["python", "markdown"]}
            }
 
         The following properties are required:
@@ -461,6 +421,64 @@ language_servers = Setting(
            }
     """,
 )
+
+formatters = Setting(
+    name="formatters",
+    flags=["--formatters"],
+    type_=json.loads,
+    help_="Code formatter configurations",
+    default={},
+    schema={
+        "type": "object",
+        "additionalProperties": {
+            "oneOf": [
+                {"type": "object", "maxProperties": 0},
+                {
+                    "type": "object",
+                    "properties": {
+                        "command": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                        },
+                        "languages": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                        },
+                    },
+                    "required": ["command"],
+                },
+            ]
+        },
+    },
+    description="""
+        A mapping of formatter names to their configurations. Formatters can be
+        added, modified, or disabled.
+
+        Each formatter configuration should have:
+        - ``command``: An array of the command and any arguments. Code to be
+          formatted is passed via standard input, and the formatted code is
+          read from standard output.
+        - ``languages``: An optional array of language names this formatter
+          supports. If not specified, the formatter must be explicitly
+          referenced by language configuration.
+
+        To disable a built-in formatter, set its value to an empty object.
+
+        e.g.
+
+        .. code-block:: json
+
+           {
+             "black": {"command": ["black", "-"], "languages": ["python"]},
+             "isort": {"command": ["isort", "-"], "languages": ["python"]},
+             "ruff-format": {"command": ["ruff", "format", "-"], "languages": ["python"]},
+             "nixfmt": {}
+           }
+
+        The last entry disables the built-in ``nixfmt`` formatter.
+    """,
+)
+
 
 # Terminal
 

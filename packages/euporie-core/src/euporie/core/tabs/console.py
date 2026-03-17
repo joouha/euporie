@@ -90,6 +90,8 @@ class BaseConsole(KernelTab):
         # Set tab path as untitled, so LSP servers know the files do not exist on disk
         self._untitled_count += 1
         path = UPath(f"untitled:/console-{self._untitled_count}")
+        # Set empty initial lang_info
+        self.lang_info: dict[str, Any] = {}
 
         super().__init__(
             app=app,
@@ -97,7 +99,6 @@ class BaseConsole(KernelTab):
             use_kernel_history=use_kernel_history,
             connection_file=connection_file,
         )
-        self.lang_info: dict[str, Any] = {}
         self.clear_outputs_on_output = False
 
         self.json = new_notebook()

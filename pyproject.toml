@@ -196,6 +196,7 @@ docstring-code-format = true
 
 
 [tool.codespell]
+skip = "packages/euporie-core/src/euporie/core/languages.py"
 ignore-words-list = "adn,als,controle,controll,abd,edn,iterm"
 
 [tool.typos.default.extend-words]
