@@ -122,6 +122,8 @@ class BaseApp(ConfigurableApp, Application, ABC):
 
     states: ClassVar[list[Setting]] = [
         core_settings.recent_files,
+        core_settings.command_history,
+        core_settings.search_history,
     ]
 
     settings: ClassVar[list[Setting]] = [

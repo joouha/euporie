@@ -29,7 +29,11 @@ def _force_quit() -> None:
 
 
 @add_cmd(
-    keys=["c-o"], menu_title="Open File…", aliases=["o"], icon="", style="class:purple"
+    keys=["c-o"],
+    menu_title="Open File…",
+    aliases=["open", "o"],
+    icon="",
+    style="class:purple",
 )
 def _open_file(path: str = "") -> None:
     """Open a file."""

@@ -34,6 +34,7 @@ from euporie.console.tabs.console import Console
 from euporie.core import settings as core_settings
 from euporie.core.app.app import BaseApp
 from euporie.core.filters import has_dialog
+from euporie.core.history import StateHistory
 from euporie.core.widgets.dialog import (
     AboutDialog,
     ConfirmDialog,
@@ -143,11 +144,15 @@ class ConsoleApp(BaseApp):
 
     def load_container(self) -> FloatContainer:
         """Return a container with all opened tabs."""
-        self.command_bar = CommandBar(style="class:toolbar")
+        self.command_bar = CommandBar(
+            style="class:toolbar",
+            history=StateHistory("command_history"),
+        )
         self.search_bar = SearchToolbar(
             forward_search_prompt=[("class:status-field", " Find: ")],
             backward_search_prompt=[("class:status-field", " Find (up): ")],
             auto_ignore_case=True,
+            history=StateHistory("search_history"),
         )
         self.pager = Pager()
 

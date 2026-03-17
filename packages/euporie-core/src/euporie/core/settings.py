@@ -921,6 +921,46 @@ recent_files = Setting(
     """,
 )
 
+command_history = Setting(
+    name="command_history",
+    group="euporie.core.app.app",
+    default=[],
+    flags=[],
+    nargs="*",
+    type_=str,
+    help_="List of previously entered commands",
+    schema={
+        "type": "array",
+        "items": {
+            "description": "History entry",
+            "type": "string",
+        },
+    },
+    description="""
+        A list of previously entered buffer input strings, stored across sessions.
+    """,
+)
+
+search_history = Setting(
+    name="search_history",
+    group="euporie.core.app.app",
+    default=[],
+    flags=[],
+    nargs="*",
+    type_=str,
+    help_="List of previous search queries",
+    schema={
+        "type": "array",
+        "items": {
+            "description": "Search query",
+            "type": "string",
+        },
+    },
+    description="""
+        A list of previously entered search queries, stored across sessions.
+    """,
+)
+
 max_notebook_width = Setting(
     name="max_notebook_width",
     flags=["--max-notebook-width"],

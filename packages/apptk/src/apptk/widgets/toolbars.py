@@ -63,6 +63,7 @@ if TYPE_CHECKING:
     from apptk.document import Document
     from apptk.filters import FilterOrBool
     from apptk.formatted_text import AnyFormattedText, StyleAndTextTuples
+    from apptk.history import History
     from apptk.key_binding.key_bindings import (
         KeyBindingsBase,
         NotImplementedOrNone,
@@ -126,6 +127,7 @@ class SearchToolbar(ptk_toolbars.SearchToolbar):
         ignore_case: Base ignore case setting.
         auto_ignore_case: Enable smart case (ignore case when query is lowercase).
         key_bindings: Custom key bindings for the search control.
+        history: History instance for persisting search queries across sessions.
     """
 
     #: Commands to load key bindings from
@@ -141,10 +143,13 @@ class SearchToolbar(ptk_toolbars.SearchToolbar):
         ignore_case: FilterOrBool = False,
         auto_ignore_case: bool = True,
         key_bindings: KeyBindingsBase | None = None,
+        history: History | None = None,
     ) -> None:
         """Create a new search toolbar instance."""
         if search_buffer is None:
-            search_buffer = Buffer(name=SEARCH_BUFFER)
+            search_buffer = Buffer(
+                name=SEARCH_BUFFER, history=history, enable_history_search=True
+            )
 
         super().__init__(
             search_buffer=search_buffer,
@@ -269,6 +274,7 @@ class CommandBar:
     Args:
         prompt: The prompt to display before command input.
         style: Style class for the toolbar.
+        history: History instance for persisting command entries across sessions.
     """
 
     #: Flag to track if commands have been registered
@@ -278,6 +284,7 @@ class CommandBar:
         self,
         prompt: AnyFormattedText = ":",
         style: str = "class:command-toolbar",
+        history: History | None = None,
     ) -> None:
         """Create a new command bar instance."""
         self.prompt = prompt
@@ -288,6 +295,8 @@ class CommandBar:
             complete_while_typing=True,
             name=COMMAND_BUFFER,
             multiline=False,
+            history=history,
+            enable_history_search=True,
             accept_handler=self._accept,
             validator=Validator.from_callable(
                 validate_func=self._validate,

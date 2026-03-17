@@ -23,7 +23,7 @@ from euporie.core.tabs.kernel import KernelTab
 log = logging.getLogger(__name__)
 
 
-@add_cmd(filter=tab_can_save, aliases=["w"], keys=["c-s"])
+@add_cmd(filter=tab_can_save, aliases=["save", "w"], keys=["c-s"])
 def _save_file(path: str = "") -> None:
     """Save the current file."""
     if (tab := get_app().tab) is not None:

@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from apptk.history import History
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncGenerator, Callable, Iterable
+    from collections.abc import AsyncGenerator, Callable, Iterable, Sequence
 
     from euporie.core.kernel.base import BaseKernel
 
@@ -81,3 +81,77 @@ class KernelHistory(History):
     def recent(self) -> list[str]:
         """Return new items added since history was initially loaded."""
         return self._loaded_strings[: -self.n_loaded]
+
+
+class StateHistory(History):
+    """History class that stores entries in an application state variable.
+
+    This persists buffer history across sessions by reading from and writing to
+    a state variable managed by the application's configuration system.
+
+    Args:
+        state_key: The attribute name on the application's state object used
+            to store history entries.
+        max_entries: The maximum number of history entries to retain.
+    """
+
+    def __init__(self, state_key: str, max_entries: int = 100) -> None:
+        """Create a new instance of the state history loader."""
+        super().__init__()
+        self.state_key = state_key
+        self.max_entries = max_entries
+
+    def _get_state_entries(self) -> list[str]:
+        """Read history entries from the application state.
+
+        Returns:
+            A list of history strings in chronological order (oldest first).
+        """
+        from euporie.core.app.current import get_app
+
+        try:
+            app = get_app()
+        except Exception:
+            return []
+
+        entries: Sequence[str] = getattr(app.state, self.state_key, [])
+        return list(entries)
+
+    def _set_state_entries(self, entries: list[str]) -> None:
+        """Write history entries to the application state.
+
+        Args:
+            entries: A list of history strings in chronological order
+                (oldest first).
+        """
+        from euporie.core.app.current import get_app
+
+        try:
+            app = get_app()
+        except Exception:
+            return
+
+        setattr(app.state, self.state_key, entries[-self.max_entries :])
+
+    def load_history_strings(self) -> Iterable[str]:
+        """Load history strings from the application state.
+
+        Yields the most recent items first.
+
+        Returns:
+            An iterable of history strings, most recent first.
+        """
+        return reversed(self._get_state_entries())
+
+    def store_string(self, string: str) -> None:
+        """Store a string in the application state.
+
+        Appends the string to the state entries and enforces the maximum
+        entry limit.
+
+        Args:
+            string: The history string to store.
+        """
+        entries = self._get_state_entries()
+        entries.append(string)
+        self._set_state_entries(entries)
