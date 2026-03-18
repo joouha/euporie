@@ -1230,7 +1230,7 @@ class Table:
 
         width = self.width if width is None else to_dimension(width)
         return calculate_col_widths(
-            tuple(self.cols), width, self.expand, self.render_count
+            tuple(self.cols), width, self.expand, min_col_width, self.render_count
         )
 
     def calculate_cell_widths(
