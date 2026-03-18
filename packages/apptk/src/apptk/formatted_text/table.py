@@ -500,7 +500,15 @@ class Col(RowCol):
 @lru_cache
 def compute_style(cell: Cell, render_count: int = 0) -> str:
     """Compute a cell's style string."""
-    return f"{cell.row.table.style} {cell.col.style} {cell.row.style} {cell.style}"
+    table = cell.row.table
+    alt_style = ""
+    if (
+        table.alternate_row_style
+        and cell._row_index is not None
+        and cell._row_index % 2 == 0
+    ):
+        alt_style = table.alternate_row_style
+    return f"{table.style} {alt_style} {cell.col.style} {cell.row.style} {cell.style}"
 
 
 ###############
@@ -990,6 +998,7 @@ class Table:
         border_style: DiStr | str = "",
         border_visibility: DiBool | bool = False,
         background_style: str = "",
+        alternate_row_style: str = "",
     ) -> None:
         """Create a new table instance.
 
@@ -1008,6 +1017,8 @@ class Table:
             border_visibility: If :const:`True`, if borders in the table are
                 :class:`Invisible` for their entire length, no extra line will be drawn
             background_style: The style to apply to missing cells
+            alternate_row_style: An additional style applied to odd-numbered rows
+                (0-indexed), enabling striped/zebra row styling
 
         """
         from apptk.layout.dimension import Dimension, to_dimension
@@ -1063,6 +1074,7 @@ class Table:
             else border_visibility
         )
         self.background_style: str = background_style
+        self.alternate_row_style: str = alternate_row_style
 
     @property
     def padding(self) -> DiInt:
@@ -1129,19 +1141,23 @@ class Table:
         return [self._cols[i] for i in range(len(self._cols))]
 
     def sync_rows_to_cols(self) -> None:
-        """Enure cells in rows are present in the relevant columns."""
+        """Ensure cells in rows are present in the relevant columns."""
         cols = self._cols
         for i, row in self._rows.items():
             for j, cell in row._cells.items():
                 cell.col = cols[j]
+                cell._row_index = i
+                cell._col_index = j
                 cols[j]._cells[i] = cell
 
     def sync_cols_to_rows(self) -> None:
-        """Enure cells in columns are present in the relevant rows."""
+        """Ensure cells in columns are present in the relevant rows."""
         rows = self._rows
         for i, col in self._cols.items():
             for j, cell in col._cells.items():
                 cell.row = rows[j]
+                cell._row_index = j
+                cell._col_index = i
                 rows[j]._cells[i] = cell
 
     def new_row(self, *args: Any, **kwargs: Any) -> Row:
