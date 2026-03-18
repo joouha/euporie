@@ -1150,8 +1150,18 @@ class Table:
         self.add_row(row)
         return row
 
-    def add_row(self, row: Row) -> None:
-        """Add a row to the table."""
+    def add_row(self, row: Row | Sequence[Cell | AnyFormattedText]) -> None:
+        """Add a row to the table.
+
+        Args:
+            row: A :class:`Row` instance, or a sequence of :class:`Cell` instances
+                or formatted text values which will be wrapped in cells.
+        """
+        if not isinstance(row, Row):
+            cells = [
+                cell if isinstance(cell, Cell) else Cell(text=cell) for cell in row
+            ]
+            row = Row(cells=cells)
         row.table = self
 
         unfilled = [
@@ -1188,8 +1198,18 @@ class Table:
         self.add_col(col)
         return col
 
-    def add_col(self, col: Col) -> None:
-        """Add a column to the table."""
+    def add_col(self, col: Col | Sequence[Cell | AnyFormattedText]) -> None:
+        """Add a column to the table.
+
+        Args:
+            col: A :class:`Col` instance, or a sequence of :class:`Cell` instances
+                or formatted text values which will be wrapped in cells.
+        """
+        if not isinstance(col, Col):
+            cells = [
+                cell if isinstance(cell, Cell) else Cell(text=cell) for cell in col
+            ]
+            col = Col(cells=cells)
         col.table = self
 
         unfilled = [
@@ -1549,6 +1569,79 @@ class Table:
     def __pt_formatted_text__(self) -> StyleAndTextTuples:
         """Render the table as formatted text."""
         return self.render()
+
+    @classmethod
+    def from_lists(
+        cls,
+        data: Sequence[Sequence[AnyFormattedText]],
+        headers: Sequence[AnyFormattedText] | None = None,
+        **kwargs: Any,
+    ) -> Table:
+        """Create a table from a 2D list of cell values.
+
+        This is a convenience constructor for quickly building simple tables.
+
+        Args:
+            data: A list of rows, where each row is a list of cell values.
+            headers: An optional list of header values for the first row.
+            **kwargs: Additional keyword arguments passed to the :class:`Table`
+                constructor.
+
+        Returns:
+            A new :class:`Table` instance.
+        """
+        rows: list[Row] = []
+        if headers is not None:
+            rows.append(Row(cells=[Cell(text=h) for h in headers]))
+        for row_data in data:
+            rows.append(Row(cells=[Cell(text=c) for c in row_data]))
+        return cls(rows=rows, **kwargs)
+
+    @classmethod
+    def from_dict(
+        cls,
+        data: dict[str, Sequence[AnyFormattedText]],
+        **kwargs: Any,
+    ) -> Table:
+        """Create a table from a dictionary mapping column headers to column values.
+
+        Args:
+            data: A mapping of column header to a sequence of values in that column.
+            **kwargs: Additional keyword arguments passed to the :class:`Table`
+                constructor.
+
+        Returns:
+            A new :class:`Table` instance.
+        """
+        headers = list(data.keys())
+        columns = list(data.values())
+        n_rows = max((len(col) for col in columns), default=0)
+        rows_data: list[list[AnyFormattedText]] = []
+        for i in range(n_rows):
+            rows_data.append([col[i] if i < len(col) else "" for col in columns])
+        return cls.from_lists(rows_data, headers=headers, **kwargs)
+
+    def __len__(self) -> int:
+        """Return the number of rows in the table."""
+        return len(self._rows)
+
+    def __getitem__(self, index: int) -> Row:
+        """Return a row by index.
+
+        Args:
+            index: The row index.
+
+        Returns:
+            The :class:`Row` at the given index.
+
+        Raises:
+            IndexError: If the index is out of range.
+        """
+        if index < 0:
+            index += len(self._rows)
+        if index not in self._rows:
+            raise IndexError(f"Row index {index} out of range")
+        return self._rows[index]
 
 
 class DummyRow(Row):
