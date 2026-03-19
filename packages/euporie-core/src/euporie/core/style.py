@@ -638,6 +638,16 @@ def dataframe_styles(cp: ColorPalette) -> dict[str, str]:
     }
 
 
+def variables_styles(cp: ColorPalette) -> dict[str, str]:
+    """Generate dataframe display styles."""
+    return {
+        "variables header": f"bg:{cp.bg.more(0.1)} bold",
+        "variables row alt": f"bg:{cp.bg.more(0.05)}",
+        "variables row selection": f"bg:{cp.hl.more(1)} fg:{cp.hl} reverse",
+        "variables type": "italic",
+    }
+
+
 def build_style(cp: ColorPalette) -> Style:
     """Create an application style based on the given color palette."""
     variants = ColorPalette(
@@ -679,6 +689,7 @@ def build_style(cp: ColorPalette) -> Style:
         **ipywidget_styles(cp, variants),
         **input_widget_styles(cp, variants),
         **dataframe_styles(cp),
+        **variables_styles(cp),
     }
 
     return style_dict

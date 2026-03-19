@@ -137,6 +137,7 @@ class JupyterKernel(BaseKernel):
             lambda: MsgCallbacks(dict(self.default_callbacks))  # type: ignore # mypy #8890
         )
         self.client_lock = threading.Lock()
+        self._debug_seq = 0
 
         # Accessing the kernel spec causes `readline` to be imported, which causes the
         # terminal to be set to cooked mode on MacOS when run not on the main thread.
@@ -297,6 +298,7 @@ class JupyterKernel(BaseKernel):
                         asyncio.create_task(self.poll("shell")),
                         asyncio.create_task(self.poll("iopub")),
                         asyncio.create_task(self.poll("stdin")),
+                        asyncio.create_task(self.poll("control")),
                     ]
                     self.dead = False
 
@@ -630,6 +632,12 @@ class JupyterKernel(BaseKernel):
             content=rsp.get("content", {}), buffers=rsp.get("buffers", [])
         )
 
+    def on_control_debug_reply(self, rsp: dict[str, Any], own: bool) -> None:
+        """Call callbacks for a control debug reply response."""
+        msg_id = rsp.get("parent_header", {}).get("msg_id")
+        if callable(done := self.msg_id_callbacks[msg_id].get("done")):
+            done(rsp.get("content", {}))
+
     def kc_comm(self, comm_id: str, data: dict[str, Any]) -> str | None:
         """Send a comm message on the shell channel."""
         content = {
@@ -879,6 +887,118 @@ class JupyterKernel(BaseKernel):
             await asyncio.wait_for(event.wait(), timeout)
         except asyncio.TimeoutError:
             log.debug("Timed out waiting for kernel completion response")
+
+        return result
+
+    async def inspect_variables_async(
+        self,
+        timeout: int = 10,
+    ) -> list[dict[str, Any]]:
+        """Request variable inspection from the kernel via DAP inspectVariables.
+
+        Sends a ``debug_request`` with the ``inspectVariables`` command on the
+        control channel and waits for the ``debug_reply``.
+
+        Args:
+            timeout: Number of seconds to wait for the response.
+
+        Returns:
+            A list of variable dictionaries, each containing ``name``,
+            ``variablesReference``, ``value``, and ``type`` keys.
+
+        """
+        results: list[dict[str, Any]] = []
+
+        if not self.kc:
+            return results
+
+        event = asyncio.Event()
+
+        def process_debug_reply(content: dict[str, Any]) -> None:
+            """Process the inspectVariables debug reply."""
+            if content.get("success", False):
+                body = content.get("body", {})
+                results.extend(body.get("variables", []))
+            event.set()
+
+        self._debug_seq += 1
+        content = {
+            "type": "request",
+            "command": "inspectVariables",
+            "seq": self._debug_seq,
+        }
+        msg = self.kc.session.msg("debug_request", content)
+        msg_id = msg["header"]["msg_id"]
+        self.msg_id_callbacks[msg_id].update({"done": process_debug_reply})
+
+        with self.client_lock:
+            self.kc.control_channel.send(msg)
+
+        try:
+            await asyncio.wait_for(event.wait(), timeout)
+        except asyncio.TimeoutError:
+            log.debug("Timed out waiting for inspectVariables response")
+
+        return results
+
+    async def rich_inspect_variable_async(
+        self,
+        variable_name: str,
+        frame_id: int | None = None,
+        timeout: int = 10,
+    ) -> dict[str, Any]:
+        """Request a rich representation of a variable via DAP richInspectVariables.
+
+        Sends a ``debug_request`` with the ``richInspectVariables`` command on
+        the control channel and waits for the ``debug_reply``.
+
+        Args:
+            variable_name: The name of the variable to inspect.
+            frame_id: The frame ID, used when the debugger hit a breakpoint.
+            timeout: Number of seconds to wait for the response.
+
+        Returns:
+            A dictionary with ``data`` and ``metadata`` keys containing the
+            rich representation of the variable.
+
+        """
+        result: dict[str, Any] = {}
+
+        if not self.kc:
+            return result
+
+        event = asyncio.Event()
+
+        def process_debug_reply(content: dict[str, Any]) -> None:
+            """Process the richInspectVariables debug reply."""
+            if content.get("success", False):
+                body = content.get("body", {})
+                result["data"] = body.get("data", {})
+                result["metadata"] = body.get("metadata", {})
+            event.set()
+
+        arguments: dict[str, Any] = {"variableName": variable_name}
+        if frame_id is not None:
+            arguments["frameId"] = frame_id
+
+        self._debug_seq += 1
+        content: dict[str, Any] = {
+            "type": "request",
+            "command": "richInspectVariables",
+            "seq": self._debug_seq,
+            "arguments": arguments,
+        }
+        msg = self.kc.session.msg("debug_request", content)
+        msg_id = msg["header"]["msg_id"]
+        self.msg_id_callbacks[msg_id].update({"done": process_debug_reply})
+
+        with self.client_lock:
+            self.kc.control_channel.send(msg)
+
+        try:
+            await asyncio.wait_for(event.wait(), timeout)
+        except asyncio.TimeoutError:
+            log.debug("Timed out waiting for richInspectVariables response")
 
         return result
 

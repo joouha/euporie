@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import builtins
 import code
 import getpass
 import logging
@@ -501,6 +502,66 @@ class LocalPythonKernel(BaseKernel):
                 return {"text/plain": doc}
         return {}
 
+    async def inspect_variables_async(self, timeout: int = 10) -> list[dict[str, Any]]:
+        """Return all variables defined in the local namespace.
+
+        Args:
+            timeout: Not used for local kernel.
+
+        Returns:
+            A list of variable dictionaries, each containing ``name``,
+            ``variablesReference``, ``value``, and ``type`` keys.
+
+        """
+        results: list[dict[str, Any]] = []
+        for name, value in list(self.locals.items()):
+            if name.startswith("_"):
+                continue
+            try:
+                value_str = repr(value)
+            except Exception:
+                value_str = "<error getting repr>"
+            results.append(
+                {
+                    "name": name,
+                    "variablesReference": 0,
+                    "value": value_str,
+                    "type": type(value).__name__,
+                }
+            )
+        return results
+
+    async def rich_inspect_variable_async(
+        self,
+        variable_name: str,
+        frame_id: int | None = None,
+        timeout: int = 10,
+    ) -> dict[str, Any]:
+        """Return a rich MIME-bundle representation of a variable.
+
+        Args:
+            variable_name: The name of the variable to inspect.
+            frame_id: Not used for local kernel.
+            timeout: Not used for local kernel.
+
+        Returns:
+            A dictionary with ``data`` and ``metadata`` keys containing the
+            rich representation of the variable.
+
+        """
+        if variable_name not in self.locals:
+            return {}
+
+        obj = self.locals[variable_name]
+        data, metadata = get_display_data(obj)
+        # Ensure text/plain is always present
+        if "text/plain" not in data:
+            try:
+                data["text/plain"] = repr(obj)
+            except Exception:
+                data["text/plain"] = "<error getting repr>"
+        return {"data": data, "metadata": metadata}
+
     async def is_complete_async(
         self,
         source: str,
@@ -662,15 +723,20 @@ class DisplayGlobal(BaseHook):
             kernel: The kernel instance to hook
         """
         super().__init__(kernel)
+        self._prev: Callable[..., Any] | None = None
 
     def __enter__(self) -> DisplayGlobal:
-        """Add display() to kernel locals."""
-        self._kernel.locals["display"] = self
+        """Add display() to builtins."""
+        self._prev = getattr(builtins, "display", None)
+        builtins.display = self  # type: ignore[attr-defined]
         return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
-        """Remove display() from kernel locals."""
-        self._kernel.locals.pop("display", None)
+        """Remove display() from builtins."""
+        if self._prev is not None:
+            builtins.display = self._prev  # type: ignore[attr-defined]
+        elif hasattr(builtins, "display"):
+            del builtins.display  # type: ignore[attr-defined]
 
     def __call__(
         self,
@@ -755,8 +821,8 @@ class InputBuiltin(BaseHook):
             self._prev = getpass.getpass
             getpass.getpass = self  # type: ignore[assignment]
         else:
-            self._prev = self._kernel.locals.get("input")
-            self._kernel.locals["input"] = self
+            self._prev = builtins.input
+            builtins.input = self  # type: ignore[assignment]
         return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
@@ -764,10 +830,7 @@ class InputBuiltin(BaseHook):
         if self._is_password:
             getpass.getpass = self._prev  # type: ignore[assignment]
         else:
-            if self._prev is not None:
-                self._kernel.locals["input"] = self._prev
-            else:
-                self._kernel.locals.pop("input", None)
+            builtins.input = self._prev  # type: ignore[assignment]
 
     def __call__(
         self,

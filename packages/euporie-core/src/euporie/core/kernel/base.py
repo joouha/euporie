@@ -13,6 +13,7 @@ from apptk.eventloop.utils import (
     run_coro_async,
     run_coro_sync,
 )
+from prompt_toolkit.utils import Event
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine
@@ -101,6 +102,14 @@ class BaseKernel(ABC):
         self.status_change_event = asyncio.Event()
         self.coros: dict[str, concurrent.futures.Future] = {}
         self.msg_id_callbacks: dict[str, MsgCallbacks] = {}
+
+        # Events
+        self.on_start = Event(self)
+        self.on_stop = Event(self)
+        self.on_execution_done = Event(self)
+        self.on_restart = Event(self)
+        self.on_shutdown = Event(self)
+        self.on_status_change = Event(self)
 
         self.default_callbacks = MsgCallbacks(
             {
@@ -205,6 +214,7 @@ class BaseKernel(ABC):
         self.status_change_event.set()
         self._status = value
         self.status_change_event.clear()
+        self.on_status_change()
 
     def wait_for_status(self, status: str = "idle") -> None:
         """Block until the kernel reaches a given status value."""
@@ -229,11 +239,17 @@ class BaseKernel(ABC):
             timeout: How long to wait until failure is assumed
 
         """
+
+        def _on_start(result: Any) -> None:
+            self.on_start()
+            if callable(cb):
+                cb(result)
+
         self._aodo(
             self.start_async(),
             timeout=timeout,
             wait=wait,
-            callback=cb,
+            callback=_on_start,
         )
 
     @abstractmethod
@@ -245,7 +261,13 @@ class BaseKernel(ABC):
         log.debug("Stopping kernel %s (wait=%s)", self.id, wait)
         if not wait:
             self.interrupt()
-        self._aodo(self.stop_async(), callback=cb, wait=wait)
+
+        def _on_stop(result: Any) -> None:
+            self.on_stop()
+            if callable(cb):
+                cb(result)
+
+        self._aodo(self.stop_async(), callback=_on_stop, wait=wait)
 
     async def stop_async(self, cb: Callable | None = None) -> None:
         """Stop the kernel asynchronously."""
@@ -259,10 +281,16 @@ class BaseKernel(ABC):
         **callbacks: Callable[..., Any],
     ) -> None:
         """Execute code in the kernel."""
+
+        def _on_execution_done(result: Any) -> None:
+            self.on_execution_done()
+            if callable(callback):
+                callback(result)
+
         self._aodo(
             self.run_async(source, **callbacks),
             wait=wait,
-            callback=callback,
+            callback=_on_execution_done,
         )
 
     @abstractmethod
@@ -415,10 +443,16 @@ class BaseKernel(ABC):
 
     def restart(self, wait: bool = False, cb: Callable | None = None) -> None:
         """Restart the current kernel."""
+
+        def _on_restart(result: Any) -> None:
+            self.on_restart()
+            if callable(cb):
+                cb(result)
+
         self._aodo(
             self.restart_async(),
             wait=wait,
-            callback=cb,
+            callback=_on_restart,
         )
 
     @abstractmethod
@@ -436,7 +470,13 @@ class BaseKernel(ABC):
             cb: Callback run after shutdown completes
 
         """
-        self._aodo(self.shutdown_async(), wait=wait, callback=cb)
+
+        def _on_shutdown(result: Any) -> None:
+            self.on_shutdown()
+            if callable(cb):
+                cb(result)
+
+        self._aodo(self.shutdown_async(), wait=wait, callback=_on_shutdown)
 
     @abstractmethod
     async def shutdown_async(self) -> None:
@@ -464,6 +504,100 @@ class BaseKernel(ABC):
         """By default kernels do not implement COMM communication."""
         log.warning("The %s kernel does not implement COMMs", self.__class__.__name__)
         return None
+
+    def inspect_variables(
+        self,
+        callback: Callable[[list[dict[str, Any]]], None] | None = None,
+        wait: bool = True,
+    ) -> list[dict[str, Any]]:
+        """Request the values of all variables defined in the kernel.
+
+        Uses the DAP ``inspectVariables`` debug request to retrieve variable
+        information from the kernel.
+
+        Args:
+            callback: An optional callback to run with the list of variables.
+            wait: Whether to block until the result is available.
+
+        Returns:
+            A list of variable dictionaries, each containing ``name``,
+            ``variablesReference``, ``value``, and ``type`` keys.
+
+        """
+        return (
+            self._aodo(
+                self.inspect_variables_async(),
+                wait=wait,
+                callback=callback,
+                single=True,
+            )
+            or []
+        )
+
+    async def inspect_variables_async(
+        self,
+        timeout: int = 10,
+    ) -> list[dict[str, Any]]:
+        """Request the values of all variables defined in the kernel asynchronously.
+
+        Args:
+            timeout: Number of seconds to wait for the response.
+
+        Returns:
+            A list of variable dictionaries.
+
+        """
+        return []
+
+    def rich_inspect_variable(
+        self,
+        variable_name: str,
+        frame_id: int | None = None,
+        callback: Callable[[dict[str, Any]], None] | None = None,
+    ) -> dict[str, Any]:
+        """Request a rich representation of a variable defined in the kernel.
+
+        Uses the DAP ``richInspectVariables`` debug request to retrieve a
+        MIME-bundle representation of a single variable.
+
+        Args:
+            variable_name: The name of the variable to inspect.
+            frame_id: The frame ID, used when the debugger hit a breakpoint.
+            callback: An optional callback to run with the result.
+
+        Returns:
+            A dictionary with ``data`` and ``metadata`` keys containing the
+            rich representation of the variable.
+
+        """
+        return (
+            self._aodo(
+                self.rich_inspect_variable_async(variable_name, frame_id),
+                wait=True,
+                callback=callback,
+                single=True,
+            )
+            or {}
+        )
+
+    async def rich_inspect_variable_async(
+        self,
+        variable_name: str,
+        frame_id: int | None = None,
+        timeout: int = 10,
+    ) -> dict[str, Any]:
+        """Request a rich representation of a variable asynchronously.
+
+        Args:
+            variable_name: The name of the variable to inspect.
+            frame_id: The frame ID, used when the debugger hit a breakpoint.
+            timeout: Number of seconds to wait for the response.
+
+        Returns:
+            A dictionary with ``data`` and ``metadata`` keys.
+
+        """
+        return {}
 
     def comm_info(self, target_name: str | None = None) -> None:
         """Request information about the current comms.
@@ -559,3 +693,19 @@ class NoKernel(BaseKernel):
     ) -> None:
         """Request information about the kernel."""
         raise NotImplementedError()
+
+    async def inspect_variables_async(
+        self,
+        timeout: int = 10,
+    ) -> list[dict[str, Any]]:
+        """Request the values of all variables defined in the kernel asynchronously."""
+        return []
+
+    async def rich_inspect_variable_async(
+        self,
+        variable_name: str,
+        frame_id: int | None = None,
+        timeout: int = 10,
+    ) -> dict[str, Any]:
+        """Request a rich representation of a variable asynchronously."""
+        return {}
