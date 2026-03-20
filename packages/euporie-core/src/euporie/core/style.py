@@ -623,6 +623,7 @@ def input_widget_styles(
         "input list border": f"fg:{cp.bg.more(0.5)}",
         "input list face": f"bg:{cp.bg.lighter(0.1)}",
         "input list face placeholder": f"fg:{cp.fg.more(0.5)}",
+        "input list face row header": f"bg:{cp.bg.more(0.2)}",
         "input list face row alt": f"bg:{cp.bg.lighter(0.1).more(0.01)}",
         "input list face row hovered": f"bg:{cp.bg.more(0.2)}",
         "input list face row selection": f"bg:{cp.bg.more(0.3)}",
@@ -635,16 +636,6 @@ def dataframe_styles(cp: ColorPalette) -> dict[str, str]:
     return {
         "dataframe th": f"bg:{cp.bg.more(0.1)}",
         "dataframe row-odd td": f"bg:{cp.bg.more(0.05)}",
-    }
-
-
-def variables_styles(cp: ColorPalette) -> dict[str, str]:
-    """Generate dataframe display styles."""
-    return {
-        "variables header": f"bg:{cp.bg.more(0.1)} bold",
-        "variables row alt": f"bg:{cp.bg.more(0.05)}",
-        "variables row selection": f"bg:{cp.hl.more(1)} fg:{cp.hl} reverse",
-        "variables type": "italic",
     }
 
 
@@ -689,7 +680,6 @@ def build_style(cp: ColorPalette) -> Style:
         **ipywidget_styles(cp, variants),
         **input_widget_styles(cp, variants),
         **dataframe_styles(cp),
-        **variables_styles(cp),
     }
 
     return style_dict

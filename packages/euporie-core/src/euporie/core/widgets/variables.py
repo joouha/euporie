@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import weakref
 from functools import cached_property, lru_cache, partial
+from textwrap import wrap
 from typing import TYPE_CHECKING, Any
 
 from apptk.application.current import get_app
@@ -17,6 +18,7 @@ from apptk.layout.controls import UIContent, UIControl
 from apptk.layout.decor import FocusedStyle
 from apptk.layout.dimension import Dimension
 from apptk.layout.margins import ScrollbarMargin
+from apptk.layout.screen import WritePosition
 from apptk.mouse_events import MouseButton, MouseEventType
 from apptk.utils import Event
 from apptk.widgets.base import Frame
@@ -62,9 +64,10 @@ class VariableControl(UIControl):
             BaseKernel, list[dict[str, Any]]
         ] = weakref.WeakKeyDictionary()
         self._connected_kernels: weakref.WeakSet[BaseKernel] = weakref.WeakSet()
-        self._selected_index: int = 0
+        self._selected_index: int | None = None
         self._hovered_index: int | None = None
         self._lines: list[StyleAndTextTuples] = []
+        self.cursor_position: Point | None = None
         self.window: Window | None = None
         self._invalidate_event: Event[object] = Event(self)
         self._build_variable_row = lru_cache(maxsize=256)(self._build_variable_row)
@@ -87,7 +90,7 @@ class VariableControl(UIControl):
                 Cell("Value", border_visibility=None),
             ],
             padding=DiInt(0, 1, 0, 0),
-            style="class:header",
+            style="class:row,header",
         )
 
     def _build_variable_row(
@@ -230,42 +233,82 @@ class VariableControl(UIControl):
         variables = self._variables
 
         # Clamp selected index
-        if variables:
-            self._selected_index = min(self._selected_index, len(variables) - 1)
-        else:
-            self._selected_index = 0
+        if (index := self._selected_index) is not None and variables:
+            self._selected_index = min(index, len(variables) - 1)
 
         self._update_table(variables)
 
-        ft = self._table.render(Dimension(preferred=width, max=width))
-        self._lines = lines = list(split_lines(ft))
-        line_count = len(self._lines)
+        if not variables and self._kernel is None:
+            # No kernel available
+            self._lines = lines = [
+                [],
+                *(
+                    [("bold class:placeholder", x.center(width))]
+                    for x in wrap("No Kernel", width)
+                ),
+                [],
+                *(
+                    [("class:placeholder", x.center(width))]
+                    for x in wrap(
+                        "The variable viewer shows variables defined "
+                        "in the current kernel.",
+                        width,
+                    )
+                ),
+            ]
+        elif not variables:
+            # Kernel exists but no variables
+            self._lines = lines = [
+                [],
+                *(
+                    [("bold class:placeholder", x.center(width))]
+                    for x in wrap("No Variables", width)
+                ),
+                [],
+                *(
+                    [("class:placeholder", x.center(width))]
+                    for x in wrap(
+                        "Variables defined in the kernel will appear here "
+                        "after code is executed.",
+                        width,
+                    )
+                ),
+            ]
+        else:
+            ft = self._table.render(Dimension(preferred=width, max=width))
+            self._lines = lines = []
+            # Get cursor position
+            for y, line in enumerate(split_lines(ft)):
+                lines.append(line)
+                for frag in line:
+                    if "[SetCursorPosition]" in frag[0]:
+                        self.cursor_position = Point(0, y)
+
+        line_count = len(lines)
+        window = self.window
 
         def get_line(i: int) -> StyleAndTextTuples:
+            # Freeze the first row
+            if window and i == window.vertical_scroll:
+                return lines[0]
             if 0 <= i < line_count:
-                return self._lines[i]
+                return lines[i]
             return []
-
-        # Get cursor position
-        cursor_position: Point | None = None
-        for y, line in enumerate(lines):
-            for frag in line:
-                if "[SetCursorPosition]" in frag[0]:
-                    cursor_position = Point(0, y)
 
         return UIContent(
             get_line=get_line,
             line_count=line_count,
-            cursor_position=cursor_position,
-            show_cursor=True,
+            cursor_position=self.cursor_position,
+            show_cursor=False,
         )
 
     def _row_from_mouse(self, mouse_event: MouseEvent) -> int | None:
         """Map a mouse event's y position to a variable index.
 
-        The first row of the table is the header, so row 0 in the content
-        maps to variable index -1 (header). Variable indices start at 0 for
-        the second rendered row.
+        Uses the :attr:`Table.line_to_row` mapping populated during
+        rendering to correctly handle multi-line rows (wrapped text,
+        padding, borders, etc.).  The first table row (index 0) is the
+        header; variable indices start at table row 1.
 
         Args:
             mouse_event: The mouse event.
@@ -276,11 +319,14 @@ class VariableControl(UIControl):
         variables = self._variables
         if not variables:
             return None
-        # Account for the header row (row 0 in the rendered table)
-        row = mouse_event.position.y
-        # The header occupies the first line(s); variable rows start after.
-        # Since each row is one line in the table, row index 1 = variable 0.
-        var_index = row - 1
+        y = mouse_event.position.y
+        line_to_row = self._table.line_to_row
+        if y < 0 or y >= len(line_to_row):
+            return None
+        table_row = line_to_row[y]
+        if table_row is None or table_row < 1:
+            return None
+        var_index = table_row - 1  # row 0 is the header
         if 0 <= var_index < len(variables):
             return var_index
         return None
@@ -302,37 +348,58 @@ class VariableControl(UIControl):
             var_index = self._row_from_mouse(mouse_event)
             if var_index is not None:
                 self._hovered_index = None
-                self._selected_index = var_index
+                if self._selected_index == var_index:
+                    self._selected_index = None
+                else:
+                    self._selected_index = var_index
             return None
 
         elif mouse_event.event_type == MouseEventType.MOUSE_MOVE:
-            var_index = self._row_from_mouse(mouse_event)
-            if var_index is not None and var_index != self._hovered_index:
-                self._hovered_index = var_index
-                return None
+            app = get_app()
+            if (
+                self.window is not None
+                and (info := self.window.render_info) is not None
+            ):
+                rowcol_to_yx = info._rowcol_to_yx
+                abs_mouse_pos = Point(
+                    x=mouse_event.position.x + info._x_offset,
+                    y=mouse_event.position.y + info._y_offset - info.vertical_scroll,
+                )
+                if abs_mouse_pos == app.mouse_position:
+                    row_col_vals = rowcol_to_yx.values()
+                    y_min, x_min = min(row_col_vals)
+                    y_max, x_max = max(row_col_vals)
+                    app.mouse_limits = WritePosition(
+                        xpos=x_min,
+                        ypos=y_min,
+                        width=x_max - x_min + 1,
+                        height=y_max - y_min + 1,
+                    )
+                    var_index = self._row_from_mouse(mouse_event)
+                    if var_index is not None and var_index != self._hovered_index:
+                        self._hovered_index = var_index
+                        return None
+                    return NotImplemented
+                else:
+                    app.mouse_limits = None
+                    self._hovered_index = None
+                    return None
             return NotImplemented
-
-        elif mouse_event.event_type == MouseEventType.SCROLL_UP:
-            self.move_cursor_up()
-            return None
-
-        elif mouse_event.event_type == MouseEventType.SCROLL_DOWN:
-            self.move_cursor_down()
-            return None
 
         return NotImplemented
 
     def move_cursor_down(self) -> None:
         """Move selection to the next variable."""
         variables = self._variables
-        if variables:
-            self._selected_index = min(self._selected_index + 1, len(variables) - 1)
+        if (variables := self._variables) and (
+            index := self._selected_index
+        ) is not None:
+            self._selected_index = min(index + 1, len(variables) - 1)
 
     def move_cursor_up(self) -> None:
         """Move selection to the previous variable."""
-        variables = self._variables
-        if variables:
-            self._selected_index = max(self._selected_index - 1, 0)
+        if (index := self._selected_index) is not None:
+            self._selected_index = max(index - 1, 0)
 
     def get_key_bindings(self) -> KeyBindingsBase | None:
         """Key bindings that are specific for this user control.
@@ -369,7 +436,9 @@ class VariableList:
         """
         self.control = VariableControl(get_kernel=kernel)
         window = Window(
-            content=self.control, wrap_lines=False, style="class:input,list,face"
+            content=self.control,
+            wrap_lines=False,
+            style="class:input,list,face",
         )
         self.control.window = window
         self.container = Frame(
@@ -377,7 +446,8 @@ class VariableList:
                 [
                     FocusedStyle(window),
                     MarginContainer(ScrollbarMargin(), target=window),
-                ]
+                ],
+                style="class:variables",
             ),
             border=InsetGrid,
         )

@@ -1538,10 +1538,16 @@ class Table:
             yield output_line
 
     def render(self, width: AnyDimension | None = None) -> StyleAndTextTuples:
-        """Draw the table, optionally at a given character width."""
+        """Draw the table, optionally at a given character width.
+
+        After rendering, the :attr:`line_to_row` attribute contains a list
+        mapping each rendered line index to the logical row index whose
+        content occupies that line, or ``None`` for border-only lines.
+        """
         from apptk.layout.dimension import to_dimension
 
         self.render_count += 1
+        self.line_to_row: list[int | None] = []
         width = self.width if width is None else to_dimension(width)
 
         # Calculate border visibility
@@ -1569,16 +1575,19 @@ class Table:
             for i, (row_above, row_below) in enumerate(
                 pairwise([None, *self.rows, None])
             ):
-                lines.extend(
-                    self.draw_table_row(
-                        row_above,
-                        row_below,
-                        cell_widths,
-                        col_widths,
-                        row_edge_visibilities[i],
-                        col_edge_visibilities,
-                    )
-                )
+                # row_above is the row whose content lines are drawn;
+                # i-1 gives its index in self.rows (i=0 → row_above=None).
+                row_index = i - 1 if row_above is not None else None
+                for line in self.draw_table_row(
+                    row_above,
+                    row_below,
+                    cell_widths,
+                    col_widths,
+                    row_edge_visibilities[i],
+                    col_edge_visibilities,
+                ):
+                    self.line_to_row.append(row_index)
+                    lines.append(line)
 
         return join_lines(lines)
 

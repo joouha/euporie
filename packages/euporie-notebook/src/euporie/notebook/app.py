@@ -56,6 +56,7 @@ from euporie.core.widgets.minimap import MiniMap
 from euporie.core.widgets.pager import Pager
 from euporie.core.widgets.palette import CommandPalette
 from euporie.core.widgets.toc import TableOfContents
+from euporie.core.widgets.variables import VariableList
 from euporie.notebook import settings as notebook_settings
 from euporie.notebook.enums import TabMode
 from euporie.notebook.widgets.side_bar import SideBar
@@ -341,6 +342,11 @@ class NotebookApp(BaseApp):
                         TableOfContents(_shadows=self.config.filters.show_shadows),
                     ),
                     ("Mini Map", "", MiniMap()),
+                    (
+                        "Variables",
+                        "",
+                        VariableList(lambda: getattr(self.tab, "kernel", None)),
+                    ),
                 ]
             ),
         )
