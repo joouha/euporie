@@ -5266,6 +5266,20 @@ class RichHTML:
                         for style, text, *rest in ft
                     ],
                 )
+        else:
+            # When no mouse handler is set, use OSC 8 hyperlinks for <a> elements
+            href = element.attrs.get("href")
+            if not href and d_inline and (parent := element.parent):
+                href = parent.attrs.get("href")
+            if href:
+                link_url = str(self.base.joinuri(href))
+                ft = cast(
+                    "StyleAndTextTuples",
+                    [
+                        (f"{style} link:{link_url}", text, *rest)
+                        for style, text, *rest in ft
+                    ],
+                )
 
         return ft
 
