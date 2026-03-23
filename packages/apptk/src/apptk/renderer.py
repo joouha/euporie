@@ -8,8 +8,10 @@ from typing import TYPE_CHECKING
 
 from apptk.data_structures import Point, Size
 from apptk.filters import to_filter
+from apptk.formatted_text import AnyFormattedText, to_formatted_text
 from apptk.layout.mouse_handlers import MouseHandlers
 from apptk.layout.screen import Char, Screen, WritePosition
+from apptk.styles import DummyStyleTransformation
 from prompt_toolkit.renderer import Renderer as PtkRenderer
 from prompt_toolkit.renderer import _StyleStringHasStyleCache, _StyleStringToAttrsCache
 
@@ -24,9 +26,9 @@ if TYPE_CHECKING:
     from apptk.layout.screen import Char
     from apptk.layout.screen import Screen as PtkScreen
     from apptk.output import ColorDepth, Output
-    from apptk.styles import BaseStyle
+    from apptk.styles import Attrs, BaseStyle, StyleTransformation
 
-__all__ = ["Renderer"]
+__all__ = ["Renderer", "print_formatted_text"]
 
 log = logging.getLogger(__name__)
 
@@ -39,13 +41,14 @@ def _output_screen_diff(
     color_depth: ColorDepth,
     previous_screen: PtkScreen | None,
     last_style: str | None,
+    last_link: str | None,
     is_done: bool,  # XXX: drop is_done
     full_screen: bool,
     attrs_for_style_string: _StyleStringToAttrsCache,
     style_string_has_style: _StyleStringHasStyleCache,
     size: Size,
     previous_width: int,
-) -> tuple[Point, str | None]:
+) -> tuple[Point, str | None, str | None]:
     """Render the diff between this screen and the previous screen."""
     width, height = size.columns, size.rows
 
@@ -60,13 +63,17 @@ def _output_screen_diff(
     _output_cursor_forward = output.cursor_forward
     _output_cursor_up = output.cursor_up
     _output_cursor_backward = output.cursor_backward
+    _output_close_hyperlink = output.close_hyperlink
 
     # Hide cursor before rendering. (Avoid flickering.)
     output.hide_cursor()
 
     def reset_attributes() -> None:
         """Wrap Output.reset_attributes."""
-        nonlocal last_style
+        nonlocal last_style, last_link
+        if last_link:
+            _output_close_hyperlink()
+        last_link = None
         _output_reset_attributes()
         last_style = None  # Forget last char after resetting attributes.
 
@@ -99,7 +106,7 @@ def _output_screen_diff(
 
     def output_char(char: Char) -> None:
         """Write the output of this character."""
-        nonlocal last_style
+        nonlocal last_style, last_link
 
         # If the last printed character has the same style, don't output the
         # style again.
@@ -112,7 +119,13 @@ def _output_screen_diff(
             # be applied, because of style transformations.
             new_attrs = attrs_for_style_string[char.style]
             if not last_style or new_attrs != attrs_for_style_string[last_style]:
+                new_link = new_attrs.link
+                if last_link and not new_link:
+                    _output_close_hyperlink()
                 _output_set_attributes(new_attrs, color_depth)
+                last_link = new_link
+            else:
+                last_link = new_attrs.link
 
             write(char.char)
             last_style = char.style
@@ -268,7 +281,71 @@ def _output_screen_diff(
     if screen.show_cursor or is_done:
         output.show_cursor()
 
-    return current_pos, last_style
+    return current_pos, last_style, last_link
+
+
+def print_formatted_text(
+    output: Output,
+    formatted_text: AnyFormattedText,
+    style: BaseStyle,
+    style_transformation: StyleTransformation | None = None,
+    color_depth: ColorDepth | None = None,
+) -> None:
+    """Print a list of (style_str, text) tuples in the given style to the output.
+
+    This is an extended version of prompt_toolkit's ``print_formatted_text``
+    that adds hyperlink support, closing open hyperlinks when transitioning
+    to fragments without a link.
+    """
+    fragments = to_formatted_text(formatted_text)
+    style_transformation = style_transformation or DummyStyleTransformation()
+    color_depth = color_depth or output.get_default_color_depth()
+
+    # Reset first.
+    output.reset_attributes()
+    output.enable_autowrap()
+    last_attrs: Attrs | None = None
+    last_link: str | None = None
+
+    # Print all (style_str, text) tuples.
+    attrs_for_style_string = _StyleStringToAttrsCache(
+        style.get_attrs_for_style_str, style_transformation
+    )
+
+    for style_str, text, *_ in fragments:
+        attrs = attrs_for_style_string[style_str]
+
+        # Set style attributes if something changed.
+        if attrs != last_attrs:
+            if attrs:
+                new_link = attrs.link
+                if last_link and not new_link:
+                    output.close_hyperlink()
+                output.set_attributes(attrs, color_depth)
+                last_link = new_link
+            else:
+                if last_link:
+                    output.close_hyperlink()
+                    last_link = None
+                output.reset_attributes()
+        last_attrs = attrs
+
+        # Print escape sequences as raw output
+        if "[ZeroWidthEscape]" in style_str:
+            output.write_raw(text)
+        else:
+            # Eliminate carriage returns
+            text = text.replace("\r", "")
+            # Insert a carriage return before every newline (important when the
+            # front-end is a telnet client).
+            text = text.replace("\n", "\r\n")
+            output.write(text)
+
+    # Close any remaining open hyperlink and reset.
+    if last_link:
+        output.close_hyperlink()
+    output.reset_attributes()
+    output.flush()
 
 
 class Renderer(PtkRenderer):
@@ -308,6 +385,8 @@ class Renderer(PtkRenderer):
         self.sgr_pixel = False
         self.osc52_clipboard = False
         self.size_px: tuple[int, int] = (10, 20)
+
+        self._last_link: str | None = None
 
         super().__init__(
             style, output, full_screen, mouse_support, cpr_not_supported_callback
@@ -472,7 +551,7 @@ class Renderer(PtkRenderer):
             output_size = Size(size.rows, output_size.columns + 1)
 
         # Process diff and write to output.
-        self._cursor_pos, self._last_style = _output_screen_diff(
+        self._cursor_pos, self._last_style, self._last_link = _output_screen_diff(
             app,
             output,
             screen,
@@ -480,6 +559,7 @@ class Renderer(PtkRenderer):
             app.color_depth,
             self._last_screen,
             self._last_style,
+            self._last_link,
             is_done,
             full_screen=self.full_screen,
             attrs_for_style_string=self._attrs_for_style,

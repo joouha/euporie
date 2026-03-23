@@ -146,6 +146,15 @@ class _EscapeCodeCache(_PtkEscapeCodeCache):
         else:
             result = "\x1b[0m"
 
+        # Handle OSC 8 hyperlinks (only open; closing is handled by the renderer)
+        link = attr_args["link"]
+        if link:
+            # Generate ID from the full attrs tuple so that fragments with identical
+            # style + URI share an ID (e.g. when a link is wrapped across lines),
+            # while differently-styled links to the same URI get distinct IDs.
+            link_id = hash(attrs)
+            result += f"\x1b]8;id={link_id};{link}\x1b\\"
+
         self[attrs] = result
         return result
 
@@ -289,6 +298,10 @@ class Vt100_Output(PtkVt100_Output):
     def write_raw(self, data: str) -> None:
         """Write raw data to output."""
         self._buffer.append(data)
+
+    def close_hyperlink(self) -> None:
+        """Close any open OSC 8 hyperlink."""
+        self.write_raw("\x1b]8;;\x1b\\")
 
     def clear_graphics_kitty(self) -> None:
         """Delete all kitty terminal graphic placements."""

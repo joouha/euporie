@@ -34,6 +34,7 @@ class Attrs(NamedTuple):
     dottedunderline: bool | None = False
     dashedunderline: bool | None = False
     overline: bool | None = False
+    link: str | None = ""
 
 
 DEFAULT_ATTRS = Attrs(
@@ -54,4 +55,5 @@ DEFAULT_ATTRS = Attrs(
     dottedunderline=False,
     dashedunderline=False,
     overline=False,
+    link="",
 )

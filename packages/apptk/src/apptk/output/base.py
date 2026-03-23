@@ -45,6 +45,9 @@ class Output(PtkOutput, metaclass=ABCMeta):
         # If we can't get the pixel size, just guess wildly
         return Size(px // cols or 10, py // rows or 20)
 
+    def close_hyperlink(self) -> None:
+        """Close any open OSC 8 hyperlink."""
+
     def clear_graphics_kitty(self) -> None:
         """Delete all kitty terminal graphic placements."""
 

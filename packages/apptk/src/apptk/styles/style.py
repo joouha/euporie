@@ -34,6 +34,7 @@ _EMPTY_ATTRS = Attrs(
     dashedunderline=None,
     blinkfast=None,
     overline=None,
+    link=None,
 )
 
 
@@ -127,6 +128,8 @@ def _parse_style_str(style_str: str) -> Attrs:
             attrs = attrs._replace(color=parse_color(part[3:]))
         elif part.startswith("ul:"):
             attrs = attrs._replace(ulcolor=parse_color(part[3:]))
+        elif part.startswith("link:"):
+            attrs = attrs._replace(link=part[5:])
         else:
             # The 'fg:' prefix is optional.
             try:
@@ -169,6 +172,7 @@ def _merge_attrs(list_of_attrs: list[Attrs]) -> Attrs:
         dottedunderline=_or(False, *[a.dottedunderline for a in list_of_attrs]),
         dashedunderline=_or(False, *[a.dashedunderline for a in list_of_attrs]),
         overline=_or(False, *[a.overline for a in list_of_attrs]),
+        link=_or("", *[a.link for a in list_of_attrs]),
     )
 
 
