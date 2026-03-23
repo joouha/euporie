@@ -273,6 +273,8 @@ class MiniMapControl(UIControl):
                                     source_line, 0
                                 )
                             )
+                            # Signal buffer that we've changed it's cursor's position
+                            buffer.on_cursor_position_changed()
                             # Focus the source window
                             get_app().layout.current_window = window
                             return None
