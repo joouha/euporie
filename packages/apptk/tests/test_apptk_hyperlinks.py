@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from hashlib import md5
-
 from apptk.output.color_depth import ColorDepth
 from apptk.output.vt100 import _EscapeCodeCache
 from apptk.styles.base import DEFAULT_ATTRS, Attrs
@@ -131,19 +129,19 @@ class TestHyperlinkEscapeCodeCache:
         assert "\x1b\\" in result
 
     def test_escape_code_link_id_generation(self) -> None:
-        """Test that link ID is generated from URL hash."""
+        """Test that link ID is generated from attrs hash."""
         cache = _EscapeCodeCache(ColorDepth.DEPTH_24_BIT)
         url = "https://example.com"
         attrs = DEFAULT_ATTRS._replace(link=url)
 
         result = cache[attrs]
 
-        # ID should be first 8 chars of MD5 hash
-        expected_id = md5(url.encode(), usedforsecurity=False).hexdigest()[:8]
+        # ID should be the hash of the full attrs tuple
+        expected_id = hash(attrs)
         assert f"id={expected_id}" in result
 
-    def test_escape_code_same_url_same_id(self) -> None:
-        """Test that same URL produces same ID for grouping."""
+    def test_escape_code_same_url_different_styles_have_ids(self) -> None:
+        """Test that same URL with different styles both produce link IDs."""
         cache = _EscapeCodeCache(ColorDepth.DEPTH_24_BIT)
         url = "https://example.com"
 
@@ -153,9 +151,8 @@ class TestHyperlinkEscapeCodeCache:
         result1 = cache[attrs1]
         result2 = cache[attrs2]
 
-        expected_id = md5(url.encode(), usedforsecurity=False).hexdigest()[:8]
-        assert f"id={expected_id}" in result1
-        assert f"id={expected_id}" in result2
+        assert f"id={hash(attrs1)}" in result1
+        assert f"id={hash(attrs2)}" in result2
 
     def test_escape_code_different_url_different_id(self) -> None:
         """Test that different URLs produce different IDs."""
@@ -167,12 +164,12 @@ class TestHyperlinkEscapeCodeCache:
         result1 = cache[attrs1]
         result2 = cache[attrs2]
 
-        id1 = md5(b"https://example1.com", usedforsecurity=False).hexdigest()[:8]
-        id2 = md5(b"https://example2.com", usedforsecurity=False).hexdigest()[:8]
+        expected_id1 = hash(attrs1)
+        expected_id2 = hash(attrs2)
 
-        assert f"id={id1}" in result1
-        assert f"id={id2}" in result2
-        assert id1 != id2
+        assert f"id={expected_id1}" in result1
+        assert f"id={expected_id2}" in result2
+        assert expected_id1 != expected_id2
 
     def test_escape_code_no_link_omits_osc8(self) -> None:
         """Test that attrs without link do not produce OSC 8 sequence."""
@@ -272,6 +269,49 @@ class TestHyperlinkRendererTransitions:
         assert "https://second.com" in result2
         assert "\x1b]8;id=" in result1
         assert "\x1b]8;id=" in result2
+
+
+class TestHyperlinkSplitFragments:
+    """Tests for split linked fragments sharing the same link ID."""
+
+    def test_split_linked_fragment_same_id(self) -> None:
+        """Test that splitting a linked fragment keeps the same link ID."""
+        cache = _EscapeCodeCache(ColorDepth.DEPTH_24_BIT)
+
+        # Simulate a linked fragment split into two parts — both have the
+        # same style attrs, so the cache should return the same escape code
+        # (and therefore the same link ID) for both.
+        attrs = DEFAULT_ATTRS._replace(link="https://example.com")
+
+        result_part1 = cache[attrs]
+        result_part2 = cache[attrs]
+
+        # Extract the id= value from the OSC 8 sequence
+        import re
+
+        ids_part1 = re.findall(r"id=([^;]+)", result_part1)
+        ids_part2 = re.findall(r"id=([^;]+)", result_part2)
+
+        assert len(ids_part1) == 1
+        assert len(ids_part2) == 1
+        assert ids_part1[0] == ids_part2[0]
+
+    def test_split_linked_fragment_with_bold_same_id(self) -> None:
+        """Test that split bold-linked fragments share the same link ID."""
+        cache = _EscapeCodeCache(ColorDepth.DEPTH_24_BIT)
+
+        attrs = DEFAULT_ATTRS._replace(link="https://example.com", bold=True)
+
+        result_part1 = cache[attrs]
+        result_part2 = cache[attrs]
+
+        import re
+
+        ids_part1 = re.findall(r"id=([^;]+)", result_part1)
+        ids_part2 = re.findall(r"id=([^;]+)", result_part2)
+
+        assert len(ids_part1) == 1
+        assert ids_part1[0] == ids_part2[0]
 
 
 class TestHyperlinkAttrsDefault:
