@@ -5246,18 +5246,19 @@ class RichHTML:
                 padding_style=parent_style,
             )
 
+        attrs = element.attrs
+        # Inline elements inherit from parents
+        if d_inline and (parent := element.parent):
+            p_attrs = parent.attrs
+            for attr in ("href", "title", "alt"):
+                if attr in p_attrs and attr not in attrs:
+                    attrs[attr] = p_attrs[attr]
+        # Resolve link paths
+        if href := attrs.get("href"):
+            attrs["_link_path"] = self.base.joinuri(href)
+
         # Apply mouse handler to elements with href, title, alt
         if callable(handler := self.mouse_handler):
-            attrs = element.attrs
-            # Inline elements inherit from parents
-            if d_inline and (parent := element.parent):
-                p_attrs = parent.attrs
-                for attr in ("html", "title", "alt"):
-                    if attr in p_attrs and attr not in attrs:
-                        attrs[attr] = p_attrs[attr]
-            # Resolve link paths
-            if href := attrs.get("href"):
-                attrs["_link_path"] = self.base.joinuri(href)
             if {"title", "alt", "href"} & set(attrs):
                 ft = cast(
                     "StyleAndTextTuples",
@@ -5266,13 +5267,9 @@ class RichHTML:
                         for style, text, *rest in ft
                     ],
                 )
+        # When no mouse handler is set, use OSC 8 hyperlinks for <a> elements
         else:
-            # When no mouse handler is set, use OSC 8 hyperlinks for <a> elements
-            href = element.attrs.get("href")
-            if not href and d_inline and (parent := element.parent):
-                href = parent.attrs.get("href")
-            if href:
-                link_url = str(self.base.joinuri(href))
+            if link_url := attrs.get("_link_path"):
                 ft = cast(
                     "StyleAndTextTuples",
                     [
