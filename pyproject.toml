@@ -27,6 +27,8 @@ dependencies = ["euporie-notebook", "euporie-preview", "euporie-console"]
 
 [dependency-groups]
 dev = [
+    "python-lsp-server>=1.14.0",
+    "ruff>=0.15.2",
     "taskipy>=1.14.1",
     "towncrier>=24.8.0",
 ]
