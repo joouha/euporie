@@ -242,7 +242,7 @@ class Application(PtkApplication, Generic[_AppResult]):
             pass
 
 
-class _CombinedRegistry(_PtkCombinedRegistry):
+class _CombinedRegistry(_PtkCombinedRegistry, Generic[_AppResult]):
     """The `KeyBindings` of key bindings for a `Application`."""
 
     def __init__(self, app: Application[_AppResult]) -> None:

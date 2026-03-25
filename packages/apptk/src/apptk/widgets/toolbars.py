@@ -51,7 +51,7 @@ from apptk.layout.processors import BeforeInput, HighlightSelectionProcessor
 from apptk.lexers import SimpleLexer
 from apptk.utils import get_cwidth
 from apptk.validation import Validator
-from prompt_toolkit.widgets import toolbars as ptk_toolbars
+from prompt_toolkit.widgets.toolbars import SearchToolbar as PtkSearchToolbar
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
@@ -79,30 +79,10 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 __all__ = [
-    # Constants
-    "COMMAND_BUFFER",
-    "SEARCH_BUFFER",
-    # Re-exported from prompt_toolkit
-    "ArgToolbar",
-    # New
     "CommandBar",
     "CommandCompleter",
-    "CompletionsToolbar",
-    "FormattedTextToolbar",
     "HorizontalCompletionsMenu",
-    # Overridden
-    "SearchToolbar",
-    "StatusBar",
-    "SystemToolbar",
-    "ValidationToolbar",
 ]
-
-# Re-export prompt_toolkit toolbars
-ArgToolbar = ptk_toolbars.ArgToolbar
-CompletionsToolbar = ptk_toolbars.CompletionsToolbar
-FormattedTextToolbar = ptk_toolbars.FormattedTextToolbar
-SystemToolbar = ptk_toolbars.SystemToolbar
-ValidationToolbar = ptk_toolbars.ValidationToolbar
 
 
 # =============================================================================
@@ -110,7 +90,7 @@ ValidationToolbar = ptk_toolbars.ValidationToolbar
 # =============================================================================
 
 
-class SearchToolbar(ptk_toolbars.SearchToolbar):
+class SearchToolbar(PtkSearchToolbar):
     """Enhanced search toolbar with smart case sensitivity.
 
     Extends prompt_toolkit's SearchToolbar with:

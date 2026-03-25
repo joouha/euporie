@@ -29,6 +29,8 @@ _COLOR_CONV_CACHE: SimpleCache[tuple[Color, float, float, float, bool], Color] =
 class Color(str):
     """A string representation of a color with adjustment methods."""
 
+    hex: str
+
     def __new__(cls, value: str, name: str = "") -> Color:
         """Create a new color from a hex code."""
         if isinstance(value, Color):

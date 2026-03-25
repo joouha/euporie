@@ -37,10 +37,22 @@ from apptk.layout.screen import _CHAR_CACHE, WritePosition
 from apptk.layout.utils import explode_text_fragments
 from apptk.mouse_events import MouseButton, MouseEvent, MouseEventType
 from apptk.utils import get_cwidth, take_using_weights, to_str
-from prompt_toolkit.layout import containers as ptk_containers
 from prompt_toolkit.layout.containers import (
     Container,
     ScrollOffsets,
+)
+from prompt_toolkit.layout.containers import Float as PtkFloat
+from prompt_toolkit.layout.containers import FloatContainer as PtkFloatContainer
+from prompt_toolkit.layout.containers import (
+    HSplit as PtkHSplit,
+)
+from prompt_toolkit.layout.containers import (
+    VSplit as PtkVSplit,
+)
+from prompt_toolkit.layout.containers import Window as PtkWindow
+from prompt_toolkit.layout.containers import WindowRenderInfo as PtkWindowRenderInfo
+from prompt_toolkit.layout.containers import (
+    to_container as ptk_to_container,
 )
 
 if TYPE_CHECKING:
@@ -83,9 +95,6 @@ _CONTAINER_STATUSES: WeakKeyDictionary[
     Container, Callable[[], StatusBarFields | None]
 ] = WeakKeyDictionary()
 
-# Store original to_container for use in override
-_ptk_to_container = ptk_containers.to_container
-
 
 def to_container(container: AnyContainer) -> Container:
     """Convert to container and collect __pt_status__ functions.
@@ -99,14 +108,10 @@ def to_container(container: AnyContainer) -> Container:
     Returns:
         The converted Container instance.
     """
-    result = _ptk_to_container(container)
+    result = ptk_to_container(container)
     if hasattr(container, "__pt_status__"):
         _CONTAINER_STATUSES[result] = container.__pt_status__
     return result
-
-
-# Apply the override
-ptk_containers.to_container = to_container
 
 
 class StatusContainer:
@@ -258,7 +263,7 @@ class DummyContainer(Container):
         return []
 
 
-class HSplit(ptk_containers.HSplit):
+class HSplit(PtkHSplit):
     """Several layouts, one stacked above/under the other."""
 
     _pad_window: Window
@@ -436,7 +441,7 @@ class HSplit(ptk_containers.HSplit):
         return self._children_cache.get(tuple(self.children), get)
 
 
-class VSplit(ptk_containers.VSplit):
+class VSplit(PtkVSplit):
     """Several layouts, one stacked left/right of the other."""
 
     _pad_window: Window
@@ -622,7 +627,7 @@ class VSplit(ptk_containers.VSplit):
         return self._children_cache.get(tuple(self.children), get)
 
 
-class WindowRenderInfo(ptk_containers.WindowRenderInfo):
+class WindowRenderInfo(PtkWindowRenderInfo):
     """Render information for the last render time of this control."""
 
     def __init__(
@@ -658,7 +663,7 @@ class WindowRenderInfo(ptk_containers.WindowRenderInfo):
         self.horizontal_scroll = horizontal_scroll
 
 
-class Window(ptk_containers.Window):
+class Window(PtkWindow):
     """Container that holds a control."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -1529,7 +1534,7 @@ class Window(ptk_containers.Window):
         return NotImplemented
 
 
-class FloatContainer(ptk_containers.FloatContainer):
+class FloatContainer(PtkFloatContainer):
     """A `FloatContainer` which uses :py`BoundedWritePosition`s."""
 
     def _draw_float(
@@ -1877,7 +1882,7 @@ class MarginContainer(Window):
         return []
 
 
-class Float(ptk_containers.Float):
+class Float(PtkFloat):
     """A Float container that supports dragging to reposition.
 
     Extends the base Float class with a mouse handler method that can be used
