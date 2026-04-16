@@ -1,0 +1,93 @@
+import logging
+import weakref
+from collections import deque
+from collections.abc import Generator
+from typing import TYPE_CHECKING, Any
+
+from apptk.application.current import get_app
+from apptk.keys import Keys
+from apptk.utils import Event
+
+from .key_bindings import Binding, KeyBindingsBase
+
+if TYPE_CHECKING:
+    from apptk.application import Application
+    from apptk.buffer import Buffer
+
+_Flush = KeyPress("?", data="_Flush")
+log = logging.getLogger(__name__)
+
+__all__ = [
+    "KeyPress",
+    "KeyPressEvent",
+    "KeyProcessor",
+]
+
+class KeyPress:
+    key: Keys | str
+    data: str | None
+    def __init__(self, key: Keys | str, data: str | None = None) -> None: ...
+    def __repr__(self) -> str: ...
+    def __eq__(self, other: object) -> bool: ...
+
+class KeyProcessor(PtKeyProcessor):
+    _bindings: KeyBindingsBase
+    before_key_press: Event
+    after_key_press: Event
+    _flush_wait_task = app.create_background_task(wait())
+    _previous_key_sequence: list[KeyPress]
+    _previous_handler: Binding | None
+    input_queue: deque[KeyPress]
+    key_buffer: list[KeyPress]
+    arg: str | None
+    _process_coroutine = self._process()
+    _last_key_press: KeyPress | None
+    def __init__(self, *args: Any, **kwargs: Any) -> None: ...
+    def reset(self) -> None: ...
+    def _get_matches(self, key_presses: list[KeyPress]) -> list[Binding]: ...
+    def _is_prefix_of_longer_match(self, key_presses: list[KeyPress]) -> bool: ...
+    def _process(self) -> Generator[None, KeyPress]: ...
+    def feed(self, key_press: KeyPress, first: bool = False) -> None: ...
+    def feed_multiple(
+        self, key_presses: list[KeyPress], first: bool = False
+    ) -> None: ...
+    def process_keys(self) -> None: ...
+    def empty_queue(self) -> list[KeyPress]: ...
+    def _call_handler(self, handler: Binding, key_sequence: list[KeyPress]) -> None: ...
+    def _fix_vi_cursor_position(self, event: KeyPressEvent) -> None: ...
+    def _leave_vi_temp_navigation_mode(self, event: KeyPressEvent) -> None: ...
+    def _start_timeout(self) -> None: ...
+    def send_sigint(self) -> None: ...
+    def await_key(self, key: Keys, timeout: float = 1.0) -> None: ...
+
+class KeyPressEvent:
+    _key_processor_ref: weakref.ReferenceType[KeyProcessor]
+    key_sequence: list[KeyPress]
+    previous_key_sequence: list[KeyPress]
+    is_repeat: bool
+    _arg: str | None
+    _app = get_app()
+    def __init__(
+        self,
+        key_processor_ref: weakref.ReferenceType[KeyProcessor],
+        arg: str | None,
+        key_sequence: list[KeyPress],
+        previous_key_sequence: list[KeyPress],
+        is_repeat: bool,
+    ) -> None: ...
+    def __repr__(self) -> str: ...
+    @property
+    def data(self) -> str: ...
+    @property
+    def key_processor(self) -> KeyProcessor: ...
+    @property
+    def app(self) -> Application[Any]: ...
+    @property
+    def current_buffer(self) -> Buffer: ...
+    @property
+    def arg(self) -> int: ...
+    @property
+    def arg_present(self) -> bool: ...
+    def append_to_arg_count(self, data: str) -> None: ...
+    @property
+    def cli(self) -> Application[Any]: ...

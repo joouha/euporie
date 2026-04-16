@@ -1,0 +1,56 @@
+from asyncio import AbstractEventLoop
+from collections.abc import Callable
+from typing import ContextManager, TextIO
+
+from ..key_binding import KeyPress
+from .base import Input
+from .posix_utils import PosixStdinReader
+from .vt100_parser import Vt100Parser
+
+_current_callbacks: dict[
+    tuple[AbstractEventLoop, int], Callable[[], None] | None
+] = {}  # (loop, fd) -> current callback
+
+__all__ = [
+    "Vt100Input",
+    "cooked_mode",
+    "raw_mode",
+]
+
+class Vt100Input(Input):
+    _fds_not_a_terminal: set[int] = set()
+    stdin: TextIO
+    _fileno = stdin.fileno()
+    _buffer: list[KeyPress]
+    stdin_reader: PosixStdinReader
+    vt100_parser: Vt100Parser
+    def __init__(self, stdin: TextIO) -> None: ...
+    def attach(
+        self, input_ready_callback: Callable[[], None]
+    ) -> ContextManager[None]: ...
+    def detach(self) -> ContextManager[None]: ...
+    def read_keys(self) -> list[KeyPress]: ...
+    def flush_keys(self) -> list[KeyPress]: ...
+    @property
+    def closed(self) -> bool: ...
+    def raw_mode(self) -> ContextManager[None]: ...
+    def cooked_mode(self) -> ContextManager[None]: ...
+    def fileno(self) -> int: ...
+    def typeahead_hash(self) -> str: ...
+
+class raw_mode:
+    fileno: int
+    attrs_before: list[int | list[bytes | int]] | None
+    def __init__(self, fileno: int) -> None: ...
+    @classmethod
+    def _patch_lflag(cls, attrs: int) -> int: ...
+    @classmethod
+    def _patch_iflag(cls, attrs: int) -> int: ...
+    def __enter__(self) -> None: ...
+    def __exit__(self, *a: object) -> None: ...
+
+class cooked_mode(raw_mode):
+    @classmethod
+    def _patch_lflag(cls, attrs: int) -> int: ...
+    @classmethod
+    def _patch_iflag(cls, attrs: int) -> int: ...

@@ -1,0 +1,59 @@
+__all__ = [
+    "Lookahead",
+    "Regex",
+    "Repeat",
+    "Variable",
+    "parse_regex",
+    "tokenize_regex",
+]
+
+def tokenize_regex(input: str) -> list[str]: ...
+
+class Node:
+    def __add__(self, other_node: Node) -> NodeSequence: ...
+    def __or__(self, other_node: Node) -> AnyNode: ...
+
+def parse_regex(regex_tokens: list[str]) -> Node: ...
+
+class AnyNode(Node):
+    children: list[Node]
+    def __init__(self, children: list[Node]) -> None: ...
+    def __or__(self, other_node: Node) -> AnyNode: ...
+    def __repr__(self) -> str: ...
+
+class NodeSequence(Node):
+    children: list[Node]
+    def __init__(self, children: list[Node]) -> None: ...
+    def __add__(self, other_node: Node) -> NodeSequence: ...
+    def __repr__(self) -> str: ...
+
+class Regex(Node):
+    regex: str
+    def __init__(self, regex: str) -> None: ...
+    def __repr__(self) -> str: ...
+
+class Lookahead(Node):
+    childnode: Node
+    negative: bool
+    def __init__(self, childnode: Node, negative: bool = False) -> None: ...
+    def __repr__(self) -> str: ...
+
+class Variable(Node):
+    childnode: Node
+    varname: str
+    def __init__(self, childnode: Node, varname: str = "") -> None: ...
+    def __repr__(self) -> str: ...
+
+class Repeat(Node):
+    childnode: Node
+    min_repeat: int
+    max_repeat: int | None
+    greedy: bool
+    def __init__(
+        self,
+        childnode: Node,
+        min_repeat: int = 0,
+        max_repeat: int | None = None,
+        greedy: bool = True,
+    ) -> None: ...
+    def __repr__(self) -> str: ...
