@@ -5,6 +5,85 @@ Gallery
 This page showcases screenshots demonstrating some of the features of euporie
 
 ******
+v3.x.x
+******
+
+.. grid:: 1 2 3 4
+
+   .. grid-item::
+
+      .. figure:: https://placehold.co/800x600?text=Helix+Mode
+         :target: https://placehold.co/1600x1200?text=Helix+Mode
+
+         Custom tab layout
+
+   .. grid-item::
+
+      .. figure:: https://placehold.co/800x600?text=Variable+Viewer
+         :target: https://placehold.co/1600x1200?text=Variable+Viewer
+
+         Variable viewer
+
+   .. grid-item::
+
+      .. figure:: https://placehold.co/800x600?text=Mermaid+Diagrams
+         :target: https://placehold.co/1600x1200?text=Mermaid+Diagrams
+
+         Mermaid diagrams
+
+   .. grid-item::
+
+      .. figure:: https://placehold.co/800x600?text=Output+Selection
+         :target: https://placehold.co/1600x1200?text=Output+Selection
+
+         Selecting and copying text from cell outputs
+
+   .. grid-item::
+
+      .. figure:: https://placehold.co/800x600?text=Clickable+Links
+         :target: https://placehold.co/1600x1200?text=Clickable+Links
+
+         Clickable OSC 8 hyperlinks
+
+   .. grid-item::
+
+      .. figure:: https://placehold.co/800x600?text=Integrated+Terminal
+         :target: https://placehold.co/1600x1200?text=Integrated+Terminal
+
+         Integrated terminal
+
+   .. grid-item::
+
+      .. figure:: https://placehold.co/800x600?text=Menu+Icons
+         :target: https://placehold.co/1600x1200?text=Menu+Icons
+
+         Menu icons
+
+   .. grid-item::
+
+      .. figure:: https://placehold.co/800x600?text=Custom+Key+Bindings
+         :target: https://placehold.co/1600x1200?text=Custom+Key+Bindings
+
+         Custom key bindings
+
+   .. grid-item::
+
+      .. figure:: https://placehold.co/800x600?text=TOML+Config
+         :target: https://placehold.co/1600x1200?text=TOML+Config
+
+         TOML-based configuration
+
+   .. grid-item::
+
+      .. figure:: https://placehold.co/800x600?text=Background+Patterns
+         :target: https://placehold.co/1600x1200?text=Background+Patterns
+
+         Additional background patterns
+
+
+----
+
+******
 v2.x.x
 ******
 

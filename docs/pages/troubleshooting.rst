@@ -19,7 +19,7 @@ This will create a detailed log file that can help identify what's going wrong.
 Kernel not starting (shows * indefinitely)
 -------------------------------------------
 
-If cells get stuck showing ``*`` and never execute:
+If :term:`cells <Cell>` get stuck showing ``*`` and never execute:
 
 1. Ensure you have ``ipykernel`` installed in your environment:
 
@@ -27,7 +27,7 @@ If cells get stuck showing ``*`` and never execute:
 
       pip install ipykernel
 
-2. Register your kernel so euporie can discover it:
+2. Register your :term:`kernel <Kernel>` so euporie can discover it:
 
    .. code-block:: bash
 
@@ -37,7 +37,7 @@ If cells get stuck showing ``*`` and never execute:
 Images not displaying in tmux
 -----------------------------
 
-Tmux only supports sixel graphics in version 3.4 and later (and must be compiled with sixel support). For older tmux versions or when using kitty graphics, you can try:
+:term:`Tmux <Terminal multiplexer>` only supports sixel graphics in version 3.4 and later (and must be compiled with sixel support). For older tmux versions or when using kitty graphics, you can try:
 
 .. code-block:: bash
 
@@ -57,11 +57,15 @@ PDF display requirements
 
 To display PDFs in euporie, you need to install additional dependencies:
 
-- For ANSI art: ``chafa``, ``timg``, or ``tiv``
-- For kitty/iTerm2 graphics: ``imagemagick``
-- For sixel graphics: ``imagemagick`` or ``chafa``
+- For ANSI art: :program:`chafa`, :program:`timg`, or :program:`tiv`
+- For kitty/iTerm2 graphics: :program:`imagemagick`
+- For sixel graphics: :program:`imagemagick` or :program:`chafa`
 
-Note: Only the first page of multi-page PDFs is currently displayed.
+.. note::
+
+   Only the first page of multi-page PDFs is currently displayed.
+
+See the :ref:`PDF <pages/installation:PDF>` section of the installation page for more details.
 
 
 Neovim terminal mode
@@ -97,45 +101,36 @@ If euporie uses excessive memory or hangs on startup, this may be due to very lo
 
 1. Set autosuggest to "simple" mode in your configuration:
 
-   .. code-block:: json
+   .. code-block:: toml
 
-      {
-        "autosuggest": "simple"
-      }
+      autosuggest = "simple"
 
 2. Or disable autosuggest entirely:
 
-   .. code-block:: json
+   .. code-block:: toml
 
-      {
-        "autosuggest": "none"
-      }
+      autosuggest = "none"
 
 
 Language Server Protocol (LSP) errors
 -------------------------------------
 
-If you're using ``ruff-lsp`` and experiencing formatting issues, note that ``ruff-lsp`` is deprecated. Update your configuration to use the built-in ruff server:
+If you're using :program:`ruff-lsp` and experiencing formatting issues, note that :program:`ruff-lsp` is deprecated. Update your configuration to use the built-in ruff server:
 
-.. code-block:: json
+.. code-block:: toml
 
-   {
-     "language_servers": {
-       "ruff": {
-         "command": ["ruff", "server"],
-         "languages": ["python"]
-       }
-     }
-   }
+   [language_servers.ruff]
+   command = ["ruff", "server"]
+   languages = ["python"]
 
 
 Menu/mouse not working on OSX
 -----------------------------
 
-If mouse clicks are not registering correctly in iterm2 or Terminal.app:
+If mouse clicks are not registering correctly in :program:`iterm2` or :program:`Terminal.app`:
 
-1. Try using keyboard shortcuts (Ctrl+key, not Alt or Cmd)
-2. Click on a notebook cell first to focus it, then try clicking the menu
+1. Try using keyboard shortcuts (:kbd:`Ctrl+key`, not :kbd:`Alt` or :kbd:`Cmd`)
+2. Click on a notebook :term:`cell <Cell>` first to focus it, then try clicking the menu
 3. Consider using alternative terminals like WezTerm where mouse support works better
 
 
@@ -146,4 +141,4 @@ When using euporie over SSH:
 
 - Terminal size detection may fail, causing images to display at incorrect sizes
 - Some graphics protocols may not work properly
-- Consider using ``--force-graphics`` if graphics aren't detected
+- Consider using :option:`--force-graphics` if graphics aren't detected

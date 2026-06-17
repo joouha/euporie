@@ -47,7 +47,7 @@ class HTTPFileSystem(FsHTTPFileSystem):
         encoded: bool = False,
         **storage_options: Any,
     ) -> None:
-        """Defaults to using :py:mod:`NoRaiseClientResponse` for responses."""
+        """Defaults to using :py:class:`NoRaiseClientResponse` for responses."""
         client_kwargs = {
             "response_class": NoRaiseClientResponse,
             **(client_kwargs or {}),

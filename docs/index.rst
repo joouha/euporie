@@ -9,31 +9,64 @@ Euporie's Documentation
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: User Guide
 
    pages/installation
-   pages/gallery
+   pages/getting_started
    pages/overview
-   pages/keybindings
+   pages/gallery
    pages/configuration
-   pages/changelog
+   pages/keybindings
+   pages/cli
+   pages/troubleshooting
+   pages/glossary
    pages/related
+   pages/changelog
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Guides
+
+   pages/guides/terminal_graphics
+   pages/guides/ipywidgets
+   pages/guides/kernels
+   pages/guides/lsp
+   pages/guides/theming
+   pages/guides/remote_notebooks
+   pages/guides/multiplexers
 
 .. toctree::
    :maxdepth: 2
    :caption: Applications
 
-   apps/notebook
-   apps/console
-   apps/preview
-   apps/hub
+   packages/notebook
+   packages/console
+   packages/preview
+   packages/hub
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Libraries
+
+   packages/euporie-core
+   packages/apptk
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Development
+
+   development/contributing
+   development/conventions
+   development/architecture
+   development/extending
+   development/release
 
 .. toctree::
    :maxdepth: 2
    :caption: API Reference
    :hidden:
 
-   reference/euporie
+   api/index
 
 ******************
 Indices and tables

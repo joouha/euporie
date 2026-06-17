@@ -47,7 +47,7 @@ async def png_to_pil_py(
     bg: str | None = None,
     **kwargs: Any,
 ) -> PilImage:
-    """Convert PNG to a pillow image using :py:mod:`PIL`."""
+    """Convert PNG to a pillow image using :py:mod:`pillow`."""
     import io
 
     from PIL import Image

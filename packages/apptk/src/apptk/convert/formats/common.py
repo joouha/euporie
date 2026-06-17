@@ -98,7 +98,7 @@ async def chafa_convert_py(
     bg: str | None = None,
     **kwargs: Any,
 ) -> str | bytes:
-    """Convert image data to ANSI text using ::`chafa.py`."""
+    """Convert image data to ANSI text using :py:class:`chafa.Canvas`."""
     from chafa import Canvas, CanvasConfig, PixelMode, PixelType
     from PIL import Image
 

@@ -15,15 +15,17 @@ class GridPart(Enum):
 
     Character naming works as follows:
 
-                ╭┈┈┈┈┈┈┈┈LEFT
-                ┊ ╭┈┈┈┈┈┈MID
-                ┊ ┊ ╭┈┈┈┈SPLIT
-                ┊ ┊ ┊ ╭┈┈RIGHT
-                ∨ ∨ ∨ v
-          TOP┈> ┏ ━ ┳ ┓
-          MID┈> ┃   ┃ ┃
-        SPLIT┈> ┣ ━ ╋ ┫
-       BOTTOM┈> ┗ ━ ┻ ┛
+    ::
+
+                 ╭┈┈┈┈┈┈┈┈LEFT
+                 ┊ ╭┈┈┈┈┈┈MID
+                 ┊ ┊ ╭┈┈┈┈SPLIT
+                 ┊ ┊ ┊ ╭┈┈RIGHT
+                 ∨ ∨ ∨ v
+          TOP ┈> ┏ ━ ┳ ┓
+          MID ┈> ┃   ┃ ┃
+        SPLIT ┈> ┣ ━ ╋ ┫
+       BOTTOM ┈> ┗ ━ ┻ ┛
 
     """  # noqa: RUF002
 
@@ -845,7 +847,11 @@ class GridStyle:
     def __getattr__(self, value: str) -> str:
         """Allow the parts of the grid to be accessed as attributes by name."""
         key = getattr(GridPart, value)
-        return get_grid_char(self.grid[key])
+        try:
+            part = self.grid[key]
+        except KeyError as exc:
+            raise AttributeError(f"'{type(self).__name__}' object has no attribute '{key}'") from exc
+        return get_grid_char(part)
 
     def __dir__(self) -> list:
         """Lit the public attributes of the grid style."""

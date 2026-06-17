@@ -16,8 +16,8 @@ except ModuleNotFoundError as err:
 
 from apptk.contrib.ssh import PromptToolkitSSHSession
 
-from euporie.core.app import APP_ALIASES
 from euporie.core.app.base import ConfigurableApp
+from euporie.core.app.current import APP_ALIASES, available_apps
 from euporie.hub import settings as hub_settings
 
 if TYPE_CHECKING:
@@ -101,8 +101,6 @@ class HubApp(ConfigurableApp):
         chosen_app = APP_ALIASES.get(chosen_app, chosen_app)
 
         # Import the hubbed app
-        from euporie.core.__main__ import available_apps
-
         apps = available_apps()
         if entry := apps.get(chosen_app):
             app_cls = entry.load()

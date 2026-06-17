@@ -2,9 +2,11 @@
 Euporie Notebook
 ################
 
-In euporie's notebooks editor, you can interactively edit and run Jupyter notebooks from the comfort of your terminal.
+.. include:: ../../packages/euporie-notebook/README.rst
+   :start-after: .. content_start
+   :end-before: .. getting_started_end
 
-Euporie supports most of the features of Jupyter Notebooks, so users of Jupyter should find it intuitive to use.
+----
 
 **********
 User Guide

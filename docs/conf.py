@@ -13,7 +13,7 @@ sys.path.append(str(Path(__file__).parent.absolute()))
 
 # Project information
 project = "euporie"
-copyright = "2022, Josiah Outram Halstead"
+copyright = "2026, Josiah Outram Halstead"
 author = "Josiah Outram Halstead"
 
 # General configuration
@@ -40,7 +40,7 @@ extensions: list[str] = [
     "_extensions.video",
 ]
 templates_path = ["_templates"]
-exclude_patterns: list[str] = []
+suppress_warnings = ["autosectionlabel.*"]
 
 # Make sure the target is unique
 autosectionlabel_prefix_document = True
@@ -61,12 +61,68 @@ latex_engine = "lualatex"
 
 # Autosummary options
 autosummary_generate = True
-autosummary_imported_members = True
+autosummary_imported_members = False
 
 # Intersphinx options
 intersphinx_mapping = get_intersphinx_mapping(
-    packages={"python", "prompt_toolkit", "sympy", "rich", "commonmark"}
-)
+    packages={
+        "python",
+        # "akernel",
+        # "antlr4",
+        # "cairosvg",
+        # "chafa",
+        # "fastjsonschema",
+        # "flatlatex",
+        "fsspec",
+        # "html2text",
+        # "html5lib",
+        # "img2unicode",
+        "ipykernel",
+        "ipython",
+        "ipywidgets",
+        # "isort",
+        "jupyterclient",
+        "markdown_it",
+        "matplotlib",
+        # "mtable",
+        "nbformat",
+        "numpy",
+        "paramiko",
+        "pillow",
+        "prompt_toolkit",
+        # "pygments",
+        # "pylatexenc",
+        "rich",
+        # "ssort",
+        "sympy",
+        # "teimpy",
+        # "timg",
+        # "unicodeit",
+        # "unicodeitplus",
+        # "ziamath",
+    }
+) | {
+    # "akernel": ("", None),
+    # "antlr4": ("", None),
+    # "cairosvg": ("", None),
+    "chafa.py": ("https://chafapy.mage.black/", None),
+    "fastjsonschema": ("https://horejsek.github.io/python-fastjsonschema/", None),
+    # "flatlatex": ("", None),
+    # "html2text": ("", None),
+    "html5lib": ("https://html5lib.readthedocs.io/en/latest/", None),
+    # "img2unicode": ("", None),
+    "isort": ("https://isort.readthedocs.io/en/latest/", None),
+    # "mtable": ("", None),
+    "pygments": ("https://pygments.org/", None),
+    "pylatexenc": ("https://pylatexenc.readthedocs.io/en/latest/", None),
+    # "ssort": ("", None),
+    # "teimpy": ("", None),
+    # "timg": ("", None),
+    # "unicodeit": ("", None),
+    # "unicodeitplus": ("", None),
+    "universal-pathlib": ("https://universal-pathlib.readthedocs.io/en/latest/", None),
+    "ziamath": ("https://ziamath.readthedocs.io/en/latest", None),
+}
 
 # Run scripts to generate rst includes
 docs_dir = Path(__file__).parent

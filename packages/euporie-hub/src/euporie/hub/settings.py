@@ -9,12 +9,10 @@ from euporie.core.config._setting import Setting
 
 def _euporie_hub_app_choices() -> list[str]:
     """List known euporie-apps and their aliases."""
-    from euporie.core.__main__ import available_apps
-    from euporie.core.app import APP_ALIASES
+    from euporie.core.app.current import APP_ALIASES, available_apps
 
     return sorted(
-        {entry.name for entry in available_apps().values()} - {"launch", "hub"}
-        | APP_ALIASES.keys()
+        set(available_apps()) - {"launch", "hub"} | APP_ALIASES.keys()
     )
 
 
@@ -107,6 +105,6 @@ auth = Setting(
         .. warning::
 
            This option is dangerous, as arbitrary code can be executed through
-           euporie apps.
+           euporie :term:`apps <App>`.
     """,
 )

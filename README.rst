@@ -7,7 +7,7 @@
 euporie
 #######
 
-|PyPI| |RTD| |PyVer| |License| |Binder| |Stars|
+|PyPI| |RTD| |License| |Stars| |TryOnline|
 
 .. content_start
 
@@ -17,20 +17,41 @@ Euporie's apps allow you to interact with Jupyter kernels, and run Jupyter noteb
 
 If you're working with Jupyter notebooks in a terminal only environment, like an SSH server or a container, or just prefer working in the terminal, then euporie is the tool for you!
 
+.. image:: https://github.com/joouha/euporie/assets/12154190/c8ea6e23-11bb-4ffc-a9e5-111f788c51ae
+   :target: https://github.com/joouha/euporie/assets/12154190/c8ea6e23-11bb-4ffc-a9e5-111f788c51ae
+
 .. list-table::
    :align: center
    :widths: 25 25 25 25
    :class: text-center
 
-   * - `Console <https://euporie.readthedocs.io/en/latest/apps/console.html>`_
-     - `Notebook <https://euporie.readthedocs.io/en/latest/apps/notebook.html>`_
-     - `Preview <https://euporie.readthedocs.io/en/latest/apps/preview.html>`_
-     - `Hub <https://euporie.readthedocs.io/en/latest/apps/hub.html>`_
-
-.. image:: https://github.com/joouha/euporie/assets/12154190/c8ea6e23-11bb-4ffc-a9e5-111f788c51ae
-   :target: https://github.com/joouha/euporie/assets/12154190/c8ea6e23-11bb-4ffc-a9e5-111f788c51ae
+   * - `Console <https://euporie.readthedocs.io/en/latest/packages/console.html>`_
+     - `Notebook <https://euporie.readthedocs.io/en/latest/packages/notebook.html>`_
+     - `Preview <https://euporie.readthedocs.io/en/latest/packages/preview.html>`_
+     - `Hub <https://euporie.readthedocs.io/en/latest/packages/hub.html>`_
 
 `View more screenshots here <https://euporie.readthedocs.io/en/latest/pages/gallery.html>`_
+
+----
+
+************
+Try euporie
+************
+
+**In your terminal** - if you have `uv <https://docs.astral.sh/uv/>`_ installed,
+you can run any euporie app instantly without installing it, using ``uvx``:
+
+.. code-block:: console
+
+   $ uvx euporie notebook            # launch the notebook editor
+   $ uvx euporie notebook my.ipynb   # ...optionally with a notebook to open
+   $ uvx euporie console             # interactive Jupyter console
+   $ uvx euporie preview my.ipynb    # render a notebook to the terminal
+
+**In your browser** - no installation required:
+`launch the live demo <https://euporie.readthedocs.io/en/latest/_static/lite.html>`_.
+
+If you'd rather install euporie permanently, see `Install`_ below.
 
 ----
 
@@ -38,7 +59,8 @@ If you're working with Jupyter notebooks in a terminal only environment, like an
 Install
 *******
 
-You can install euporie with `uv <https://docs.astral.sh/uv/>`_  (recommended), or with `pipx <https://pipxproject.github.io/>`_ or ``pip``):
+For day-to-day use, install euporie with `uv <https://docs.astral.sh/uv/>`_
+(recommended), `pipx <https://pipxproject.github.io/>`_ or ``pip``:
 
 .. code-block:: console
 
@@ -48,7 +70,7 @@ You can install euporie with `uv <https://docs.astral.sh/uv/>`_  (recommended), 
    $ # OR
    $ python -m pip install --user euporie
 
-You can also try euporie online `here <https://euporie.readthedocs.io/en/latest/_static/lite.html>`_.
+You can also run euporie without installing it - see `Try euporie`_ above.
 
 ********
 Features
@@ -63,9 +85,44 @@ Features
 * Convert a console session to a notebook
 * Micro / Vim / Emacs style key-bindings
 
+**********
+Packages
+**********
+
+Euporie is structured as a collection of packages, allowing you to install only the components you need:
+
+* `euporie <https://euporie.readthedocs.io/>`_ - Metapackage which installs all euporie apps and provides the ``euporie`` launcher command
+* `euporie-core <https://euporie.readthedocs.io/en/latest/packages/euporie-core.html>`_ - Core functionality shared across all apps (config system, kernel client, LSP client, shared widgets, and rich output rendering)
+* `euporie-console <https://euporie.readthedocs.io/en/latest/packages/euporie-console.html>`_ - Interactive console application
+* `euporie-notebook <https://euporie.readthedocs.io/en/latest/packages/euporie-notebook.html>`_ - Notebook editing application
+* `euporie-preview <https://euporie.readthedocs.io/en/latest/packages/euporie-preview.html>`_ - Notebook preview application
+* `euporie-hub <https://euporie.readthedocs.io/en/latest/packages/euporie-hub.html>`_ - Multi-user SSH server for euporie apps
+* `apptk <https://euporie.readthedocs.io/en/latest/packages/apptk.html>`_ - Terminal UI toolkit extending ``prompt_toolkit``, used by euporie
+
+Installing the ``euporie`` metapackage will pull in ``euporie-console``, ``euporie-notebook``, and ``euporie-preview``. To install an individual app, install its package directly, e.g.:
+
+.. code-block:: console
+
+   $ uv tool install euporie-notebook
+
 *****
 Usage
 *****
+
+**Launcher**
+
+   The ``euporie`` command acts as a launcher for the various euporie apps:
+
+   .. code-block:: console
+
+      $ euporie notebook notebook.ipynb
+      $ euporie console
+      $ euporie preview notebook.ipynb
+      $ euporie hub
+
+   If you don't want to install euporie, you can run any of these commands
+   directly with ``uvx`` (e.g. ``uvx euporie notebook notebook.ipynb``) - see
+   `Try euporie`_.
 
 **Notebooks**
 
@@ -75,7 +132,7 @@ Usage
 
       $ euporie-notebook notebook.ipynb
 
-   Alternatively, launch ``euporie-notebooks`` and open a notebook file by selecting "Open" from the file menu (``Ctrl+O``).
+   Alternatively, launch ``euporie-notebook`` and open a notebook file by selecting "Open" from the file menu (``Ctrl+O``).
 
 **Console**
 
@@ -85,7 +142,7 @@ Usage
 
       $ euporie-console
 
-   (You can press ``Ctrl+C`` to open the command palette in ``euporie-console``).
+   (You can press ``Ctrl+Space`` to open the command palette in ``euporie-console``).
 
 **Preview**
 
@@ -113,11 +170,23 @@ View the online documentation at: `https://euporie.readthedocs.io/ <https://eupo
 
 The code is available on GitHub at: `https://github.com/joouha/euporie <https://github.com/joouha/euporie>`_
 
+***********
+Development
+***********
+
+Euporie is developed as a `uv <https://docs.astral.sh/uv/>`_ workspace mono-repo. The individual packages live under ``packages/``. To set up a development environment:
+
+.. code-block:: console
+
+   $ git clone https://github.com/joouha/euporie
+   $ cd euporie
+   $ uv sync
+
 *************
 Compatibility
 *************
 
-Euporie requires Python 3.8 or later. It works on Linux, Windows and MacOS
+Euporie requires Python 3.10 or later. It works on Linux, Windows and MacOS
 
 
 
@@ -133,9 +202,9 @@ Euporie requires Python 3.8 or later. It works on Linux, Windows and MacOS
     :target: https://pypi.python.org/project/euporie/
     :alt: Supported Python versions
 
-.. |Binder| image:: https://mybinder.org/badge_logo.svg
-   :target: https://mybinder.org/v2/gh/joouha/euporie-binder/HEAD?urlpath=%2Feuporie%2F
-   :alt: Launch with Binder
+.. |TryOnline| image:: https://img.shields.io/badge/Try%20it%20online-%E2%96%B6%20Launch%20demo-success?style=for-the-badge&logo=jupyter
+   :target: https://euporie.readthedocs.io/en/latest/_static/lite.html
+   :alt: Try euporie online in your browser
 
 .. |License| image:: https://img.shields.io/github/license/joouha/euporie.svg
     :target: https://github.com/joouha/euporie/blob/main/LICENSE

@@ -5,10 +5,10 @@ from __future__ import annotations
 
 import importlib
 import inspect
-import json
 import pkgutil
 from textwrap import dedent
 
+import tomlkit
 from apptk.border import (
     AsciiLine,
     AsciiThickLine,
@@ -120,9 +120,12 @@ for cls in classes_with_commands:
         cmd_desc = cmd.description.replace("`", r"\`")
         row.new_cell(cmd_desc, border_line=AsciiLine)
 
-        row.new_cell(f":command:`{cmd_name}`", border_line=AsciiLine)
+        row.new_cell(f":option:`{cmd_name}`", border_line=AsciiLine)
 
     sections[section_title] = table
+
+print(".. start-key-bindings-reference")
+print()
 
 # Find maximum column widths across all tables
 if sections:
@@ -156,21 +159,20 @@ if sections:
         print_formatted_text(to_formatted_text(indent(ft, "   ")))
 
 print()
-print("----")
+print(".. end-key-bindings-reference")
+print()
+print(".. start-key-bindings-config")
+print()
+print(".. code-block:: toml")
 print()
 
-print(
-    """
-Default Key-binding configuration
-=================================
+# Flatten all per-class bindings into a single command -> keys mapping,
+# matching the flat `[<app>.key_bindings]` configuration format.
+flat_bindings: dict[str, list[str]] = {}
+for group_bindings in bindings_by_group.values():
+    flat_bindings.update(group_bindings)
 
-The following lists all of the default key-bindings used in euporie in the format required for custom key-bindings in the configuration file.
-
-.. code-block:: javascript
-"""
-)
-
-lines = json.dumps(bindings_by_group, indent=2).split("\n")
-for line in lines:
-    print(f"   {line}")
+toml_doc = tomlkit.dumps({"key_bindings": dict(sorted(flat_bindings.items()))})
+for line in toml_doc.split("\n"):
+    print(f"   {line}" if line else "")
 print()

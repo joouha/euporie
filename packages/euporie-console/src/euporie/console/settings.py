@@ -28,8 +28,9 @@ max_stored_outputs = Setting(
         "minimum": 0,
     },
     description="""
-        Defines the maximum number of executed "cells" to store in case the console
-        session is saved to a file or converted into a notebook.
+        Defines the maximum number of executed :term:`cells <Cell>` to store in
+        case the console session is saved to a file or converted into a
+        notebook.
     """,
 )
 
@@ -40,8 +41,8 @@ connection_file = Setting(
     help_="Attempt to connect to an existing kernel using a JSON connection info file",
     default=None,
     description="""
-        If the file does not exist, kernel connection information will be written
-        to the file path provided.
+        If the file does not exist, :term:`kernel <Kernel>` connection
+        information will be written to the file path provided.
 
         If the file exists, kernel connection info will be read from the file,
         allowing euporie to connect to existing kernels.

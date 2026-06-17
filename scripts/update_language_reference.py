@@ -198,7 +198,7 @@ def generate_module(
         """Language support reference data.
 
         Auto-generated from Helix editor's languages.toml by
-        scripts/clone_helix_lsp_config.py — do not edit manually.
+        scripts/clone_helix_lsp_config.py - do not edit manually.
         """
 
         from __future__ import annotations

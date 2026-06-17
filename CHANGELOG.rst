@@ -271,6 +271,8 @@ Fixed
 
 - Fix kitty graphics detection query
 
+----
+
 *******************
 v2.8.7 (2025-03-07)
 *******************
@@ -279,7 +281,7 @@ Added
 =====
 
 - Add smart/simple/none autosuggest options
-- Add "find and replace" command
+- Add "find and replace" command, ``replace-all``
 - Allow mouse scrolling in menus
 - Allow scrolling of overflowing tab bars
 - Add kernel restart prompting to console
@@ -297,7 +299,7 @@ Changed
 Fixed
 =====
 
-- Improve performance with long cell otuputs
+- Improve performance with long cell outputs
 - Update style of disabled text ipwidgets
 - Update console execution count on Jupyter kernel restart
 - Queue cell executions in console if kernel is starting
@@ -681,7 +683,7 @@ Changed
 Added
 =====
 
-- Add web viewer tab for sufing the world wide web
+- Add web viewer tab for surfing the world wide web
 - Add JSON viewer tab
 - Add ability to open remote files from "open" dialog
 - Add ability to select file open method
@@ -689,7 +691,7 @@ Added
 - Show full file-browser file path in status-bar
 - Make all scrollbars clickable
 - Add ability to select an existing kernel when changing a notebook's kernel
-- Add "*.desktop" files
+- Add ``*.desktop`` files
 - Select text on find-next
 - Add support for saving changes to text files
 
@@ -697,7 +699,7 @@ Fixed
 =====
 
 - Fix pandas dataframe HTML output formatting with row multi-indices
-- Prevent every ``euporie-consle`` run clearing the screen in ``Konsole``
+- Prevent every ``euporie-console`` run clearing the screen in ``Konsole``
 - Replace tabs with spaces in ANSI text output
 - ``SelectMultiple`` widget is now styled consistently with other widgets
 - Restore terminal state on unexpected exit signal
@@ -719,7 +721,7 @@ v2.3.2 - (2023-03-21)
 Added
 =====
 
-- Add :kbd:`Ctrl+up` and :kbd:`Ctrl+down` as key-bindings to move through kernel history in the console
+- Add :kbd:`Ctrl+Up` and :kbd:`Ctrl+Down` as key-bindings to move through kernel history in the console
 - Allow closing notebook tabs with the middle mouse button
 - Notify the user if the kernel dies unexpectedly
 
@@ -757,7 +759,7 @@ v2.3.0 - (2023-02-03)
 Added
 =====
 
-- Add ``cahfa.py`` image renderer
+- Add ``chafa.py`` image renderer
 - Add command to clear screen
 - Add a "Restart kernel and clear all output" command
 - Add commands for clearing cell outputs
@@ -924,7 +926,7 @@ Added
 - Do not show text selection when cell input is not focused
 - Allow menus to be closed with :kbd:`Escape` and opened with :kbd:`F10`
 - Enable cell inputs and outputs to be collapsed
-- Make changing cursor shapes to showing editing mode configurable
+- Make changing cursor shapes to show editing mode configurable
 
 Fixed
 =====
@@ -1076,12 +1078,12 @@ Added
 - Add ability to convert from console to notebook
 - Set initial vi mode to navigation
 - Add euporie console application
-- Add "Save As..." command
+- Add ``Save As...`` command
 - Allow opening file from remote file systems (e.g. ``http:``, ``hdfs:``, ``gs:``, ``s3:``, etc.)
 - Add ability to undo deleting cells
 - Add support for ipywidgets
 - Allow changing app accent color
-- Allow connecting to existing kernels with :option:`kernel_connection_file` config option
+- Allow connecting to existing kernels with ``connection_file`` config option
 
 Changed
 =======
@@ -1166,7 +1168,7 @@ Fixed
 =====
 
 - Force cell input to be re-lexed when changing cell type
-- Prevent OSC-8 link mis-detection bug by adding link IDs
+- Prevent OSC-8 link misdetection bug by adding link IDs
 - Fix regression making cell selection in long notebooks very slow
 
 ----
@@ -1199,7 +1201,7 @@ Fixed
 - Expand ``~`` in log file path
 - Prevent IPython import race condition when IPython is installed
 - Prevent down key moving to next cell if the cursor is on the last line of a cell when the completion menu is open
-- Enable euporie to run on Window again
+- Enable euporie to run on Windows again
 - Prevent an underscore being printed when the app is launched
 - Only send terminal queries if the terminal supports it
 
@@ -1253,7 +1255,6 @@ Changed
 v1.4.1 - (2022-03-26)
 *********************
 
-=====
 Fixed
 =====
 
@@ -1270,7 +1271,7 @@ Added
 
 - Add :py:mod:`html2text` as a HTML renderer
 - Add new markdown parser based on :py:mod:`markdown_it`
-- Highlight matching brackets and add command (:kbd:`Ctrl+g`) to jump between matching brackets
+- Highlight matching brackets and add command (:kbd:`Ctrl+G`) to jump between matching brackets
 - Add shortcuts :kbd:`Alt+Up` and :kbd:`Alt+Down` to move cells
 - Show notebook mode in status-bar
 - Allow moving cursor between cells from first / last line
@@ -1288,13 +1289,13 @@ Fixed
 - Only send terminal query escape codes if output is a TTY - this prevents disrupted output when dumping or paging notebooks
 - Fix word selection in case toggle command
 - Images now resized if terminal font size changes
-- Fixed maultiple bugs with external image converters
+- Fixed multiple bugs with external image converters
 - Fix editing cells in external editor
 
 ----
 
 *********************
-v1.3.1 - (2022-03-24)
+v1.3.2 - (2022-03-24)
 *********************
 
 Fixed
@@ -1402,7 +1403,7 @@ Added
 
 - Obey the :envvar:`NO_COLOR` environment variable (`https://no-color.org/ <https://no-color.org/>`_)
 - Graphic background now follows theme color not terminal color
-- Add command palette (summoned with :kbd:`Ctrl+space`)
+- Add command palette (summoned with :kbd:`Ctrl+Space`)
 - Add experimental support for terminal graphics from within tmux
 - Add support for displaying images using the `iTerm inline images protocol <https://iterm2.com/documentation-images.html>`_
 - New terminal graphic rendering system to work with new scrolling method
@@ -1461,7 +1462,7 @@ Added
 - Major code restructure
 - Much improved scrollbar
 - Added ability to view the logs in a tab
-- Introduced the concept of "tabs" (tabs are only displayed vertially tiled for now)
+- Introduced the concept of "tabs" (tabs are only displayed vertically tiled for now)
 - Automatic suggestions from kernel history
 - Completion type annotations in the completion menu
 - Added ability to automatically run notebooks with `--run` command line flag

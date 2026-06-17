@@ -6,65 +6,50 @@ Key Bindings
 Editing Modes
 *************
 
-The key-bindings used when editing a cell or in the console are determined by the :option:`edit_mode` configuration variable. This can be set to ``micro``, ``emacs`` or ``vi`` to use key-bindings in the style of the respective text editor.
+The key-bindings used when editing a cell or in the console are determined by the :confval:`edit_mode` configuration variable. This can be set to ``micro``, ``emacs``, ``vi`` or ``helix`` to use key-bindings in the style of the respective text editor.
 
 *******************
 Custom Key Bindings
 *******************
 
-Key bindings can be customized by setting the :option:`key_bindings` configuration parameter.
+Key bindings can be customized by setting the :confval:`key_bindings` configuration parameter.
 
-This parameter takes the form of a mapping, where they keys are references to modes or components to which a set of key-bindings apply, and the values are mapping of command names to lists of keys.
+This parameter takes the form of a mapping where the keys are command names and the values are lists of keys to bind to those commands. You can also use the ``add``, ``remove``, and ``replace`` keys for finer control over how your bindings interact with the defaults.
 
-Key bindings set in the configuration will entirely over-ride the default binding, so if you want to add an additional binding for a command while retaining the default, you will need to include the default binding in the configuration.
+Using the simple list form will entirely over-ride the default bindings for a command, so if you want to add an additional binding for a command while retaining the defaults, use the ``add`` key instead.
 
-Below is an example :ref:`pages/configuration:configuration file` showing how the key-bindings can be set:
+Below is an example :ref:`pages/configuration:Configuration File` showing how the key-bindings can be set:
 
-.. code-block:: javascript
-   :emphasize-lines: 5-10
+.. code-block:: toml
+   :emphasize-lines: 5-9
 
-   {
-     "notebook": {
-       "autoformat": false,
-       "expand": true,
-       "key_bindings": {
-         "euporie.notebook.app:NotebookApp": {
-           "quit": ["c-q", "c-p"],
-           "new-notebook": []
-         }
-       },
-     }
-   }
+   [notebook]
+   autoformat = false
+   expand = true
 
-This example sets two key-bindings in the :doc:`Notebook <../apps/notebook>` app for the :command:`quit` command: :kbd:`Ctrl+Q` and :kbd:`Ctrl+P`. It also unsets any key-bindings for the :command:`new-notebook` command.
+   [notebook.key_bindings]
+   quit = ["c-q", "c-p"]
+   new-notebook = []
+
+This example sets two key-bindings in the :doc:`Notebook <../packages/notebook>` app for the :option:`quit` command: :kbd:`Ctrl+Q` and :kbd:`Ctrl+P`. It also unsets any key-bindings for the :option:`new-notebook` command.
+
+To add bindings while keeping the defaults, use the ``add`` key:
+
+.. code-block:: toml
+
+   [notebook.key_bindings.quit]
+   add = ["c-q", "c-p"]
 
 Custom key-binding configuration can also be passed on the command line in the form of a JSON string:
 
 .. code-block:: console
 
-   $ euporie-notebook --key-bindings='{"euporie.notebook.app:NotebookApp": {"new-notebook": [],"quit": ["c-q", "c-p"]}}'
+   $ euporie-notebook --key-bindings='{"new-notebook": [], "quit": ["c-q", "c-p"]}'
 
-Valid component names include:
-
-* ``euporie.core.app.app:BaseApp``
-* ``euporie.console.app:ConsoleApp``
-* ``euporie.notebook.app:NotebookApp``
-* ``euporie.preview.app:PreviewApp``
-* ``euporie.core.tabs.base:Tab``
-* ``euporie.console.tabs.console:Console``
-* ``euporie.notebook.tabs.notebook:Notebook``
-* ``euporie.core.bars.command:CommandBar``
-* ``euporie.core.bars.search:SearchBar``
-* ``euporie.core.key_binding.bindings.basic:TextEntry``
-* ``euporie.core.key_binding.bindings.micro:EditMode``
-* ``euporie.core.key_binding.bindings.page_navigation:PageNavigation``
-* ``euporie.core.key_binding.bindings.terminal:TerminalQueries``
-* ``euporie.core.widgets.display:DisplayControl``
-* ``euporie.core.widgets.inputs:KernelInput``
-* ``euporie.core.widgets.pager:Pager``
-* ``euporie.web.widgets.webview:WebViewControl``
-
-Most command names are listed in `Default Key Bindings Reference`_.
+Command names are listed in the `Default Key Bindings Reference`_ below. You
+can also discover them using the command palette (press :kbd:`:` or
+:kbd:`Alt+:`), via the :menuselection:`Help --> Keyboard Shortcuts` menu item in :doc:`euporie-notebook <../packages/notebok>`,
+or you can view all available command on the :doc:`All Commands <../_inc/commands>` documentation page.
 
 
 *************
@@ -161,13 +146,13 @@ In the menu, navigate to :menuselection:`Settings --> Edit Current Profile`, the
 
 Change the existing entry for `Return+Shift` to `Return+Shift+Ctrl` (or whatever you prefer), then add the following entries:
 
-+-----------------+-----------+
-| Key combination | Output    |
-+=================+===========+
-| Return+Ctrl     | E\[13;5u  |
-+-----------------+-----------+
-| Return+Shift    | \E\[13;2u |
-+-----------------+-----------+
++-----------------+---------------+
+| Key combination | Output        |
++=================+===============+
+| Return+Ctrl     | ``E\[13;5u``  |
++-----------------+---------------+
+| Return+Shift    | ``\E\[13;2u`` |
++-----------------+---------------+
 
 ******************************
 Default Key Bindings Reference
@@ -176,3 +161,17 @@ Default Key Bindings Reference
 The following lists outline the default key-bindings used in euporie:
 
 .. include:: ../_inc/default_key_bindings.rst
+   :start-after: .. start-key-bindings-reference
+   :end-before: .. end-key-bindings-reference
+
+----
+
+Default Key-binding configuration
+=================================
+
+The following lists all of the default key-bindings used in euporie in the format required for custom key-bindings in the configuration file. The ``[key_bindings]`` table below should be placed under the relevant app section in your configuration (e.g. ``[notebook.key_bindings]``).
+
+.. include:: ../_inc/default_key_bindings.rst
+   :start-after: .. start-key-bindings-config
+
+

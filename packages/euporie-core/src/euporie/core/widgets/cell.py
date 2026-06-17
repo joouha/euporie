@@ -68,7 +68,7 @@ log = logging.getLogger(__name__)
 def get_cell_id(cell_json: dict) -> str:
     """Return the cell ID field defined in a cell JSON object.
 
-    If no cell ID is defined (as per ```:mod:`nbformat`<4.5``), then one is generated
+    If no cell ID is defined (as per :py:mod:`nbformat` ``<4.5``), then one is generated
     and added to the cell.
 
     Args:

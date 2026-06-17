@@ -63,7 +63,7 @@ async def markdown_to_html_markdown_it(
     syntax_theme: str = "default",
     **kwargs: Any,
 ) -> str:
-    """Convert markdown to HTML using :py:mod:`markdownit_py`."""
+    """Convert markdown to HTML using :py:mod:`markdown_it`."""
     parser = markdown_parser(syntax_theme)
     data = datum.data
     markup = data.decode() if isinstance(data, bytes) else data

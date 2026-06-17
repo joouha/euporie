@@ -870,6 +870,7 @@ def select_graphic_control(
         The appropriate GraphicControl subclass, or None if graphics disabled
     """
     if preferred is DisabledGraphicControl:
+        log.debug("Graphics disabled for format %r", format_)
         return None
 
     usable: list[type[GraphicControl]] = []
@@ -878,6 +879,11 @@ def select_graphic_control(
     if graphics_iterm and find_route(format_, "base64-png"):
         usable.append(ItermGraphicControl)
         if preferred is ItermGraphicControl and not in_mplex:
+            log.debug(
+                "Selected graphics protocol %r for format %r",
+                ItermGraphicControl.__name__,
+                format_,
+            )
             return ItermGraphicControl
 
     # Check Kitty support (doesn't work in mplex without passthrough)
@@ -885,14 +891,39 @@ def select_graphic_control(
         usable.append(KittyGraphicControl)
         usable.append(KittyUnicodeGraphicControl)
         if preferred is KittyGraphicControl:
+            log.debug(
+                "Selected graphics protocol %r for format %r",
+                KittyGraphicControl.__name__,
+                format_,
+            )
             return KittyGraphicControl
         if preferred is KittyUnicodeGraphicControl:
+            log.debug(
+                "Selected graphics protocol %r for format %r",
+                KittyUnicodeGraphicControl.__name__,
+                format_,
+            )
             return KittyUnicodeGraphicControl
 
     # Check Sixel support
     if graphics_sixel and find_route(format_, "sixel"):
         usable.append(SixelGraphicControl)
         if preferred is SixelGraphicControl:
+            log.debug(
+                "Selected graphics protocol %r for format %r",
+                SixelGraphicControl.__name__,
+                format_,
+            )
             return SixelGraphicControl
 
-    return usable[0] if usable else None
+    if usable:
+        selected = usable[0]
+        log.debug(
+            "Selected graphics protocol %r for format %r",
+            selected.__name__,
+            format_,
+        )
+        return selected
+
+    log.debug("No graphics protocol available for format %r", format_)
+    return None

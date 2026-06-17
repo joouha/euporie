@@ -731,6 +731,7 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "codespell" },
+    { name = "euporie-hub" },
     { name = "pre-commit-hooks" },
     { name = "prek" },
     { name = "python-lsp-server" },
@@ -742,8 +743,7 @@ docs = [
     { name = "intersphinx-registry" },
     { name = "sphinx", version = "8.1.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "sphinx", version = "8.2.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
-    { name = "sphinx-argparse-cli", version = "1.19.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "sphinx-argparse-cli", version = "1.20.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "sphinx-argparse" },
     { name = "sphinx-autobuild" },
     { name = "sphinx-copybutton" },
     { name = "sphinx-design" },
@@ -779,6 +779,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "codespell", specifier = ">=2.4.1" },
+    { name = "euporie-hub", editable = "packages/euporie-hub" },
     { name = "pre-commit-hooks", specifier = ">=6.0.0" },
     { name = "prek", specifier = ">=0.3.3" },
     { name = "python-lsp-server", specifier = ">=1.14.0" },
@@ -787,14 +788,14 @@ dev = [
     { name = "towncrier", specifier = ">=24.8.0" },
 ]
 docs = [
-    { name = "intersphinx-registry", specifier = "~=0.2411" },
-    { name = "sphinx", specifier = "~=8.1" },
-    { name = "sphinx-argparse-cli", specifier = "~=1.19" },
-    { name = "sphinx-autobuild", specifier = "~=2024.10" },
-    { name = "sphinx-copybutton", specifier = "~=0.5" },
-    { name = "sphinx-design", specifier = "~=0.6.0" },
-    { name = "sphinx-rtd-theme", specifier = "~=3.0" },
-    { name = "sphinxext-opengraph", specifier = "~=0.9" },
+    { name = "intersphinx-registry", specifier = ">=0.2602.2" },
+    { name = "sphinx", specifier = ">=8.1.3" },
+    { name = "sphinx-argparse", specifier = ">=0.5.2" },
+    { name = "sphinx-autobuild", specifier = ">=2024.10.3" },
+    { name = "sphinx-copybutton", specifier = ">=0.5.2" },
+    { name = "sphinx-design", specifier = ">=0.6.1" },
+    { name = "sphinx-rtd-theme", specifier = ">=3.1.0" },
+    { name = "sphinxext-opengraph", specifier = ">=0.13.0" },
 ]
 lint = [
     { name = "codespell", specifier = ">=2.4.1" },
@@ -2586,34 +2587,17 @@ wheels = [
 ]
 
 [[package]]
-name = "sphinx-argparse-cli"
-version = "1.19.0"
+name = "sphinx-argparse"
+version = "0.5.2"
 source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version < '3.11'",
-]
 dependencies = [
+    { name = "docutils" },
     { name = "sphinx", version = "8.1.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/32/5f/ae6043738a48408ce1371303958fa02943d29619dd5d202e147b1dc8552d/sphinx_argparse_cli-1.19.0.tar.gz", hash = "sha256:0374b23560fd4246234c0ef2d8bb97703088c8ae721bf63a84b9fd0d32f87a78", size = 12667, upload-time = "2024-12-10T01:44:47.429Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/00/1f/7d40169591a70fb1a8ba57345e22c3f6dca5b06ee6efddafe5ccee91336c/sphinx_argparse_cli-1.19.0-py3-none-any.whl", hash = "sha256:c0e069deed1db44d289f90469c04320f1c2249b3dcbd3c3e093bf9a66e4bd8e4", size = 9941, upload-time = "2024-12-10T01:44:44.738Z" },
-]
-
-[[package]]
-name = "sphinx-argparse-cli"
-version = "1.20.1"
-source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version >= '3.14'",
-    "python_full_version >= '3.11' and python_full_version < '3.14'",
-]
-dependencies = [
     { name = "sphinx", version = "8.2.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/35/86/e64bef5ee47bbb0bdb2415b9cabcbf03cbc270eca4ba46c6060fa0977313/sphinx_argparse_cli-1.20.1.tar.gz", hash = "sha256:ce21821c5961de24f52d4f78b01be02b693a5bd3d7df7ce920facb9708f983a5", size = 13080, upload-time = "2025-10-08T22:03:10.411Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/3b/21/a8c64e6633652111e6e4f89703182a53cbc3ed67233523e47472101358b6/sphinx_argparse-0.5.2.tar.gz", hash = "sha256:e5352f8fa894b6fb6fda0498ba28a9f8d435971ef4bbc1a6c9c6414e7644f032", size = 27838, upload-time = "2024-07-17T12:08:08.219Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ce/40/da6d8044c0f27f0bffd0656f77eceef6ac7cd29b1bea21222f34c3c54784/sphinx_argparse_cli-1.20.1-py3-none-any.whl", hash = "sha256:a4592b1cc2c07dcdd6d6b58e41b79d032bd48588e68a6b057272f75f87f904ed", size = 10368, upload-time = "2025-10-08T22:03:09.051Z" },
+    { url = "https://files.pythonhosted.org/packages/e5/43/9f0e9bfb3ce02cbf7747aa2185c48a9d6e42ba95736a5e8f511a5054d976/sphinx_argparse-0.5.2-py3-none-any.whl", hash = "sha256:d771b906c36d26dee669dbdbb5605c558d9440247a5608b810f7fa6e26ab1fd3", size = 12547, upload-time = "2024-07-17T12:08:06.307Z" },
 ]
 
 [[package]]

@@ -50,7 +50,7 @@ def format_parser(
     # s += description or dedent(parser.description or "").strip()
     # s += "\n\n"
 
-    s += "\nUsage\n=====\n\n"
+    s += "\n.. rubric:: Usage\n\n"
     s += ".. code-block:: console\n\n"
     usage = parser.format_usage()
     usage = usage[usage.startswith("usage: ") and len("usage: ") :]
@@ -59,13 +59,13 @@ def format_parser(
 
     positionals = [action for action in parser._actions if not action.option_strings]
     if positionals:
-        s += "Positional Arguments\n====================\n\n"
+        s += "\n.. rubric:: Positional Arguments\n\n"
         for action in positionals:
             s += format_action(action)
 
     optionals = [action for action in parser._actions if action.option_strings]
     if optionals:
-        s += "Optional Arguments\n==================\n\n"
+        s += "\n.. rubric:: Optional Arguments\n\n"
         for action in optionals:
             s += format_action(action)
 
@@ -89,14 +89,25 @@ def load_app_class(entry_point_value: str) -> type:
     return resolve_name(entry_point_value)
 
 
+def build_parser(app_cls: type) -> argparse.ArgumentParser:
+    """Build an argparse parser populated from an app class's settings."""
+    from euporie.core.config._layers import CliLayer
+
+    layer = CliLayer(validate=lambda x: x, description=app_cls.__doc__ or "")
+    settings = {s.name: s for s in app_cls.settings}
+    for setting in settings.values():
+        args, kwargs = setting.parser_args
+        layer.parser.add_argument(*args, **kwargs)
+    return layer.parser
+
+
 if __name__ == "__main__":
     for script in entry_points(group="console_scripts"):
         if script.name.startswith("euporie"):
             if len(sys.argv) > 1 and sys.argv[-1].startswith("euporie"):
                 if sys.argv[-1] == script.name:
                     App = load_app_class(script.value)
-                    config = App.config
-                    parser = config._populate_parser(config.parser)
+                    parser = build_parser(App)
                     parser.prog = script.name
                     print(f".. _cli-{script.name}-start:")
                     print(

@@ -106,7 +106,10 @@ log_config = Setting(
     title="additional logging configuration",
     help_="Additional logging configuration",
     description="""
-        A JSON string specifying additional logging configuration.
+        A mapping specifying additional logging configuration.
+
+        On the command line this should be passed as a JSON string, while in the
+        configuration file it can be specified as a TOML table.
     """,
 )
 
@@ -162,7 +165,7 @@ edit_mode = Setting(
     help_="Key-binding mode for text editing",
     default="micro",
     description="""
-        Key binding style to use when editing cells.
+        :term:`Editor mode` (key binding style) to use when editing cells.
     """,
 )
 
@@ -312,6 +315,7 @@ clipboard = Setting(
     help_="The preferred clipboard access method",
     description="""
         The clipboard access method to use.
+
         - ``external``: Data is saved to the system clipboard using OS native
           tooling.
         - ``internal``: Clipboard data is only stored and usable inside euporie -
@@ -320,21 +324,6 @@ clipboard = Setting(
           clipboard contents. Requires your terminal emulator to support OSC52.
           Works over SSH.
 
-    """,
-)
-
-key_bindings = Setting(
-    name="key_bindings",
-    flags=["--key-bindings"],
-    type_=json.loads,
-    help_="Additional key binding definitions",
-    default={},
-    schema={
-        "type": "object",
-    },
-    description="""
-        A mapping of component names to mappings of command name to key-binding
-        lists.
     """,
 )
 
@@ -370,11 +359,11 @@ enable_language_servers = Setting(
     default=False,
     help_="Enable language server support",
     description="""
-        When set to :py:const:`True`, language servers will be used for liniting,
-        code inspection, and code formatting.
+        When set to :py:const:`True`, :term:`language servers <Language server>`
+        will be used for liniting, code inspection, and code formatting.
 
         Additional language servers can be added using the
-        :option:`language-servers` option.
+        :option:`language_servers` option.
     """,
 )
 
@@ -410,17 +399,18 @@ language_servers = Setting(
         },
     },
     description="""
-        Additional language servers can be defined here, e.g.:
+        Additional :term:`language servers <Language server>` can be defined
+        here, e.g.:
 
-        .. code-block:: json
+        .. code-block:: toml
 
-           {
-            "ruff": {"command": ["ruff-lsp"], "languages": ["python"]},
-            "pylsp": {"command": ["pylsp"], "languages": ["python"], "settings": {}},
-            "typos": {"command": ["typos-lsp"], "languages": ["python", "markdown"]}
-           }
+           [language_servers]
+           ruff = {command = ["ruff-lsp"], languages = ["python"]}
+           pylsp = {command = ["pylsp"], languages = ["python"], settings = {}}
+           typos = {command = ["typos-lsp"], languages = ["python", "markdown"]}
 
         The following properties are required:
+
         - The name to be given to the the language server, must be unique
         - The command list consists of the process to launch, followed by any
           command line arguments
@@ -431,11 +421,10 @@ language_servers = Setting(
         empty dictionary. For example, the following would disable the awk language
         server:
 
-        .. code-block:: json
+        .. code-block:: toml
 
-           {
-             "awk-language-server": {},
-           }
+           [language_servers]
+           awk-language-server = {}
     """,
 )
 
@@ -468,10 +457,11 @@ formatters = Setting(
         },
     },
     description="""
-        A mapping of formatter names to their configurations. Formatters can be
-        added, modified, or disabled.
+        A mapping of :term:`formatter <Formatter>` names to their
+        configurations. Formatters can be added, modified, or disabled.
 
         Each formatter configuration should have:
+
         - ``command``: An array of the command and any arguments. Code to be
           formatted is passed via standard input, and the formatted code is
           read from standard output.
@@ -483,14 +473,13 @@ formatters = Setting(
 
         e.g.
 
-        .. code-block:: json
+        .. code-block:: toml
 
-           {
-             "black": {"command": ["black", "-"], "languages": ["python"]},
-             "isort": {"command": ["isort", "-"], "languages": ["python"]},
-             "ruff-format": {"command": ["ruff", "format", "-"], "languages": ["python"]},
-             "nixfmt": {}
-           }
+           [formatters]
+           black = {command = ["black", "-"], languages = ["python"]}
+           isort = {command = ["isort", "-"], languages = ["python"]}
+           ruff-format = {command = ["ruff", "format", "-"], languages = ["python"]}
+           nixfmt = {}
 
         The last entry disables the built-in ``nixfmt`` formatter.
     """,
@@ -545,7 +534,8 @@ multiplexer_passthrough = Setting(
         (:program:`screen` or :program:`tmux`), then certain escape sequences
         will be passed-through the multiplexer directly to the terminal.
 
-        This affects things such as terminal color detection and graphics display.
+        This affects things such as terminal color detection and
+        :term:`graphics <Terminal graphics>` display.
 
         for tmux, you will also need to ensure that ``allow-passthrough`` is set to
         ``on`` in your :program:`tmux` configuration.
@@ -579,7 +569,8 @@ graphics = Setting(
     help_="The preferred graphics protocol",
     description="""
         The graphics protocol to use, if supported by the terminal.
-        If set to ``none``, terminal graphics will not be used.
+        If set to ``none``, :term:`terminal graphics <Terminal graphics>` will
+        not be used.
         If set to ``auto``, euporie will detect the best protocol to use
         automatically.
     """,
@@ -635,7 +626,8 @@ color_scheme = Setting(
     help_="The color scheme to use",
     default="default",
     description="""
-        The color scheme to use: `auto` means euporie will try to use your
+        The :term:`color scheme <Color scheme>` to use: `auto` means euporie
+        will try to use your
         terminal's color scheme, `light` means black text on a white background,
         and `dark` means white text on a black background.
     """,
@@ -694,16 +686,18 @@ custom_styles = Setting(
     },
     help_="Additional style settings",
     description="""
-        A JSON object mapping style names to prompt-toolkit style values.
+        A mapping of style names to prompt-toolkit style values.
 
         The style keys used in euporie can be found in
         :py:func:`euporie.core.style.build_style`.
 
         e.g.:
 
-        .. code-block:: json
+        .. code-block:: toml
 
-           { "cell input prompt":"fg:purple", "cell output prompt": "fg:green" }
+           [custom_styles]
+           "cell input prompt" = "fg:purple"
+           "cell output prompt" = "fg:green"
 
     """,
 )
@@ -743,9 +737,9 @@ kernel_name = Setting(
     help_="The name of the kernel to start by default",
     default="python3",
     description="""
-        The name of the kernel selected automatically by the console app or in new
-        notebooks. If set to an empty string, the user will be asked which kernel
-        to launch.
+        The name of the :term:`kernel <Kernel>` selected automatically by the
+        console app or in new notebooks. If set to an empty string, the user
+        will be asked which kernel to launch.
     """,
 )
 
@@ -771,8 +765,8 @@ show_remote_inputs = Setting(
     help_="Display inputs sent to the kernel by other clients",
     default=True,
     description="""
-        If set to `True`, all code input sent to the kernel by any client will be
-        displayed.
+        If set to `True`, all code input sent to the :term:`kernel <Kernel>` by
+        any client will be displayed.
 
         If set to `False`, only inputs sent to the kernel by the current instance
         of euporie will be displayed, and all other inputs will be ignored.
@@ -791,8 +785,8 @@ show_remote_outputs = Setting(
         instance of euporie will be displayed, and all other outputs will be
         ignored.
 
-        If set to `True`, all outputs generated by the kernel will be
-        displayed.
+        If set to `True`, all outputs generated by the :term:`kernel <Kernel>`
+        will be displayed.
     """,
 )
 
@@ -803,8 +797,8 @@ warn_venv = Setting(
     default=True,
     help_="Warn when running in a virtual environment",
     description="""
-        When enabled, displays a warning message when the kernel is running inside
-        a virtual environment.
+        When enabled, displays a warning message when the :term:`kernel <Kernel>`
+        is running inside a virtual environment.
 
         This can be helpful to remind users that they are working in an isolated
         Python environment with potentially different package versions than their
@@ -825,7 +819,7 @@ wrap_cell_outputs = Setting(
     default=True,
     schema={"type": "boolean"},
     description="""
-        Whether text-based cell outputs should be wrapped.
+        Whether text-based :term:`cell <Cell>` outputs should be wrapped.
     """,
     filter=(
         ~buffer_has_focus
@@ -861,7 +855,8 @@ show_cell_borders = Setting(
         "type": "boolean",
     },
     description="""
-        Whether cell borders should be drawn for unselected cells.
+        Whether :term:`cell <Cell>` borders should be drawn for unselected
+        cells.
     """,
 )
 
@@ -872,9 +867,10 @@ save_widget_state = Setting(
     help_="Save a notebook's widget state in the notebook metadata",
     default=True,
     description="""
-        When set to ``True``, the state of any widgets in the current notebook will
-        be saves in the notebook's metadata. This enables widgets to be displayed
-        when the notebook is re-opened without having to re-run the notebook.
+        When set to ``True``, the state of any :term:`widgets <Widget>` in the
+        current notebook will be saves in the notebook's metadata. This enables
+        widgets to be displayed when the notebook is re-opened without having to
+        re-run the notebook.
     """,
 )
 
@@ -1056,27 +1052,25 @@ key_bindings = Setting(
         },
     },
     description="""
-        Configure custom keyboard shortcuts for commands.
+        Configure custom keyboard shortcuts for :term:`commands <Command>`.
 
         This setting allows you to add new key bindings to commands, remove
         existing bindings, or completely replace a command's bindings.
 
-        Key Syntax
-        ----------
+        .. rubric:: Key Syntax
 
         Keys are specified as strings using prompt_toolkit's key syntax:
 
         - Single keys: ``a``, ``b``, ``1``, ``space``, ``enter``, ``tab``
-        - Control combinations: ``c-s`` (Ctrl+S), ``c-x`` (Ctrl+X)
-        - Alt combinations: ``A-x`` (Alt+X), ``A-enter`` (Alt+Enter)
-        - Shift combinations: ``s-tab`` (Shift+Tab), ``s-left`` (Shift+Left)
+        - Control combinations: ``c-s`` (:kbd:`Ctrl+S`), ``c-x`` (:kbd:`Ctrl+X`)
+        - Alt combinations: ``A-x`` (:kbd:`Alt+X`), ``A-enter`` (:kbd:`Alt+Enter`)
+        - Shift combinations: ``s-tab`` (:kbd:`Shift+Tab`), ``s-left`` (:kbd:`Shift+Left`)
         - Function keys: ``f1``, ``f2``, ..., ``f12``
         - Special keys: ``escape``, ``backspace``, ``delete``, ``home``, ``end``
         - Arrow keys: ``up``, ``down``, ``left``, ``right``
-        - Key sequences: ``c-x c-s`` (Ctrl+X followed by Ctrl+S)
+        - Key sequences: ``c-x c-s`` (:kbd:`Ctrl+X` followed by :kbd:`Ctrl+S`)
 
-        Basic Usage
-        -----------
+        .. rubric:: Basic Usage
 
         The simplest form replaces all bindings for a command with a new list:
 
@@ -1089,8 +1083,7 @@ key_bindings = Setting(
 
         This completely replaces any default bindings for these commands.
 
-        Adding Bindings
-        ---------------
+        .. rubric:: Adding Bindings
 
         To add bindings while keeping the defaults, use the ``add`` key:
 
@@ -1102,8 +1095,7 @@ key_bindings = Setting(
             [key_bindings.save-notebook]
             add = ["f2", "c-shift-s"]
 
-        Removing Bindings
-        -----------------
+        .. rubric:: Removing Bindings
 
         To remove specific bindings while keeping others:
 
@@ -1116,8 +1108,7 @@ key_bindings = Setting(
             remove = ["c-q"]
             add = ["c-shift-q"]
 
-        Replacing All Bindings
-        ----------------------
+        .. rubric:: Replacing All Bindings
 
         To remove all default bindings before adding new ones:
 
@@ -1141,8 +1132,7 @@ key_bindings = Setting(
             [key_bindings]
             dangerous-command = []
 
-        Advanced: Global and Eager Bindings
-        -----------------------------------
+        .. rubric:: Advanced: Global and Eager Bindings
 
         Some bindings need special flags:
 
@@ -1157,8 +1147,7 @@ key_bindings = Setting(
                 {keys = "c-p", is_global = true, eager = true},
             ]
 
-        Advanced: Copying Filter Settings
-        ---------------------------------
+        .. rubric:: Advanced: Copying Filter Settings
 
         Commands may have multiple bindings with different activation filters.
         For example, a command might have one binding that works globally and
@@ -1173,20 +1162,22 @@ key_bindings = Setting(
                 {keys = "c-;", like = "A-:"},
             ]
 
-        This copies the filter, eager, and global settings from the ``A-:``
-        binding to the new ``c-;`` binding.
+        This copies the filter, eager, and global settings from the :kdb:`A-:`
+        binding to the new :kbd:`c-;` binding.
 
-        Finding Command Names
-        ---------------------
+        .. rubric:: Finding Command Names
 
-        To see available commands, use the command bar (press ``:`` or ``Alt+:``)
-        and start typing. Command names use kebab-case (e.g., ``save-notebook``,
-        ``run-cell``, ``copy-cell``).
+        To see available commands, use the :term:`command bar <Command palette>`
+        (press :kbd:`:` or :kbd:`Alt+:`) and start typing. Command names use
+        kebab-case (e.g., :option:`save-file`,
+        :option:`run-selected-cells`, :option:`copy-cells`).
 
-        You can also run ``euporie-notebook --help-all`` to see all commands.
+        You can also browse all commands via the
+        :menuselection:`Help --> Keyboard Shortcuts` menu item, on the
+        :doc:`commands documentation page <commands>`, or in the
+        :ref:`pages/keybindings:Default Key Bindings Reference` section.
 
-        Examples
-        --------
+        .. rubric:: Examples
 
         A complete example configuration:
 

@@ -78,7 +78,8 @@ run_after_external_edit = Setting(
     help_="Run cells after editing externally",
     default=False,
     description="""
-        Whether to execute a cell immediately after editing in `$EDITOR`.
+        Whether to execute a :term:`cell <Cell>` immediately after editing in
+        `$EDITOR`.
     """,
 )
 
