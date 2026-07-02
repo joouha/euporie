@@ -108,6 +108,59 @@ def apply_style(ft: StyleAndTextTuples, style: str) -> StyleAndTextTuples:
     ]
 
 
+def _normalize_style(style: str) -> str:
+    """Normalize a style string by collapsing whitespace.
+
+    This allows comparison of styles that are semantically identical but
+    differ only in whitespace (e.g. "bold  italic" vs "bold italic").
+
+    Args:
+        style: The style string to normalize.
+
+    Returns:
+        The normalized style string with collapsed whitespace.
+    """
+    return " ".join(style.split())
+
+
+def merge(ft: StyleAndTextTuples) -> StyleAndTextTuples:
+    """Merge adjacent fragments that have the same normalized style.
+
+    Consecutive fragments whose style strings are semantically equivalent
+    (i.e. contain the same tokens regardless of order) are combined into a
+    single fragment by concatenating their text.
+
+    Fragments with mouse handlers (3-tuples) are only merged if both the
+    normalized style and the handler are identical.
+
+    Args:
+        ft: The formatted text to merge.
+
+    Returns:
+        A new list of fragments with adjacent same-style fragments merged.
+    """
+    if not ft:
+        return []
+
+    result: StyleAndTextTuples = []
+    prev_style, prev_text, *prev_rest = ft[0]
+    prev_norm = _normalize_style(prev_style)
+
+    for style, text, *rest in ft[1:]:
+        norm = _normalize_style(style)
+        if norm == prev_norm and rest == prev_rest:
+            prev_text += text
+        else:
+            result.append(
+                cast("OneStyleAndTextTuple", (prev_style, prev_text, *prev_rest))
+            )
+            prev_style, prev_text, prev_rest = style, text, rest
+            prev_norm = norm
+
+    result.append(cast("OneStyleAndTextTuple", (prev_style, prev_text, *prev_rest)))
+    return result
+
+
 def strip(
     ft: StyleAndTextTuples,
     left: bool = True,
