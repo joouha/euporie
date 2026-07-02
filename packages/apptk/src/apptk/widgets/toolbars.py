@@ -344,11 +344,11 @@ class CommandBar:
     @add_cmd(
         name="activate-command-bar",
         bindings=[
-            {"keys": "A-:", "is_global": True},
             {
                 "keys": ":",
                 "filter": ~buffer_has_focus | (buffer_has_focus & navigation_mode),
             },
+            {"keys": "A-:", "is_global": True},
         ],
     )
     def _activate_command_bar(event: KeyPressEvent) -> None:
@@ -360,8 +360,8 @@ class CommandBar:
     @add_cmd(
         name="activate-command-bar-shell",
         bindings=[
-            {"keys": ["A-!"], "is_global": True},
             {"keys": ["!"], "filter": ~buffer_has_focus | navigation_mode},
+            {"keys": ["A-!"], "is_global": True},
         ],
     )
     def _activate_command_bar_shell(event: KeyPressEvent) -> None:

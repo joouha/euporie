@@ -21,11 +21,11 @@ TIPS: list[str] = [
     "available command.",
     #
     "**Run Commands from the Command Bar**<br>"
-    "Press `:` to open the command bar, then type a Euporie command name "
+    f"Press `{k('activate-command-bar')}` to open the command bar, then type a Euporie command name "
     "and press Enter to run it.",
     #
     "**Run Shell Commands**<br>"
-    "Press `!` to open the command bar in shell mode, type the shell command "
+    f"Press `{k('activate-command-bar-shell')}` to open the command bar in shell mode, type the shell command "
     "you need, and press Enter to run it without leaving Euporie.",
     #
     "**Format Code Automatically**<br>"
@@ -56,7 +56,7 @@ TIPS: list[str] = [
     "Use `euporie-hub` to host a multi-user environment over SSH.",
     #
     "**Go To Cell by Number**<br>"
-    "In a notebook type `:` followed by a number to jump directly to a specific cell.",
+    f"In a notebook type `{k('activate-command-bar')}` followed by a number to jump directly to a specific cell.",
     #
     "**Always Show Tab Bar**<br>"
     "Open *Settings → UI Elements* and toggle *Always show tab bar* to "
