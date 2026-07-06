@@ -8,6 +8,7 @@ import code
 import getpass
 import logging
 import os
+import subprocess
 import sys
 import threading
 import traceback
@@ -362,8 +363,23 @@ class LocalPythonKernel(BaseKernel):
 
         with self.hook_manager:
             stripped_src = source.strip()
+            if stripped_src.startswith("!"):
+                lines = stripped_src.splitlines()
+                if len(lines) > 1:
+                    print(  # noqa: T201
+                        "Warning: Shell commands cannot be mixed with Python code "
+                        "in the same cell",
+                        file=sys.stderr,
+                    )
+                    return True
+                cmd = stripped_src[1:].strip()
+                if cmd:
+                    await to_thread(run_shell_command, cmd)
+                return True
+
             if not stripped_src.startswith("%"):
                 return False
+
             # Warn if there are extra lines
             lines = stripped_src.splitlines()
             if len(lines) > 1 and not stripped_src.startswith("%%"):
@@ -642,6 +658,26 @@ def get_display_data(obj: Any) -> tuple[dict[str, Any], dict[str, Any]]:
             data = {"text/plain": repr(obj)}
 
     return data, metadata
+
+
+def run_shell_command(cmd: str) -> None:
+    """Run a shell command, streaming its output to stdout.
+
+    Args:
+        cmd: The shell command to execute.
+    """
+    proc = subprocess.Popen(  # noqa: S602
+        cmd,
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+    )
+    if proc.stdout is not None:
+        for line in proc.stdout:
+            sys.stdout.write(line)
+    proc.wait()
 
 
 class BaseHook(AbstractContextManager):
