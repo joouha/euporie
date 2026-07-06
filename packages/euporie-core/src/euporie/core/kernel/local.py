@@ -967,6 +967,7 @@ class MatplotlibHook(BaseHook):
             import matplotlib
         except ImportError:
             log.debug("matplotlib not available - skipping inline configuration")
+            self._configured = True
             return
         except Exception:
             log.exception("Failed to configure matplotlib for inline display")
