@@ -728,7 +728,12 @@ class DisplayHook(BaseHook):
 
         if callbacks := self.callbacks:
             # Store value in kernel locals
-            self._kernel.locals[f"_{self._kernel.execution_count}"] = value
+            locals_ = self._kernel.locals
+            locals_[f"_{self._kernel.execution_count}"] = value
+            # Rotate the last-three-results variables (like IPython)
+            locals_["___"] = locals_.get("__")
+            locals_["__"] = locals_.get("_")
+            locals_["_"] = value
 
             # Get display data and metadata
             data, metadata = get_display_data(value)
