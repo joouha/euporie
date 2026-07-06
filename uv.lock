@@ -787,7 +787,7 @@ dev = [
     { name = "towncrier", specifier = ">=24.8.0" },
 ]
 docs = [
-    { name = "intersphinx-registry", specifier = ">=0.2602.2" },
+    { name = "intersphinx-registry", specifier = ">=0.2606.25" },
     { name = "sphinx-argparse-cli", specifier = ">=1.19.0" },
     { name = "sphinx-autobuild", specifier = ">=2024.10.3" },
     { name = "sphinx-copybutton", specifier = ">=0.5.2" },
@@ -1113,11 +1113,11 @@ wheels = [
 
 [[package]]
 name = "intersphinx-registry"
-version = "0.2602.2"
+version = "0.2606.25"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/e0/a3/0fc57bb05624f1c2dcb26bf2fa2a7b3bcf14be7d404b49b6dd66f7a2df1f/intersphinx_registry-0.2602.2.tar.gz", hash = "sha256:5c02659a3025082049031635b3b1759f90bd538e4528fd5d22e4a426b1685e5a", size = 19586, upload-time = "2026-02-02T14:21:19.949Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/05/a7/a314d13ac2def26c14a911fbf80938dbab1c3b1182ad12984a4575fc1177/intersphinx_registry-0.2606.25.tar.gz", hash = "sha256:d1094e756792f228b1dcbf7f6981926e92aa7829286655c887f79730d65d8ad5", size = 19754, upload-time = "2026-06-25T07:47:47.878Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b8/c9/11ccfaacd8bbc0398a113d9f7ca3592b18ec15a37e77fe7f9496a6d9f5f0/intersphinx_registry-0.2602.2-py2.py3-none-any.whl", hash = "sha256:562738145bea82704af05c59f47fd9ab9fd3c5e8ea9529abad2eb79c2ac9ed7f", size = 21858, upload-time = "2026-02-02T14:21:18.327Z" },
+    { url = "https://files.pythonhosted.org/packages/4e/f3/10cb0bd403879a21e14470d1372b2c16ae704b833071c341dbdbcdb54edb/intersphinx_registry-0.2606.25-py2.py3-none-any.whl", hash = "sha256:bec345884230bfd4c70f3464e1c77cf7ae6a22d4032c73cf5f9f9519e37e6b85", size = 22034, upload-time = "2026-06-25T07:47:46.588Z" },
 ]
 
 [[package]]

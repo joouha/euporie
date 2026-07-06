@@ -43,7 +43,7 @@ dev = [
     "towncrier>=24.8.0",
 ]
 docs = [
-    "intersphinx-registry>=0.2602.2",
+    "intersphinx-registry>=0.2606.25",
     "sphinx-argparse-cli>=1.19.0",
     "sphinx-autobuild>=2024.10.3",
     "sphinx-copybutton>=0.5.2",
@@ -269,9 +269,9 @@ test-parallel = "sh -c '(trap \"kill 0\" SIGINT; for v in 3-10 3-11 3-12 3-13 3-
 cov = "uv run --isolated --group test coverage run --parallel -m pytest"
 
 # Documentation
-docs-build = "sphinx-build docs docs/_build/html"
+docs-build = "uv run --all-packages sphinx-build docs docs/_build/html"
 docs-serve = "python -m http.server --directory docs/_build/html/"
-docs-autobuild = "sphinx-autobuild docs docs/_build/html"
+docs-autobuild = "uv run --all-packages sphinx-autobuild docs docs/_build/html"
 
 
 [tool.pytest.ini_options]
