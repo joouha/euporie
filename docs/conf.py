@@ -5,8 +5,13 @@ from __future__ import annotations
 import subprocess
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 from intersphinx_registry import get_intersphinx_mapping
+
+if TYPE_CHECKING:
+    from sphinx.application import Sphinx
+    from sphinx.ext.autodoc import Options
 
 # # Add the docs folder to the path for local extensions
 sys.path.append(str(Path(__file__).parent.absolute()))
@@ -116,3 +121,31 @@ for script in script_dir.glob("document_*.py"):
     name = script.stem.replace("document_", "")
     with (inc_dir / name).with_suffix(".rst").open("w") as f:
         subprocess.call([sys.executable, script], stdout=f)
+
+# Manual docstrings for namespace packages
+
+NAMESPACE_DOCS = {
+    "euporie": "Euporie ecosystem namespace containing UI tools and terminal applications.",
+}
+
+
+def add_namespace_docstrings(
+    app: Sphinx,
+    what: str,
+    name: str,
+    obj: Any,
+    options: Options,
+    lines: list[str],
+) -> None:
+    """Add docstrings to implicit namespace packages."""
+    # Target your specific implicit namespace packages
+    if what == "module" and name in NAMESPACE_DOCS:
+        # Clear any existing lines (which will be empty for namespaces)
+        # and insert your custom description line by line
+        lines.extend(NAMESPACE_DOCS[name].splitlines())
+
+
+def setup(app: Sphinx) -> None:
+    """Set up the Sphinx application."""
+    # Connect the function to the autodoc docstring processor hook
+    app.connect("autodoc-process-docstring", add_namespace_docstrings)
