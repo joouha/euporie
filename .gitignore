@@ -78,8 +78,7 @@ instance/
 # Sphinx documentation
 docs/_build/
 docs/_inc/
-docs/api/
-!docs/api/index.rst
+docs/_autosummary/
 
 # PyBuilder
 .pybuilder/
