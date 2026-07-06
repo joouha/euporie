@@ -69,7 +69,7 @@ if __name__ == "__main__":
                     script.load()
                     print(f".. _commands-{script.name}-start:")
                     format_commands()
-                    print(f".. _commands-{script.name}-end:")
+                    print(f".. _commands-{script.name}-end:\n")
                     break
             else:
                 subprocess.call([sys.executable, __file__, script.name])  # S603
