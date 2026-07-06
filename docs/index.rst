@@ -20,13 +20,13 @@ Euporie's Documentation
    :maxdepth: 2
    :caption: Guides
 
-   pages/guides/kernels
-   pages/guides/ipywidgets
-   pages/guides/terminal_graphics
-   pages/guides/theming
-   pages/guides/lsp
-   pages/guides/remote_notebooks
-   pages/guides/multiplexers
+   pages/kernels
+   pages/ipywidgets
+   pages/terminal_graphics
+   pages/theming
+   pages/lsp
+   pages/remote_notebooks
+   pages/multiplexers
    pages/troubleshooting
 
 .. toctree::

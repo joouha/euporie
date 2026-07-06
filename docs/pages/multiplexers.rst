@@ -118,5 +118,5 @@ See also
 ***********
 
 * :doc:`terminal_graphics` - details of the supported graphics protocols
-* :doc:`../troubleshooting` - solutions to specific common issues
+* :doc:`troubleshooting` - solutions to specific common issues
 * :doc:`../../packages/hub` - hosting euporie itself as an SSH service

@@ -35,20 +35,20 @@ Sixel
 
 A much older protocol, supported (in 2024+) by xterm, mlterm, foot, WezTerm, recent versions of tmux (3.4+), Windows Terminal and more.
 
-Force with :option:`--graphics=sixel`. Requires either the :py:mod:`timg` Python package (installed by default), :py:mod:`chafa.py`, or an external program like :program:`img2sixel` or :program:`imagemagick`. See the :ref:`sixel section <installation:sixel>` of the installation page for the exhaustive list of supported tools.
+Force with :option:`--graphics=sixel`. Requires either the :py:mod:`timg` Python package (installed by default), :py:mod:`chafa.py`, or an external program like :program:`img2sixel` or :program:`imagemagick`. See the :ref:`sixel section <installation:sixels>` of the installation page for the exhaustive list of supported tools.
 
 Unicode and ANSI fallbacks
 ==========================
 
 For terminals that don't support any graphics protocol, euporie can still approximate images using Unicode block characters and ANSI colour codes. This is significantly lower-fidelity but still useful for plots and icons.
 
-Force with :option:`--graphics=none`. Quality is improved if any of `chafa <https://hpjansson.org/chafa/>`_, `timg <https://github.com/hzeller/timg>`_, `viu <https://github.com/atanunq/viu>`_ or other ANSI-art tools are installed. See the :ref:`ANSI art section <installation:ansi art>` of the installation page for the exhaustive list of supported tools.
+Force with :option:`--graphics=none`. Quality is improved if any of `chafa <https://hpjansson.org/chafa/>`_, `timg <https://github.com/hzeller/timg>`_, `viu <https://github.com/atanunq/viu>`_ or other ANSI-art tools are installed. See the :ref:`ANSI art section <installation:ansi-art>` of the installation page for the exhaustive list of supported tools.
 
 *****************
 Detection
 *****************
 
-By default, euporie detects which protocol your terminal supports by sending escape-sequence queries on startup and seeing which ones the terminal acknowledges. The chosen protocol is logged at debug level (see :doc:`../troubleshooting` for how to enable a debug log).
+By default, euporie detects which protocol your terminal supports by sending escape-sequence queries on startup and seeing which ones the terminal acknowledges. The chosen protocol is logged at debug level (see :doc:`troubleshooting` for how to enable a debug log).
 
 You can override the auto-detection with the :option:`--graphics` flag, or with the :confval:`graphics` configuration option.
 
@@ -76,7 +76,7 @@ Once euporie can render raster images, it composes them on top of:
 * **HTML** - rendered by euporie's built-in HTML engine, with text-mode
   fallback to :program:`w3m`/:program:`elinks`/:program:`lynx`.
 
-See :doc:`../installation` for the optional dependencies needed by each format.
+See :doc:`installation` for the optional dependencies needed by each format.
 
 *****************
 Troubleshooting
@@ -90,4 +90,4 @@ If graphics aren't appearing, work through this list:
 4. If you're over SSH, the multiplexer guide also applies.
 5. Generate a debug log (``euporie-notebook --log-file=debug.log --log-level=debug``) and grep for ``graphics`` to see which protocol was selected.
 
-The :doc:`../troubleshooting` page lists fixes for several common, specific symptoms.
+The :doc:`troubleshooting` page lists fixes for several common, specific symptoms.

@@ -161,7 +161,7 @@ For other programming languages, you'll need to install the appropriate :term:`k
 
 You can view a list of available :term:`kernel <Kernel>` implementations for various programming languages `here <https://github.com/jupyter/jupyter/wiki/Jupyter-kernels>`_.
 
-See the :doc:`guides/kernels` guide for more details on managing and connecting to :term:`kernels <Kernel>`.
+See the :doc:`kernels` guide for more details on managing and connecting to :term:`kernels <Kernel>`.
 
 ----
 
@@ -171,7 +171,7 @@ Optional Dependencies
 
 Euporie supports a wide range of rendering methods in order to get your notebooks looking as nice as possible in the terminal. The following section lists the various rendering methods available, and details what needs to be installed for them to be used.
 
-For a deeper discussion of how images are rendered in the terminal, see the :doc:`guides/terminal_graphics` guide.
+For a deeper discussion of how images are rendered in the terminal, see the :doc:`terminal_graphics` guide.
 
 Images
 ======

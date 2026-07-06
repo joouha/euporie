@@ -79,7 +79,7 @@ Glossary
    Kernel
       A backend process that runs the code in a notebook's cells. Kernels
       communicate with euporie using the standard Jupyter messaging
-      protocol. See the :doc:`kernel guide <guides/kernels>`.
+      protocol. See the :doc:`kernel guide <kernels>`.
 
    Pager
       A scrollable popup used to display long-form output - help text,
@@ -104,4 +104,4 @@ Glossary
       Pixel-accurate images rendered inside a terminal using one of several
       protocols - **Sixel**, **Kitty's terminal graphics protocol**, or
       **iTerm2's inline images** protocol. See the :doc:`terminal graphics
-      guide <guides/terminal_graphics>`.
+      guide <terminal_graphics>`.

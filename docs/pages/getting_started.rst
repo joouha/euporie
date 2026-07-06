@@ -54,7 +54,7 @@ To add another :term:`cell` **below**, press :kbd:`b`. Press :kbd:`Enter` again 
    url = "https://raw.githubusercontent.com/joouha/euporie-binder/main/euporie-logo.png"
    Image.open(io.BytesIO(urllib.request.urlopen(url).read()))
 
-Run the :term:`cell`. If your terminal supports :term:`terminal graphics` (kitty, iTerm2, WezTerm, foot, recent xterm, etc.) you'll see the image rendered inline. If not, euporie will fall back to ANSI art. See :doc:`guides/terminal_graphics` for details.
+Run the :term:`cell`. If your terminal supports :term:`terminal graphics` (kitty, iTerm2, WezTerm, foot, recent xterm, etc.) you'll see the image rendered inline. If not, euporie will fall back to ANSI art. See :doc:`terminal_graphics` for details.
 
 Save with :kbd:`Ctrl+S`, then close with :kbd:`Ctrl+W` (or :kbd:`Ctrl+Q` to quit the :term:`app <App>`).
 
@@ -98,7 +98,7 @@ What next?
 * :doc:`configuration` - how to persist settings via a config file or
   environment variables
 * :doc:`keybindings` - default key bindings and how to customise them
-* :doc:`guides/terminal_graphics` - how images are rendered in your terminal
+* :doc:`terminal_graphics` - how images are rendered in your terminal
   and how to troubleshoot when they don't appear
-* :doc:`guides/kernels` - install and connect to non-Python Jupyter kernels
+* :doc:`kernels` - install and connect to non-Python Jupyter kernels
 * :doc:`troubleshooting` - solutions to common issues

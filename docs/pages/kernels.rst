@@ -101,4 +101,4 @@ If euporie shows ``No kernels found`` or cells stay stuck on ``*``:
 3. Check the kernel can start standalone: :code:`jupyter kernel` from the same environment.
 4. Check euporie's debug log for kernel start-up errors: :code:`euporie-notebook --log-file=debug.log --log-level=debug`.
 
-See :doc:`../troubleshooting` for further fixes.
+See :doc:`troubleshooting` for further fixes.

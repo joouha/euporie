@@ -56,7 +56,7 @@ Both options can be overridden per :term:`app`. For example, to use a light sche
    color_scheme = "dark"
    syntax_theme = "dracula"
 
-See :doc:`../configuration` for the full configuration mechanism.
+See :doc:`configuration` for the full configuration mechanism.
 
 **********************************
 Borders, cell visuals and tab bars
