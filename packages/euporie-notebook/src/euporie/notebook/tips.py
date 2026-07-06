@@ -167,4 +167,74 @@ TIPS: list[str] = [
     "**Background Patterns**<br>"
     "Explore the background pattern options in settings to add subtle "
     "visual texture to the notebook background.",
+    #
+    "**Table of Contents**<br>"
+    f"Press `{k('toggle-side-bar-pane')}` to open the sidebar and use the "
+    "table of contents to navigate between markdown headings.",
+    #
+    "**Use an External Editor**<br>"
+    f"Press `{k('edit-in-external-editor')}` in notebook navigation mode to "
+    "edit a cell in your external `$EDITOR`. Set the `external_editor` "
+    "option to use your preferred text editor (e.g. vim, nano, or VS Code).",
+    #
+    "**LSP Integration**<br>"
+    "Euporie supports the Language Server Protocol for completions, "
+    "diagnostics, and formatting. Enable it in "
+    "*Settings → Code tools → Language servers*.",
+    #
+    "**Multiplexer Passthrough**<br>"
+    "Go to *Settings → UI elements → Multiplexer passthrough* to pass "
+    "graphics escape sequences through tmux or screen.",
+    #
+    "**Interactive Matplotlib**<br>"
+    "Euporie supports `ipympl` for interactive matplotlib figures "
+    "directly in the terminal.",
+    #
+    "**Open Remote Notebooks**<br>"
+    "Use `fsspec`-compatible URLs to open notebooks from remote "
+    "filesystems like S3, HTTP, or SSH.",
+    #
+    "**Minimap Navigation**<br>"
+    "The sidebar includes a minimap for quick visual navigation "
+    "through long notebooks.",
+    #
+    "**Autosuggest Completions**<br>"
+    "Go to *Settings → Code tools → Autosuggest* to see inline ghost-text "
+    "suggestions as you type.",
+    #
+    "**Cursor Blink**<br>"
+    "Toggle `cursor_blink` in settings to enable or disable cursor "
+    "blinking in the editor.",
+    #
+    "**Set an Accent Color**<br>"
+    "Customize the `accent_color` setting to change the highlight "
+    "color used throughout the interface.",
+    #
+    "**Cell Shadows**<br>"
+    "Go to *Settings → UI Elements → Shadows* to add drop shadows to cells "
+    "for a more layered appearance.",
+    #
+    "**Console Session Saving**<br>"
+    "`euporie-console` can save your interactive session as a notebook "
+    "file for later reference.",
+    #
+    "**Preview Specific Cells**<br>"
+    "Use `--cell-start` and `--cell-stop` with `euporie-preview` to "
+    "render only a range of cells.",
+    #
+    "**Export Preview Output**<br>"
+    "Use `--output-file` with `euporie-preview` to save the rendered "
+    "output to a file.",
+    #
+    "**Custom Key Bindings**<br>"
+    "Add a `key_bindings` section to your config to add, remove, or "
+    "replace shortcuts for any command.",
+    #
+    "**Notebook Width Control**<br>"
+    "Use the `max_notebook_width` setting to limit how wide the notebook renders, "
+    "or toggle *Settings → Expand* to fill the terminal width.",
+    #
+    "**Diagnostics and Linting**<br>"
+    "With language servers enabled (*Settings → Code tools → Language servers*), "
+    "Euporie shows inline diagnostics and error highlights as you type.",
 ]
