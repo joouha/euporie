@@ -10,6 +10,8 @@ from textwrap import dedent, indent
 
 from apptk.commands import COMMANDS, Command
 
+from euporie.core.panes import _PANE_REGISTRY
+
 if sys.version_info[0] >= 3 and sys.version_info[1] >= 10:
     from importlib.metadata import entry_points
 else:
@@ -67,6 +69,9 @@ if __name__ == "__main__":
                 if sys.argv[-1] == script.name:
                     # Load the app module to register commands
                     script.load()
+                    # Ensure all panes are loaded
+                    for entry in _PANE_REGISTRY:
+                        _ = entry.tab_class
                     print(f".. _commands-{script.name}-start:")
                     format_commands()
                     print(f".. _commands-{script.name}-end:\n")
