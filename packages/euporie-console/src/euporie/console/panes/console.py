@@ -503,10 +503,3 @@ class Console(BaseConsole):
     def refresh(self, now: bool = True) -> None:
         """Request the output is refreshed (refresh the whole app)."""
         self.app.invalidate()
-
-    def save(self, path: Path | None = None, cb: Callable | None = None) -> None:
-        """Save the console as a notebook."""
-        from euporie.core.panes.notebook import BaseNotebook
-
-        if path is not None:
-            BaseNotebook.save(cast("BaseNotebook", self), path)

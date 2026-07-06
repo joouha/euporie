@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from abc import abstractmethod
 from functools import partial
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from apptk.application.edit import edit_in_editor
 from apptk.buffer import Buffer, ValidationState
@@ -331,6 +331,12 @@ class BaseConsole(KernelPane):
         if hasattr(self, "lang_info"):
             return self.lang_info.get("file_extension", ".py")
         return ".py"
+
+    def write_file(self, path: Path) -> None:
+        """Write the console's virtual notebook to a path."""
+        from euporie.core.panes.notebook import BaseNotebook
+
+        BaseNotebook.write_file(cast("BaseNotebook", self), path)
 
     @property
     def lsp_cell(self) -> LspCell:
