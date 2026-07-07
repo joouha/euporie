@@ -388,6 +388,18 @@ class NotebookApp(BaseApp):
             on_change=lambda s: setattr(self.state, "side_bar_panel_index", s.index),
         )
 
+        def _sync_sidebar_index(setting: Setting) -> None:
+            if self.side_bar.index != self.state.side_bar_panel_index:
+                self.side_bar.index = self.state.side_bar_panel_index
+
+        self.state.events.side_bar_panel_index += _sync_sidebar_index
+
+        def _sync_sidebar_width(setting: Setting) -> None:
+            if self.side_bar.width != self.state.side_bar_width:
+                self.side_bar.width = self.state.side_bar_width
+
+        self.state.events.side_bar_width += _sync_sidebar_width
+
         self.container = FloatContainer(
             content=HSplit(
                 [
