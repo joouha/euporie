@@ -18,6 +18,15 @@ Euporie's Documentation
 
 .. toctree::
    :maxdepth: 2
+   :caption: Applications
+
+   packages/notebook
+   packages/console
+   packages/preview
+   packages/hub
+
+.. toctree::
+   :maxdepth: 2
    :caption: Guides
 
    pages/kernels
@@ -39,15 +48,6 @@ Euporie's Documentation
    pages/glossary
    pages/related
    pages/changelog
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Applications
-
-   packages/notebook
-   packages/console
-   packages/preview
-   packages/hub
 
 .. toctree::
    :maxdepth: 2
