@@ -46,7 +46,7 @@ async def imagemagick_convert(
         cmd += ["-background", bg]
     cmd.extend(["-[0]", "-density", "300"])
     app = get_app()
-    if cols is not None and hasattr(app, "cell_size_px"):
+    if cols is not None:
         px, _ = app.output.cell_pixel_size
         cmd += ["-geometry", f"{int(cols * px)}"]
     cmd += [f"{output_format}:-"]
@@ -187,10 +187,11 @@ async def mermaid_rs_renderer_cmd(output_format, datum, cols, rows, fg, bg, **kw
         output_format,
         "--output=/dev/stdout",
     ]
+    px, py = get_app().output.cell_pixel_size
     if cols is not None:
-        cmd.extend(["--width", cols])
+        cmd.extend(["--width", cols * px])
     if rows is not None:
-        cmd.extend(["--height", rows])
+        cmd.extend(["--height", rows * py])
     return await call_subproc(datum.data, cmd)
 
 

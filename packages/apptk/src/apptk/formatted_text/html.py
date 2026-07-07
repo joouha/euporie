@@ -4575,18 +4575,14 @@ class RichHTML:
         """Render an image and prepare graphic representation."""
         from apptk.layout.graphics import graphics_available
 
-        datum = Datum(
-            data,
-            format_,
-            path=path,
-        )
+        datum = Datum(data, format_, path=path)
         # Keep reference to this graphic
         self.graphic_data.add(datum)
-        # Scale down the image to fit to width
-        cols, aspect = await datum.cell_size_async()
 
+        # Determine target cell dimensions
+        cols, aspect = await datum.cell_size_async()
         if content_width := theme.content_width:
-            cols = content_width if cols == 0 else min(content_width, cols)
+            cols = min(content_width, cols) if cols else content_width
         rows = ceil(cols * aspect)
 
         # Convert the image to formatted-text
@@ -4604,20 +4600,19 @@ class RichHTML:
         # Remove trailing new-lines
         ft = strip(ft, chars="\n", left=False)
 
-        # If we couldn't calculate the image size, use the size of the text output
-        if rows == 0 and cols:
-            rows = min(theme.content_height, len(list(split_lines(ft))))
-            aspect = rows / cols
-
         # Set default background color on generated content
-        ft = [(f"{theme.style} {style}", (text), *rest) for style, text, *rest in ft]
+        ft = [(f"{theme.style} {style}", text, *rest) for style, text, *rest in ft]
 
         # Only add graphic overlay marker if graphics are available
         if graphics_available(datum.format):
-            # Store reference to image element with appropriate fit modes
-            # Images should shrink to fit width but not grow, and maintain aspect ratio
-            key = datum.add_size(Size(rows, cols), FitMode.SHRINK, FitMode.NONE)
-
+            # Use the largest of the text and computed dimensions
+            ft_cols = max_line_width(ft)
+            ft_rows = len(list(split_lines(ft)))
+            key = datum.add_size(
+                Size(max(rows or 0, ft_rows), max(cols or 0, ft_cols)),
+                FitMode.SHRINK,
+                FitMode.NONE,
+            )
             ft = [(f"[Graphic_{key}]", ""), *ft]
 
         return cast("StyleAndTextTuples", ft)
