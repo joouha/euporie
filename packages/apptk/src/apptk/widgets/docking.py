@@ -871,6 +871,64 @@ class DockingSplit:
             group.remove_panel(group.panels.index(panel))
             self.cleanup_empty_groups()
 
+    def _reset_tree(self, root: DockingGroup | DockingNode) -> None:
+        """Replace the tree with a new root and refresh derived state.
+
+        Args:
+            root: The new tree root.
+        """
+        # Discard existing groups so their drop zones and cached containers
+        # do not leak into the new tree.
+        for group in list(self._walk_groups()):
+            self._discard_group(group)
+        self.root = root
+        self.panels = self._collect_panels()
+        # Choose an active group from the new tree
+        self._active_group = self._find_first_group()
+        get_app().invalidate()
+
+    def stack_panels(self) -> None:
+        """Collapse all panels into a single tabbed group."""
+        panels = self._collect_panels()
+        if not panels:
+            return
+        new_root = DockingGroup(
+            panels=panels,
+            active=0,
+            docking_split=self,
+        )
+        self._reset_tree(new_root)
+
+    def tile_panels(self) -> None:
+        """Arrange all panels in a spiral tiled layout.
+
+        Each panel occupies its own group. Splits alternate between vertical
+        and horizontal, producing a spiral where each successive panel takes
+        the remaining space.
+        """
+        panels = self._collect_panels()
+        if not panels:
+            return
+
+        # Build the tree from the innermost pair outwards so the outermost
+        # split is the first one the user sees on the left/top.
+        groups = [
+            DockingGroup(panels=[panel], active=0, docking_split=self)
+            for panel in panels
+        ]
+
+        directions = ("vertical", "horizontal")
+        node: DockingGroup | DockingNode = groups[-1]
+        for i in range(len(groups) - 2, -1, -1):
+            direction = directions[i % 2]
+            node = DockingNode(
+                direction=direction,
+                first=groups[i],
+                second=node,
+            )
+
+        self._reset_tree(node)
+
     def sync_active_panel(self, content: AnyContainer) -> None:
         """Sync the active group highlight without firing activation callbacks.
 

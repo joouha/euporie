@@ -141,6 +141,8 @@ class NotebookApp(BaseApp):
         "toggle-side-bar-pane",
         "zoom-minimap-in",
         "zoom-minimap-out",
+        "tile-tabs",
+        "stack-tabs",
     )
 
     def __init__(self, **kwargs: Any) -> None:
@@ -603,6 +605,9 @@ class NotebookApp(BaseApp):
                 children=[
                     MenuItem.from_cmd("next-tab"),
                     MenuItem.from_cmd("previous-tab"),
+                    separator,
+                    MenuItem.from_cmd("tile-tabs"),
+                    MenuItem.from_cmd("stack-tabs"),
                 ],
                 description="Tab management",
             ),

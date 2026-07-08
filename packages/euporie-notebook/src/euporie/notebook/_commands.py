@@ -100,6 +100,26 @@ def _zoom_minimap_out(amount: int = 1) -> None:
         minimap.zoom(-amount)
 
 
+@add_cmd(icon="", style="class:primary")
+def _tile_tabs() -> None:
+    """Arrange all open tabs in a spiral tiled layout."""
+    from euporie.notebook.current import get_app
+
+    app = get_app()
+    if app.docking_split is not None:
+        app.docking_split.tile_panels()
+
+
+@add_cmd(icon="", style="class:primary")
+def _stack_tabs() -> None:
+    """Collapse all open tabs into a single tabbed group."""
+    from euporie.notebook.current import get_app
+
+    app = get_app()
+    if app.docking_split is not None:
+        app.docking_split.stack_panels()
+
+
 @add_cmd(title="Open configuration file")
 def _open_config_file() -> None:
     """Open the configuration file in a new tab."""
