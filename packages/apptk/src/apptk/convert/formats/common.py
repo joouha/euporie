@@ -217,6 +217,8 @@ async def mermaid_cli_cmd(
 ) -> bytes: ...
 async def mermaid_cli_cmd(output_format, datum, cols, rows, fg, bg, **kwargs):
     """Convert a mermaid diagram to PNG or SVG using :cmd:`mmdc` (``mermaid-cli``)."""
+    from apptk.color import Color
+
     cmd: list[Any] = [
         "mmdc",
         "--input",
@@ -227,12 +229,15 @@ async def mermaid_cli_cmd(output_format, datum, cols, rows, fg, bg, **kwargs):
         "-",
         "--quiet",
     ]
+    px, py = get_app().output.cell_pixel_size
     if cols is not None:
-        cmd.extend(["--width", str(cols)])
+        cmd.extend(["--width", cols * px])
     if rows is not None:
-        cmd.extend(["--height", str(rows)])
+        cmd.extend(["--height", rows * py])
     if bg is not None:
         cmd.extend(["--backgroundColor", bg])
+        if not Color(bg).is_light:
+            cmd.extend(["--theme", "dark"])
     result = await call_subproc(datum.data, cmd)
     if output_format == "svg" and isinstance(result, bytes):
         return result.decode()
