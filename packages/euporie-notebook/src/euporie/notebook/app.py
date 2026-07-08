@@ -139,6 +139,8 @@ class NotebookApp(BaseApp):
         "new-notebook",
         "toggle-show-top-bar",
         "toggle-side-bar-pane",
+        "zoom-minimap-in",
+        "zoom-minimap-out",
     )
 
     def __init__(self, **kwargs: Any) -> None:

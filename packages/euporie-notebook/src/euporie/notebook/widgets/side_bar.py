@@ -175,6 +175,7 @@ class SideBar:
             on_change: Optional callback called when the active panel changes.
         """
         self._width = width
+        self.panels = panels
         self.on_resize: Event[SideBar] = Event(self, on_resize)
         self.on_change: Event[SideBar] = Event(self, on_change)
 

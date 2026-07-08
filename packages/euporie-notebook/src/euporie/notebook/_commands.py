@@ -3,6 +3,8 @@
 from apptk.commands import add_cmd
 from apptk.filters.environment import have_modules
 
+from euporie.core.widgets.minimap import MiniMap
+
 
 @add_cmd(aliases=["n"], icon="", style="class:orange", keys=["c-n"])
 def _new_notebook() -> None:
@@ -72,6 +74,30 @@ def _toggle_side_bar_pane() -> None:
     from euporie.notebook.current import get_app
 
     get_app().side_bar.toggle_pane()
+
+
+def _get_minimap() -> MiniMap | None:
+    """Return the MiniMap widget from the notebook app's side bar."""
+    from euporie.notebook.current import get_app
+
+    for panel in get_app().side_bar.panels:
+        if isinstance(panel, MiniMap):
+            return panel
+    return None
+
+
+@add_cmd()
+def _zoom_minimap_in(amount: int = 1) -> None:
+    """Zoom the minimap in."""
+    if (minimap := _get_minimap()) is not None:
+        minimap.zoom(amount)
+
+
+@add_cmd()
+def _zoom_minimap_out(amount: int = 1) -> None:
+    """Zoom the minimap out."""
+    if (minimap := _get_minimap()) is not None:
+        minimap.zoom(-amount)
 
 
 @add_cmd(title="Open configuration file")
