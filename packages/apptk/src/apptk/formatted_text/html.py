@@ -3175,10 +3175,10 @@ class Node:
                 ):
                     text = text.rstrip(" \t\r\n\x0c")
 
-            elif preformatted and self.is_last_child_node:
+            # Remove one trailing newline if there's no following rendered text content
+            elif preformatted and self.next_node_in_flow is None:
                 # TODO - align tabstops
                 text = text.replace("\t", "    ")
-                # Remove one trailing newline
                 if text[-1] == "\n":
                     text = text[:-1]
 
