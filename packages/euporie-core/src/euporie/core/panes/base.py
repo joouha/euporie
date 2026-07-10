@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from abc import ABCMeta
+from pathlib import UnsupportedOperation
 from typing import TYPE_CHECKING, ClassVar
 
 from apptk.layout.containers import Window, WindowAlign
@@ -139,9 +140,10 @@ class Pane(metaclass=ABCMeta):
             if callable(cb):
                 cb()
 
-        except OSError as exc:
-            # Path-related errors (permissions, missing dirs, read-only fs, etc.)
-            # can be resolved by saving to a different location
+        except (OSError, NotImplementedError, UnsupportedOperation) as exc:
+            # Path-related errors (permissions, missing dirs, read-only fs,
+            # unsupported filesystem operations, etc.) can be resolved by
+            # saving to a different location
             log.exception("An error occurred while saving the file")
             if dialog := self.app.get_dialog("save-as"):
                 dialog.show(tab=self, cb=cb, error=str(exc))
