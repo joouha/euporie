@@ -271,6 +271,24 @@ class NotebookApp(BaseApp):
             panel = self._create_docking_panel(pane)
             self.docking_split.add_panel(panel)
 
+    def replace_tab(self, old: Pane, new: Pane) -> None:
+        """Replace a pane, updating its panel in the docking split.
+
+        Args:
+            old: The pane to replace (e.g. a placeholder).
+            new: The pane to replace it with.
+        """
+        super().replace_tab(old, new)
+        if self.docking_split is not None:
+            for panel in self.docking_split.panels:
+                if panel.content is old:
+                    panel.content = new
+                    panel.title = lambda new=new: new.title
+                    break
+            else:
+                self.docking_split.add_panel(self._create_docking_panel(new))
+        self.invalidate()
+
     def cleanup_closed_tab(self, pane: Pane) -> None:
         """Remove a pane from the app and docking split.
 

@@ -190,3 +190,19 @@ class Pane(metaclass=ABCMeta):
     def __pt_container__(self) -> AnyContainer:
         """Return the main container object."""
         return self.container
+
+
+class LoadingPane(Pane):
+    """A placeholder pane shown while a file is being resolved and opened."""
+
+    name = None
+
+    def __init__(self, app: BaseApp, path: Path | None = None) -> None:
+        """Create a loading placeholder pane."""
+        super().__init__(app, path)
+        self._title = path.name if path is not None else "Loading…"
+
+    @property
+    def title(self) -> str:
+        """Return the tab title."""
+        return self._title

@@ -1015,40 +1015,97 @@ class BaseApp(ConfigurableApp, Application, ABC):
     ) -> None:
         """Create a tab for a file.
 
+        The file path is resolved and its tab type determined in a background
+        thread. A placeholder "Loading…" pane is shown immediately and replaced
+        with the resolved pane once the tab type is known.
+
         Args:
             path: The file path of the notebook file to open
             read_only: If true, the file should be opened read_only
             tab_class: The tab type to use to open the file
 
         """
+        from euporie.core.panes.base import LoadingPane
+
+        # Show a placeholder pane immediately
+        placeholder = LoadingPane(self, path if isinstance(path, PurePath) else None)
+        self.add_tab(placeholder)
+        self.focused_element = placeholder
+        self.tab_idx = len(self.panes) - 1
+        self.invalidate()
+
+        self.create_background_task(
+            self._open_file_async(path, read_only, tab_class, placeholder)
+        )
+
+    async def _open_file_async(
+        self,
+        path: Path,
+        read_only: bool,
+        tab_class: type[Pane] | None,
+        placeholder: Pane,
+    ) -> None:
+        """Resolve a file path and open it, replacing a placeholder pane.
+
+        Runs the blocking path resolution and tab-type lookup in a loop
+        executor, then swaps the placeholder pane for the resolved pane.
+
+        Args:
+            path: The file path of the file to open
+            read_only: If true, the file should be opened read_only
+            tab_class: The tab type to use, or ``None`` to determine it
+            placeholder: The placeholder pane to replace
+        """
         from apptk.path import parse_path
 
-        ppath = parse_path(path, resolve=True)
-        log.info("Opening file %s", path)
+        loop = self.loop
+        ppath = await loop.run_in_executor(
+            None, partial(parse_path, path, resolve=True)
+        )
+
+        # Check whether the file is already open in a non-placeholder tab
         for tab in self.panes:
-            if ppath == getattr(tab, "path", "") and (
-                tab_class is None or isinstance(tab, tab_class)
+            if (
+                tab is not placeholder
+                and ppath == getattr(tab, "path", "")
+                and (tab_class is None or isinstance(tab, tab_class))
             ):
                 log.info("File %s already open, activating", path)
+                self.cleanup_closed_tab(placeholder)
                 self.layout.focus(tab)
-                break
-        else:
-            if tab_class is None:
-                tab_class = self.get_file_tab(path)
-            if tab_class is None:
-                log.error("Unable to display file %s", path)
-            else:
-                tab = tab_class(self, ppath)
-                self.add_tab(tab)
-                # Ensure the opened tab is focused at app start
-                self.focused_element = tab
-                # Ensure the newly opened tab is selected
-                self.tab_idx = len(self.panes) - 1
-                # Save 20 most recent files, deduplicating while keeping order
-                if ppath.exists():
-                    self.state.recent_files = list(
-                        dict.fromkeys([ppath, *self.state.recent_files]).keys()
-                    )[:20]
+                self.invalidate()
+                return
+
+        resolved_class = tab_class
+        if resolved_class is None:
+            resolved_class = await loop.run_in_executor(None, self.get_file_tab, ppath)
+
+        if resolved_class is None:
+            log.error("Unable to display file %s", path)
+            self.cleanup_closed_tab(placeholder)
+            self.invalidate()
+            return
+
+        # Replace the placeholder with the real tab in place
+        had_focus = self.layout.has_focus(placeholder)
+        tab = resolved_class(self, ppath)
+        self.replace_tab(placeholder, tab)
+
+        # Ensure the opened tab is focused if the placeholder was focused
+        if had_focus:
+            self._tab_idx = self.panes.index(tab)
+            try:
+                self.layout.focus(tab)
+            except ValueError:
+                log.debug("Could not focus tab; container built asynchronously")
+
+        # Save 20 most recent files, deduplicating while keeping order
+        if ppath.exists():
+            self.state.recent_files = list(
+                dict.fromkeys([ppath, *self.state.recent_files]).keys()
+            )[:20]
+
+        self.invalidate()
 
     def open_files(self) -> None:
         """Open the files defined in the configuration."""
@@ -1113,6 +1170,19 @@ class BaseApp(ConfigurableApp, Application, ABC):
     def add_tab(self, tab: Pane) -> None:
         """Add a tab to the current tabs list."""
         self.panes.append(tab)
+        self.on_tabs_change()
+
+    def replace_tab(self, old: Pane, new: Pane) -> None:
+        """Replace a tab in the tabs list with another.
+
+        Args:
+            old: The tab to replace (e.g. a placeholder).
+            new: The tab to replace it with.
+        """
+        if old in self.panes:
+            self.panes[self.panes.index(old)] = new
+        else:
+            self.panes.append(new)
         self.on_tabs_change()
 
     def close_tab(self, tab: Pane | None = None) -> None:
