@@ -1,4 +1,4 @@
-"""Contain the main class for a notebook file."""
+"""Contain the console pane for the console app."""
 
 from __future__ import annotations
 
