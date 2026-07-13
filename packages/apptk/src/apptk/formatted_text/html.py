@@ -40,7 +40,6 @@ from apptk.border import (
     UpperRightHalfLine,
 )
 from apptk.convert.datum import ConversionFailure, Datum
-from apptk.convert.mime import get_format
 from apptk.data_structures import DiBool, DiInt, DiStr, Size
 from apptk.enums import FitMode, HorizontalAlign, VerticalAlign
 from apptk.eventloop.utils import get_or_create_loop, run_coro_sync
@@ -66,8 +65,6 @@ from apptk.formatted_text.utils import (
     valign,
 )
 from apptk.utils import Event
-from fsspec.core import url_to_fs
-from upath import UPath
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Iterator
@@ -3472,6 +3469,8 @@ class RichHTML:
             on_change: An optional callback triggered when the DOM changes
 
         """
+        from upath import UPath
+
         self.value = value.strip()
         self.base = UPath(base or ".")
         self.title = ""
@@ -3720,6 +3719,8 @@ class RichHTML:
 
         Do not touch element's themes!
         """
+        from fsspec.core import url_to_fs
+
         mathjax = self.mathjax()
 
         def _process_css(data: bytes) -> None:
@@ -4625,6 +4626,8 @@ class RichHTML:
         align_content: bool = True,
     ) -> StyleAndTextTuples:
         """Render an image's content."""
+        from apptk.convert.mime import get_format
+
         theme = element.theme
         content_width = theme.content_width
         # content_height = theme.content_height

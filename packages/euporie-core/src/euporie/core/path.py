@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 import logging
+import sys
 from contextlib import contextmanager, suppress
+from pathlib import PurePosixPath
 from typing import TYPE_CHECKING
 
-from upath.implementations.memory import MemoryPath
+_PATH_INIT_TAKES_ARGS = sys.version_info >= (3, 12)
 
 if TYPE_CHECKING:
-    from collections.abc import Generator, Mapping
+    from collections.abc import Generator
     from pathlib import Path
     from typing import IO, Any
 
@@ -70,16 +72,51 @@ safe_write = contextmanager(safe_write)
 # Define custom universal_pathlib path implementations
 
 
-class UntitledPath(MemoryPath):
-    """A path for untitled files, as needed for LSP servers."""
+def LazyUPath(*args: Any, **kwargs: Any) -> Path:
+    """Lazily import and construct a :class:`upath.UPath`."""
+    from upath import UPath
+
+    return UPath(*args, **kwargs)
+
+
+class UntitledPath(PurePosixPath):
+    """A pure path for untitled files, as needed for LSP servers.
+
+    These are virtual paths that never exist on disk. The ``untitled:`` URI
+    scheme is preserved so LSP servers can identify unsaved documents.
+    An :meth:`exists` method is provided (returning ``False``) so instances
+    can be used interchangeably with concrete :class:`~pathlib.Path` objects
+    in code that checks for path existence.
+    """
+
+    _scheme = "untitled"
 
     @classmethod
-    def _parse_storage_options(
-        cls, urlpath: str, protocol: str, storage_options: Mapping[str, Any]
-    ) -> dict[str, Any]:
-        """Parse storage_options from the urlpath."""
-        return {}
+    def _strip_scheme(cls, args: tuple[object, ...]) -> tuple[object, ...]:
+        """Strip the ``untitled:`` scheme prefix from path arguments."""
+        cleaned: list[object] = []
+        for arg in args:
+            text = str(arg)
+            if text.startswith(f"{cls._scheme}:"):
+                text = text[len(cls._scheme) + 1 :]
+            cleaned.append(text)
+        return tuple(cleaned)
 
-    def exists(self, *, follow_symlinks: bool = True) -> bool:
-        """Untitled files are unsaved and do not exist."""
+    def __new__(cls, *args: object, **kwargs: object) -> UntitledPath:
+        """Create a new untitled path, stripping any ``untitled:`` scheme prefix."""
+        return super().__new__(cls, *cls._strip_scheme(args), **kwargs)
+
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        """Initialize the path, stripping any ``untitled:`` scheme prefix."""
+        if _PATH_INIT_TAKES_ARGS:
+            super().__init__(*self._strip_scheme(args), **kwargs)
+        else:
+            super().__init__()
+
+    def as_uri(self) -> str:
+        """Return the path as an ``untitled:`` URI."""
+        return f"{self._scheme}:{self.as_posix()}"
+
+    def exists(self, *args: Any, **kwargs: Any) -> bool:
+        """Untitled files are unsaved and never exist on disk."""
         return False

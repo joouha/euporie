@@ -20,13 +20,13 @@ from apptk.filters.buffer import at_end_of_buffer
 from apptk.key_binding.key_bindings import KeyBindings
 from apptk.mouse_events import MouseEventType
 from apptk.utils import Event
-from upath import UPath
 
 from euporie.core.diagnostics import Report
 from euporie.core.kernel.base import MsgCallbacks
 from euporie.core.lsp import LspCell
 from euporie.core.nbformat import new_notebook
 from euporie.core.panes.kernel import KernelPane
+from euporie.core.path import UntitledPath
 from euporie.core.style import KERNEL_STATUS_REPR
 from euporie.core.validation import KernelValidator
 from euporie.core.widgets.inputs import KernelInput, StdInput
@@ -89,7 +89,7 @@ class BaseConsole(KernelPane):
         self.kernel_tab = self
         # Set tab path as untitled, so LSP servers know the files do not exist on disk
         self._untitled_count += 1
-        path = UPath(f"untitled:/console-{self._untitled_count}")
+        path = UntitledPath(f"untitled:/console-{self._untitled_count}")
         # Set empty initial lang_info
         self.lang_info: dict[str, Any] = {}
 

@@ -853,12 +853,12 @@ class FileBrowserControl(UIControl):
         sort: FilterOrBool = True,
     ) -> None:
         """Initialize a new file browser instance."""
-        from upath import UPath
-
         self.show_icons = to_filter(show_icons)
         self.show_hidden = to_filter(show_hidden)
         self.sort = to_filter(sort)
         if path is None:
+            from upath import UPath
+
             path = UPath(".")
         self.dir = path
         self.hovered: int | None = None

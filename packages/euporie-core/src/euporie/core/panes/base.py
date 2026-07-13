@@ -6,13 +6,12 @@ import asyncio
 import logging
 from abc import ABCMeta
 from io import UnsupportedOperation
+from pathlib import PurePath
 from typing import TYPE_CHECKING, ClassVar
 
 from apptk.layout.containers import Window, WindowAlign
 from apptk.layout.controls import FormattedTextControl
-from apptk.path import parse_path
 from apptk.utils import Event
-from upath import UPath
 
 from euporie.core.path import UntitledPath
 
@@ -56,11 +55,17 @@ class Pane(metaclass=ABCMeta):
     def __init__(self, app: BaseApp, path: Path | None = None) -> None:
         """Call when the tab is created."""
         self.app = app
+
         if path is None:
             self.__class__._untitled_count += 1
             ext = next(iter(self.file_extensions), "")
-            path = UPath(f"untitled:/untitled-{self._untitled_count}{ext}")
-        self.path = parse_path(path)
+            path = UntitledPath(f"untitled:/untitled-{self._untitled_count}{ext}")
+        elif not isinstance(path, PurePath):
+            from apptk.path import parse_path
+
+            path = parse_path(path)
+        self.path = path
+
         self.container = Window(
             FormattedTextControl(
                 [("fg:#888888", "\nLoading…")], show_cursor=False, focusable=True

@@ -6,8 +6,6 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from upath import UPath
-
 if TYPE_CHECKING:
     from os import PathLike
 
@@ -25,6 +23,8 @@ def parse_path(path: str | PathLike, resolve: bool | None = None) -> Path:
         else:
             resolve = False
     if not isinstance(path, Path):
+        from upath import UPath
+
         path = UPath(path)
     try:
         path = path.expanduser()

@@ -6,9 +6,8 @@ import logging
 import os
 from typing import TYPE_CHECKING
 
-from upath import UPath
-
 from euporie.core.panes.base import Pane
+from euporie.core.path import UntitledPath
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -31,7 +30,7 @@ class TerminalPane(Pane):
         from ptterm import Terminal
 
         self._untitled_count += 1
-        path = UPath(f"untitled:/terminal-{self._untitled_count}")
+        path = UntitledPath(f"untitled:/terminal-{self._untitled_count}")
 
         super().__init__(app, path)
 

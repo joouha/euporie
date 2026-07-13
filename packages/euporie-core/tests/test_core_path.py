@@ -66,11 +66,18 @@ def test_safe_write_binary(tmp_path: PathType) -> None:
 
 
 def test_untitled_path_does_not_exist() -> None:
-    """An untitled path never exists."""
+    """An untitled path never exists on disk."""
     path = UntitledPath("untitled:/foo")
     assert path.exists() is False
 
 
-def test_untitled_path_parse_storage_options() -> None:
-    """Untitled paths use empty storage options."""
-    assert UntitledPath._parse_storage_options("memory://x", "memory", {}) == {}
+def test_untitled_path_strips_scheme() -> None:
+    """The ``untitled:`` scheme prefix is stripped from the path."""
+    path = UntitledPath("untitled:/foo")
+    assert path.as_posix() == "/foo"
+
+
+def test_untitled_path_as_uri() -> None:
+    """Untitled paths round-trip through the ``untitled:`` URI scheme."""
+    path = UntitledPath("untitled:/foo")
+    assert path.as_uri() == "untitled:/foo"

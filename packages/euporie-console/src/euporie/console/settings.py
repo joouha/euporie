@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from upath import UPath
-
 from euporie.core.config._setting import Setting
+from euporie.core.path import LazyUPath
 
 mouse_support = Setting(
     name="mouse_support",
@@ -37,7 +36,7 @@ max_stored_outputs = Setting(
 connection_file = Setting(
     name="connection_file",
     flags=["--connection-file", "--kernel-connection-file"],
-    type_=UPath,
+    type_=LazyUPath,
     help_="Attempt to connect to an existing kernel using a JSON connection info file",
     default=None,
     description="""

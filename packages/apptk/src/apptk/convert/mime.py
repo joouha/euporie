@@ -7,10 +7,6 @@ import mimetypes
 from functools import lru_cache
 from typing import TYPE_CHECKING
 
-from upath import UPath
-from upath._stat import UPathStatResult
-from upath.implementations.http import HTTPPath
-
 if TYPE_CHECKING:
     from pathlib import Path
 
@@ -39,6 +35,10 @@ MIME_FORMATS = {
 @lru_cache
 def get_mime(path: Path | str) -> str | None:
     """Attempt to determine the mime-type of a path."""
+    from upath import UPath
+    from upath._stat import UPathStatResult
+    from upath.implementations.http import HTTPPath
+
     if isinstance(path, str):
         path = UPath(path)
     try:
@@ -103,6 +103,9 @@ def get_mime(path: Path | str) -> str | None:
 @lru_cache
 def get_format(path: Path | str, default: str = "") -> str:
     """Attempt to guess the format of a path."""
+    from upath import UPath
+    from upath.implementations.http import HTTPPath
+
     if isinstance(path, str):
         path = UPath(path)
     if not default:
