@@ -10,11 +10,11 @@ from abc import ABC, abstractmethod
 from ast import literal_eval
 from typing import TYPE_CHECKING, Any
 
-import tomlkit
-
 if TYPE_CHECKING:
     from collections.abc import Callable
     from pathlib import Path
+
+    import tomlkit
 
     from euporie.core.config._setting import Setting
 
@@ -136,7 +136,7 @@ class TomlFileLayer(Layer):
         Args:
             settings: The settings to load values for.
         """
-        doc = self._load_toml().unwrap()
+        doc = self._read_toml()
         if self._namespace is not None:
             raw = self._get_app_values(doc)
         else:
@@ -160,12 +160,44 @@ class TomlFileLayer(Layer):
         self._set_value(doc, key, value)
         self._save_toml(doc)
 
-    def _load_toml(self) -> tomlkit.TOMLDocument:
-        """Load the TOML file, returning an empty document if it doesn't exist.
+    def _read_toml(self) -> dict[str, Any]:
+        """Read the TOML file.
+
+        Uses the stdlib :py:mod:`tomllib` parser on Python 3.11+, falling
+        back to :py:mod:`tomlkit` (already a project dependency) on 3.10.
 
         Returns:
-            The parsed TOML document.
+            The parsed TOML data, or an empty dict if the file is missing
+            or invalid.
         """
+        try:
+            import tomllib
+
+            if self._path.exists():
+                try:
+                    with self._path.open("rb") as f:
+                        return tomllib.load(f)
+                except tomllib.TOMLDecodeError as e:
+                    log.error("Failed to parse TOML file %s: %s", self._path, e)
+        except ImportError:
+            import tomlkit
+
+            if self._path.exists():
+                try:
+                    with self._path.open() as f:
+                        return dict(tomlkit.load(f).unwrap())
+                except tomlkit.exceptions.TOMLKitError as e:
+                    log.error("Failed to parse TOML file %s: %s", self._path, e)
+        return {}
+
+    def _load_toml(self) -> Any:
+        """Load the TOML file with tomlkit to preserve formatting on write.
+
+        Returns:
+            The parsed tomlkit document.
+        """
+        import tomlkit
+
         if self._path.exists():
             try:
                 with self._path.open() as f:
@@ -180,6 +212,8 @@ class TomlFileLayer(Layer):
         Args:
             doc: The TOML document to save.
         """
+        import tomlkit
+
         self._path.parent.mkdir(parents=True, exist_ok=True)
         with self._path.open("w") as f:
             tomlkit.dump(doc, f)
@@ -232,6 +266,8 @@ class TomlFileLayer(Layer):
             key: The setting key.
             value: The value to set, or ``None`` to remove the key.
         """
+        import tomlkit
+
         ns = self._namespace
         if ns is not None:
             if value is None:
