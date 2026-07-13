@@ -378,8 +378,8 @@ class KernelPane(Pane, metaclass=ABCMeta):
 
         # Warn the user if no kernels are installed
         if not kernel_infos:
-            if startup and "no-kernels" in self.app.dialogs:
-                self.app.dialogs["no-kernels"].show()
+            if startup and (dialog := self.app.get_dialog("no-kernels")):
+                dialog.show()
             return
 
         # Automatically select the only kernel if there is only one

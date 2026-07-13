@@ -155,7 +155,8 @@ class Notebook(BaseNotebook):
 
     def report_kernel_error(self, error: Exception | None) -> None:
         """Report a kernel error to the user."""
-        self.app.dialogs["error"].show(exception=error, when="starting the kernel")
+        if dialog := self.app.get_dialog("error"):
+            dialog.show(exception=error, when="starting the kernel")
 
     def load_container(self) -> AnyContainer:
         """Trigger loading of the main notebook container."""

@@ -154,13 +154,15 @@ class ConsoleApp(BaseApp):
         )
         self.pager = Pager()
 
-        self.dialogs["command-palette"] = CommandPalette(self)
-        self.dialogs["about"] = AboutDialog(self)
-        self.dialogs["save-as"] = SaveAsDialog(self)
-        self.dialogs["no-kernels"] = NoKernelsDialog(self)
-        self.dialogs["change-kernel"] = SelectKernelDialog(self)
-        self.dialogs["shortcuts"] = ShortcutsDialog(self)
-        self.dialogs["confirm"] = ConfirmDialog(self)
+        self.dialog_classes = {
+            "command-palette": CommandPalette,
+            "about": AboutDialog,
+            "save-as": SaveAsDialog,
+            "no-kernels": NoKernelsDialog,
+            "change-kernel": SelectKernelDialog,
+            "shortcuts": ShortcutsDialog,
+            "confirm": ConfirmDialog,
+        }
 
         self.panes = [Console(self)]
 
