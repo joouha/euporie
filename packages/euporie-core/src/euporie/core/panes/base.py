@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from abc import ABCMeta
-from pathlib import UnsupportedOperation
+from io import UnsupportedOperation
 from typing import TYPE_CHECKING, ClassVar
 
 from apptk.layout.containers import Window, WindowAlign
