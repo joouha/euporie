@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://cdn.jsdelivr.net" />
     <link
       rel="preload"
-      href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css"
+      href="https://cdn.jsdelivr.net/npm/@xterm/xterm@6.0.0/css/xterm.min.css"
       as="style"
     />
     <link
@@ -21,17 +21,17 @@
     />
     <link
       rel="preload"
-      href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"
+      href="https://cdn.jsdelivr.net/npm/@xterm/xterm@6.0.0/lib/xterm.min.js"
       as="script"
     />
     <link
       rel="preload"
-      href="https://cdn.jsdelivr.net/npm/@xterm/addon-image@0.9.0-beta.136/lib/addon-image.min.js"
+      href="https://cdn.jsdelivr.net/npm/@xterm/addon-image@0.9.0/lib/addon-image.min.js"
       as="script"
     />
     <link
       rel="preload"
-      href="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"
+      href="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.11.0/lib/addon-fit.min.js"
       as="script"
     />
     <link
@@ -41,27 +41,27 @@
     />
     <link
       rel="preload"
-      href="https://cdn.jsdelivr.net/npm/@xterm/addon-webgl@0.18.0/lib/addon-webgl.min.js"
+      href="https://cdn.jsdelivr.net/npm/@xterm/addon-webgl@0.19.0/lib/addon-webgl.min.js"
       as="script"
     />
     <link
       rel="preload"
-      href="https://cdn.jsdelivr.net/npm/@xterm/addon-unicode11@0.8.0/lib/addon-unicode11.min.js"
+      href="https://cdn.jsdelivr.net/npm/@xterm/addon-unicode11@0.9.0/lib/addon-unicode11.min.js"
       as="script"
     />
     <link
       rel="preload"
-      href="https://cdn.jsdelivr.net/npm/@xterm/addon-clipboard@0.1.0/lib/addon-clipboard.min.js"
+      href="https://cdn.jsdelivr.net/npm/@xterm/addon-clipboard@0.2.0/lib/addon-clipboard.min.js"
       as="script"
     />
     <link
       rel="preload"
-      href="https://cdn.jsdelivr.net/pyodide/v0.29.0/full/pyodide.js"
+      href="https://cdn.jsdelivr.net/pyodide/v0.29.4/full/pyodide.js"
       as="script"
     />
     <link
       rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css"
+      href="https://cdn.jsdelivr.net/npm/@xterm/xterm@6.0.0/css/xterm.min.css"
     />
     <link
       rel="stylesheet"
@@ -96,15 +96,15 @@
       <div id="terminal"></div>
     </div>
     <script
-      src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"
+      src="https://cdn.jsdelivr.net/npm/@xterm/xterm@6.0.0/lib/xterm.min.js"
       defer
     ></script>
     <script
-      src="https://cdn.jsdelivr.net/npm/@xterm/addon-image@0.9.0-beta.136/lib/addon-image.min.js"
+      src="https://cdn.jsdelivr.net/npm/@xterm/addon-image@0.9.0/lib/addon-image.min.js"
       defer
     ></script>
     <script
-      src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"
+      src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.11.0/lib/addon-fit.min.js"
       defer
     ></script>
     <script
@@ -112,19 +112,19 @@
       defer
     ></script>
     <script
-      src="https://cdn.jsdelivr.net/npm/@xterm/addon-webgl@0.18.0/lib/addon-webgl.min.js"
+      src="https://cdn.jsdelivr.net/npm/@xterm/addon-webgl@0.19.0/lib/addon-webgl.min.js"
       defer
     ></script>
     <script
-      src="https://cdn.jsdelivr.net/npm/@xterm/addon-unicode11@0.8.0/lib/addon-unicode11.min.js"
+      src="https://cdn.jsdelivr.net/npm/@xterm/addon-unicode11@0.9.0/lib/addon-unicode11.min.js"
       defer
     ></script>
     <script
-      src="https://cdn.jsdelivr.net/npm/@xterm/addon-clipboard@0.1.0/lib/addon-clipboard.min.js"
+      src="https://cdn.jsdelivr.net/npm/@xterm/addon-clipboard@0.2.0/lib/addon-clipboard.min.js"
       defer
     ></script>
     <script
-      src="https://cdn.jsdelivr.net/pyodide/v0.29.0/full/pyodide.js"
+      src="https://cdn.jsdelivr.net/pyodide/v0.29.4/full/pyodide.js"
       defer
     ></script>
     <script type="module">
@@ -137,7 +137,7 @@
 
       const PYODIDE_PACKAGES = [
         // "./euporie-2.10.1-py3-none-any.whl",
-        "https://files.pythonhosted.org/packages/fe/b3/63f114dff36a1ccde4b6afcf983af624d930f53f54025c35b962a0749bae/euporie-2.10.1-py3-none-any.whl",
+        "https://files.pythonhosted.org/packages/ce/78/b885a5abee15fce4ac409deb5901fecf3a8091d548e53657e0a9d671d21b/euporie-2.10.4-py3-none-any.whl",
         "https://files.pythonhosted.org/packages/ef/f8/451b79ab4b273383f02c364079e66375271a4cf349ab6baec922665007d5/timg-1.1.6-py3-none-any.whl",
         "https://files.pythonhosted.org/packages/ff/62/85c4c919272577931d407be5ba5d71c20f0b616d31a0befe0ae45bb79abd/imagesize-1.4.1-py2.py3-none-any.whl",
         "https://files.pythonhosted.org/packages/a9/82/0340caa499416c78e5d8f5f05947ae4bc3cba53c9f038ab6e9ed964e22f1/nbformat-5.10.4-py3-none-any.whl",
@@ -207,7 +207,6 @@
           fontFamily:
             "FiraCode Nerd Font, Fira Code, JetBrains Mono, JuliaMono, Monaco, Meslo, Menlo, Consolas, DejaVu Sans Mono, monospace",
           fontSize: 16,
-          rendererType: "webgl",
           scrollback: 1000,
           theme: TERMINAL_THEME,
           allowProposedApi: true,
@@ -222,8 +221,13 @@
         term.loadAddon(new ClipboardAddon.ClipboardAddon());
         term.open(document.getElementById("terminal"));
         term.loadAddon(new ImageAddon.ImageAddon());
-        term.loadAddon(new CanvasAddon.CanvasAddon());
-        term.loadAddon(new WebglAddon.WebglAddon());
+        try {
+          const webgl = new WebglAddon.WebglAddon();
+          webgl.onContextLoss(() => webgl.dispose());
+          term.loadAddon(webgl);
+        } catch {
+          term.loadAddon(new CanvasAddon.CanvasAddon());
+        }
 
         return fitAddon;
       }
@@ -246,13 +250,12 @@
         // Handle window resize with debouncing
         let fitTimer = null;
         window.addEventListener("resize", () => {
-          fitAddon.fit();
           clearTimeout(fitTimer);
           fitTimer = setTimeout(() => fitAddon.fit(), RESIZE_DEBOUNCE_MS);
         });
       }
 
-      function setupKeyboardHandler(term, pyodide) {
+      function setupKeyboardHandler(term, handleInput) {
         term.attachCustomKeyEventHandler((ev) => {
           // macOS native copy/paste with ⌘C / ⌘V
           if (IS_MAC) {
@@ -271,7 +274,7 @@
           // CSI-u for Ctrl+Enter / Shift+Enter
           if (ev.code === "Enter" && ev.type === "keydown") {
             if (ev.ctrlKey && !ev.shiftKey && !ev.altKey && !ev.metaKey) {
-              pyodide.runPythonAsync(`handle_input("\\x1b[13;5u")`);
+              handleInput("\x1b[13;5u");
               ev.preventDefault();
               return false;
             } else if (
@@ -280,7 +283,7 @@
               !ev.altKey &&
               !ev.metaKey
             ) {
-              pyodide.runPythonAsync(`handle_input("\\x1b[13;2u")`);
+              handleInput("\x1b[13;2u");
               ev.preventDefault();
               return false;
             }
@@ -352,11 +355,14 @@
       }
 
       function startAutoSync(pyodide, intervalMs) {
-        setInterval(() => {
+        const timer = setInterval(() => {
           syncPersistentHome(pyodide).catch((e) => {
+            // Stop syncing once Pyodide has fatally failed to avoid log spam.
             console.error("Auto-sync failed:", e);
+            clearInterval(timer);
           });
         }, intervalMs);
+        return timer;
       }
 
       function setupBeforeUnloadSync(pyodide) {
@@ -374,20 +380,30 @@
       // ============================================================================
       // Pyodide Integration
       // ============================================================================
-      async function setupPyodideIO(pyodide, term) {
+      function setupPyodideIO(pyodide, term) {
+        // Get direct references to the Python handlers to avoid re-parsing
+        // Python source on every keystroke / resize event.
+        const handleInput = pyodide.globals.get("handle_input");
+        const handleResize = pyodide.globals.get("handle_resize");
+
         // Connect xterm.js input to Python
         term.onData((data) => {
-          pyodide.runPythonAsync(`handle_input(${JSON.stringify(data)})`);
+          handleInput(data);
         });
 
         // Listen for terminal resize events
         term.onResize(({ cols, rows }) => {
-          pyodide.runPythonAsync(`handle_resize(${cols}, ${rows})`);
+          handleResize(cols, rows);
         });
+
+        // Sync the current terminal size once at startup
+        handleResize(term.cols, term.rows);
+
+        return { handleInput, handleResize };
       }
 
-      async function loadAndRunEuporie(pyodide, term) {
-        // Now load and run main.py
+      async function loadPythonBridge(pyodide) {
+        // Define the Python <-> xterm.js bridge (handle_input, handle_resize, run).
         // const launch_code = await (await fetch("main.py")).text();
         await pyodide.runPythonAsync(`
 """
@@ -618,12 +634,9 @@ async def run():
         with set_app(app):
             await app.run_async(handle_sigint=False)
       `);
+      }
 
-        // Sync initial terminal size after main.py is loaded
-        await pyodide.runPythonAsync(
-          `handle_resize(${term.cols}, ${term.rows})`
-        );
-
+      async function runEuporie(pyodide, term) {
         term.write("Starting euporie...\r\n");
         await pyodide.runPythonAsync("await run()");
       }
@@ -644,19 +657,22 @@ async def run():
           const pyodide = await loadPyodide({ packages: PYODIDE_PACKAGES });
           window.term.write("Pyodide loaded\r\n");
 
+          // Define the Python bridge (handle_input, handle_resize, run)
+          await loadPythonBridge(pyodide);
+
+          // Connect terminal I/O to Python using direct handler references
+          const { handleInput } = setupPyodideIO(pyodide, window.term);
+
           // Setup keyboard handling
-          setupKeyboardHandler(window.term, pyodide);
+          setupKeyboardHandler(window.term, handleInput);
 
           // Setup persistent storage
           setupBeforeUnloadSync(pyodide);
           await mountPersistentHome(pyodide);
           startAutoSync(pyodide, AUTO_SYNC_INTERVAL_MS);
 
-          // Connect terminal I/O to Python
-          await setupPyodideIO(pyodide, window.term);
-
-          // Load and run Euporie
-          await loadAndRunEuporie(pyodide, window.term);
+          // Run Euporie
+          await runEuporie(pyodide, window.term);
 
           // Final sync after completion
           await syncPersistentHome(pyodide);
