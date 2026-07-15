@@ -237,4 +237,8 @@ TIPS: list[str] = [
     "**Diagnostics and Linting**<br>"
     "With language servers enabled (*Settings → Code tools → Language servers*), "
     "Euporie shows inline diagnostics and error highlights as you type.",
+    #
+    "**Never Lose Your Work**<br>"
+    "Enable *Settings → Autosave* to periodically save modified files "
+    "automatically. Configure how often with the `autosave_interval` setting.",
 ]

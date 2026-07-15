@@ -144,6 +144,8 @@ class BaseApp(ConfigurableApp, Application, ABC):
         # Files
         core_settings.files,
         core_settings.backup_on_save,
+        core_settings.autosave,
+        core_settings.autosave_interval,
         # Editor
         core_settings.edit_mode,
         core_settings.tab_size,
@@ -327,6 +329,10 @@ class BaseApp(ConfigurableApp, Application, ABC):
         self.config.events.log_level += lambda x: setup_logs(self.config)
         self.config.events.log_file += lambda x: setup_logs(self.config)
         self.config.events.log_config += lambda x: setup_logs(self.config)
+        # Autosave background task management
+        self._autosave_task: asyncio.Task | None = None
+        self.config.events.autosave += lambda x: self._update_autosave_task()
+        self.config.events.autosave_interval += lambda x: self._update_autosave_task()
 
         # Build merged language configurations
         self.languages = self._build_languages()
@@ -490,6 +496,8 @@ class BaseApp(ConfigurableApp, Application, ABC):
         # Start polling terminal style if configured
         if self.config.terminal_polling_interval:
             self.create_background_task(self._poll_terminal_colors())
+        # Start the autosave task if configured
+        self._update_autosave_task()
 
     async def _poll_terminal_colors(self) -> None:
         """Repeatedly query the terminal for its background and foreground colours."""
@@ -497,6 +505,47 @@ class BaseApp(ConfigurableApp, Application, ABC):
             while self.config.terminal_polling_interval:
                 await asyncio.sleep(self.config.terminal_polling_interval)
                 output.ask_for_colors()
+
+    def _update_autosave_task(self) -> None:
+        """Start or stop the autosave background task based on config."""
+        # Cancel any running task
+        if self._autosave_task is not None and not self._autosave_task.done():
+            self._autosave_task.cancel()
+        self._autosave_task = None
+        # Start a new task if autosave is enabled
+        if self.config.autosave:
+            self._autosave_task = self.create_background_task(self._autosave_loop())
+
+    async def _autosave_loop(self) -> None:
+        """Periodically save all dirty panes."""
+        while self.config.autosave:
+            interval = max(1, int(self.config.autosave_interval))
+            try:
+                await asyncio.sleep(interval)
+            except asyncio.CancelledError:
+                return
+            self._autosave_all()
+
+    def _autosave_all(self) -> None:
+        """Save every dirty pane that can be autosaved."""
+        from euporie.core.path import UntitledPath
+
+        for pane in list(self.panes):
+            # Skip panes that are not dirty, currently saving, or untitled
+            if not pane.dirty:
+                continue
+            if pane.saving:
+                continue
+            path = pane.path
+            if path is None or isinstance(path, UntitledPath):
+                continue
+            try:
+                log.debug("Autosaving %s", path)
+                pane.saving = True
+                pane._save()
+            except Exception:
+                log.exception("Autosave failed for %s", path)
+                pane.saving = False
 
     @classmethod
     async def interact(cls, ssh_session: PromptToolkitSSHSession) -> None:

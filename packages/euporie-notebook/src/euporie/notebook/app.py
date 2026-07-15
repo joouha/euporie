@@ -660,6 +660,7 @@ class NotebookApp(BaseApp):
                         description="Turn code assistance tools on or off",
                     ),
                     MenuItem.from_cmd("toggle-run-after-external-edit"),
+                    MenuItem.from_cmd("toggle-autosave"),
                     separator,
                     MenuItem.from_cmd("open-config-file"),
                 ],

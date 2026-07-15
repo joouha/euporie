@@ -134,6 +134,35 @@ files = Setting(
     """,
 )
 
+autosave = Setting(
+    name="autosave",
+    flags=["--autosave"],
+    type_=bool,
+    title="autosave",
+    help_="Automatically save modified files",
+    default=False,
+    schema={"type": "boolean"},
+    description="""
+        Whether modified files should be periodically saved automatically.
+
+        When enabled, any tabs with unsaved changes will be saved to disk in the
+        background at the interval configured by ``autosave-interval``. Tabs
+        without a path (untitled files) are not autosaved.
+    """,
+)
+
+autosave_interval = Setting(
+    name="autosave_interval",
+    flags=["--autosave-interval"],
+    type_=int,
+    help_="Interval in seconds between autosaves",
+    default=60,
+    schema={"type": "integer", "minimum": 1, "maximum": 3600},
+    description="""
+        The interval, in seconds, between automatic saves when autosave is enabled.
+    """,
+)
+
 backup_on_save = Setting(
     name="backup_on_save",
     flags=["--backup-on-save"],
