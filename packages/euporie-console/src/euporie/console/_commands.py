@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 def _convert_to_notebook() -> None:
     """Convert the current console session to a notebook."""
     from euporie.console.app import get_app
-    from euporie.console.panes.console import Console
+    from euporie.console.panes import Console
     from euporie.core.kernel.base import NoKernel
     from euporie.notebook.app import NotebookApp
     from euporie.notebook.panes.notebook import Notebook
@@ -107,7 +107,7 @@ def _clear_input() -> None:
 def _run_input() -> None:
     """Run the console input."""
     from euporie.console.app import get_app
-    from euporie.console.panes.console import Console
+    from euporie.console.panes import Console
 
     if isinstance(console := get_app().pane, Console):
         console.run()
@@ -128,7 +128,7 @@ def _end_of_file(event: KeyPressEvent) -> None:
 def _clear_screen() -> None:
     """Clear the screen and the previous output."""
     from euporie.console.app import get_app
-    from euporie.console.panes.console import Console
+    from euporie.console.panes import Console
 
     app = get_app()
     app.renderer.clear()

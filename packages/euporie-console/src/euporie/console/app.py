@@ -30,7 +30,7 @@ from apptk.widgets.toolbars import (
 )
 
 from euporie.console import settings as console_settings
-from euporie.console.panes.console import Console
+from euporie.console.panes import Console
 from euporie.core import settings as core_settings
 from euporie.core.app.app import BaseApp
 from euporie.core.filters import has_dialog

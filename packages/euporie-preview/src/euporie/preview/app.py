@@ -18,7 +18,7 @@ from apptk.output.vt100 import Vt100_Output
 from euporie.core import settings as core_settings
 from euporie.core.app.app import BaseApp
 from euporie.preview import settings as preview_settings
-from euporie.preview.panes.notebook import PreviewNotebook
+from euporie.preview.panes import PreviewNotebook
 
 if TYPE_CHECKING:
     from pathlib import Path
