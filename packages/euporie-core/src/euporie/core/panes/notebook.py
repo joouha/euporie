@@ -68,7 +68,7 @@ class BaseNotebook(KernelPane, metaclass=ABCMeta):
                 "get_input": lambda prompt, password: self.cell.get_input(
                     prompt, password
                 ),
-                "set_execution_count": lambda n: self.cell.set_execution_count(n),
+                # "set_execution_count": lambda n: self.cell.set_execution_count(n),
                 "add_output": self.new_output_default,
                 "update_output": lambda output, own, display_id: (
                     self.cell.update_output(output, own, display_id)
