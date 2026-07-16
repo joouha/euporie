@@ -102,6 +102,7 @@ class Dialog(Float, metaclass=ABCMeta):
         self.app = app
         self.to_focus: FocusableElement | None = None
         self.last_focused: FocusableElement | None = None
+        self.on_close: Callable[[], None] | None = None
         self._visible = False
         self.visible = Condition(lambda: self._visible)
 
@@ -255,8 +256,10 @@ class Dialog(Float, metaclass=ABCMeta):
     def load(self) -> None:
         """Load the dialog's body etc."""
 
-    def show(self, **params: Any) -> None:
+    def show(self, on_close: Callable[[], None] | None = None, **params: Any) -> None:
         """Display and focuses the dialog."""
+        # Store an optional callback to run when the dialog is dismissed
+        self.on_close = on_close
         # Reset position
         self.top = self.left = None
         # Re-draw the body
@@ -284,6 +287,10 @@ class Dialog(Float, metaclass=ABCMeta):
                     self.app.layout.focus_next()
         # Stop any drag events
         self.app.mouse_limits = None
+        # Run and clear any registered close callback
+        if (on_close := self.on_close) is not None:
+            self.on_close = None
+            on_close()
 
     def toggle(self) -> None:
         """Show or hides the dialog."""

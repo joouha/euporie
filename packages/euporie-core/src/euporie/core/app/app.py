@@ -313,6 +313,8 @@ class BaseApp(ConfigurableApp, Application, ABC):
         # Allow hiding element when manually redrawing app
         self._redrawing = False
         self.redrawing = Condition(lambda: self._redrawing)
+        # Guard against recursion while recovering from render errors
+        self._handling_render_error = False
         # Add an optional pager
         self.pager: Pager | None = None
         # Stores the initially focused element
@@ -476,6 +478,10 @@ class BaseApp(ConfigurableApp, Application, ABC):
         """Call during the 'pre-run' stage of application loading."""
         # Set the application's style
         self.update_palette()
+        # Register core dialogs used during recovery
+        from euporie.core.widgets.dialog import ErrorDialog
+
+        self.dialog_classes.setdefault("error", ErrorDialog)
         # Load completions menu.
         self.menus["completions"] = Float(
             content=Shadow(
@@ -1299,6 +1305,67 @@ class BaseApp(ConfigurableApp, Application, ABC):
         """Reset all tabs."""
         for tab in self.panes:
             to_container(tab).reset()
+
+    def _redraw(self, render_as_done: bool = False) -> None:
+        """Render the application, recovering from any rendering errors."""
+        if self._handling_render_error:
+            # Already recovering; let the error propagate to avoid recursion
+            super()._redraw(render_as_done=render_as_done)
+            return
+        try:
+            super()._redraw(render_as_done=render_as_done)
+        except Exception as exc:
+            self._handling_render_error = True
+            try:
+                self._recover_from_render_error(exc)
+            finally:
+                self._handling_render_error = False
+
+    def _recover_from_render_error(self, exc: Exception) -> None:
+        """Recover the app after a rendering exception.
+
+        First attempts to reset the current layout's containers and re-render.
+        If rendering still fails, falls back to a safe blank container so the
+        render loop can recover. Either way, the error is shown to the user.
+
+        Args:
+            exc: The exception raised during rendering.
+        """
+        log.exception("An error occurred while rendering", exc_info=exc)
+
+        # Fall back to a safe blank container
+        try:
+            from apptk.layout.decor import Pattern
+
+            self.layout = Layout(
+                FloatContainer(
+                    content=Pattern(),
+                    floats=cast("list[Float]", self.floats),
+                ),
+            )
+            self.layout.on_focus_changed += self._on_focus_changed
+        except Exception:
+            log.exception("Failed to reset layout after render error")
+
+        # Show the error dialog if available, exiting once it is dismissed
+        shown = False
+        if dialog := self.get_dialog("error"):
+            try:
+                dialog.show(
+                    on_close=partial(self.exit, exception=exc),
+                    exception=exc,
+                    when="rendering the display",
+                )
+            except Exception:
+                log.exception("Failed to show error dialog after render error")
+            else:
+                shown = True
+
+        self.invalidate()
+
+        # If the dialog could not be shown, exit immediately
+        if not shown:
+            self.exit(exception=exc)
 
     def draw(self, render_as_done: bool = True) -> None:
         """Draw the app without focus, leaving the cursor below the drawn output."""
