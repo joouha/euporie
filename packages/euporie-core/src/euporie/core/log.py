@@ -470,6 +470,9 @@ def setup_logs(config: Config | None = None) -> None:
         if syntax_theme := config.syntax_theme:
             log_config["handlers"]["stdout"]["pygments_theme"] = syntax_theme
 
+        # Configure log tab handler
+        log_config["handlers"]["log_tab"]["level"] = log_level
+
         # Configure euporie logger
         log_config["loggers"]["euporie"]["level"] = log_level
         log_config["loggers"]["apptk"]["level"] = log_level
