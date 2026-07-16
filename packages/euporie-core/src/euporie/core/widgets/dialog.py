@@ -694,11 +694,63 @@ class ErrorDialog(Dialog):
             self.app.clipboard.set_data(ClipboardData(tb_text))
 
         def _report() -> None:
+            import os
+            import platform
             import webbrowser
-            from importlib.metadata import metadata
+            from importlib.metadata import metadata, version
             from urllib.parse import urlencode, urlparse, urlunparse
 
+            from apptk.formatted_text.utils import fragment_list_to_text
+
+            from euporie.core.log import LOG_QUEUE
+
             data = metadata("euporie")
+
+            # Determine the running application name and version
+            app_name = self.app.__class__.__name__
+            try:
+                app_version = version("euporie-core")
+            except Exception:
+                app_version = "unknown"
+
+            # Truncate helper to keep the resulting URL within GitHub's limit
+            def _truncate(text: str, limit: int) -> str:
+                if len(text) > limit:
+                    return "...(truncated)...\n" + text[-limit:]
+                return text
+
+            # Gather any captured log output (most recent entries only)
+            log_text = _truncate(
+                "".join(fragment_list_to_text(record) for record in LOG_QUEUE).strip(),
+                2000,
+            )
+
+            # Truncate the traceback to keep the URL length manageable
+            tb_body = _truncate(tb_text, 4000)
+
+            body = (
+                "## Description\n\n"
+                "Please describe what you were doing when the error occurred, "
+                "including the steps required to reproduce it:\n\n"
+                "1. \n2. \n3. \n\n"
+                "## Environment\n\n"
+                f"- Application: `{app_name}`\n"
+                f"- Version: `{app_version}`\n"
+                f"- Operating system: `{platform.platform()}`\n"
+                f"- Terminal: `{os.environ.get('TERM_PROGRAM', 'unknown')}`\n\n"
+                "## Traceback\n\n"
+                "<details>\n<summary>Traceback</summary>\n\n"
+                f"```python\n{tb_body}\n```\n\n"
+                "</details>\n"
+            )
+            if log_text:
+                body += (
+                    "\n## Log Output\n\n"
+                    "<details>\n<summary>Log output</summary>\n\n"
+                    f"```\n{log_text}\n```\n\n"
+                    "</details>\n"
+                )
+
             if issue_url := dict(
                 x.split(", ", 1) for x in data.json.get("project_url", [])
             ).get("Issues"):
@@ -710,8 +762,7 @@ class ErrorDialog(Dialog):
                         query=urlencode(
                             {
                                 "title": f"Error: {exception!r}",
-                                "body": "(Please describe what you did)\n\n"
-                                f"## Traceback\n\n```python\n{tb_text}\n```\n",
+                                "body": body,
                             }
                         )
                     )
