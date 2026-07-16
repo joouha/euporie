@@ -254,6 +254,9 @@ lint-check = "ruff check . && codespell ."
 fmt = "task format && task lint"
 fmt-check = "task format-check && task lint-check"
 
+# Upgrade dependency versions in root and all package pyproject.toml files
+upgrade-deps = "sh -c 'for f in pyproject.toml packages/*/pyproject.toml; do uvx --from pip-upgrader pip-upgrade \"$f\"; done'"
+
 # Type checking
 type = "mypy --namespace-packages -p euporie -p scripts"
 

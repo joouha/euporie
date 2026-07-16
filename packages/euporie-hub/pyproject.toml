@@ -3,7 +3,7 @@ name = "euporie-hub"
 requires-python = ">=3.10"
 dynamic = ["version"]
 dependencies = [
-    "asyncssh>=2.22.0",
+    "asyncssh>=2.24.0",
     "euporie-core",
 ]
 

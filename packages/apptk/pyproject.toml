@@ -5,18 +5,18 @@ dynamic = ["version"]
 dependencies = [
     "prompt-toolkit==3.0.52",
     "flatlatex>=0.15",
-    "fsspec[http]>=2026.2.0",
-    "imagesize>=1.4.1",
-    "linkify-it-py>=2.0.3",
-    "markdown-it-py>=4.0.0",
-    "mdit-py-plugins>=0.5.0",
+    "fsspec[http]>=2026.6.0",
+    "imagesize>=2.0.0",
+    "linkify-it-py>=2.1.0",
+    "markdown-it-py>=4.2.0",
+    "mdit-py-plugins>=0.6.1",
     "modshim>=0.5.1",
-    "pillow>=12.1.1",
+    "pillow>=12.3.0",
     "pyperclip>=1.11.0",
     "sixelcrop>=0.1.9",
     "timg>=1.1.6",
     "universal-pathlib>=0.3.10",
-    "pygments>=2.19.2",
+    "pygments>=2.20.0",
 ]
 
 [tool.uv.sources]
