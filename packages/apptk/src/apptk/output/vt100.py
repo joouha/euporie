@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
+import subprocess  # S404 - Security implications have been considered
 from base64 import b64encode
 from functools import lru_cache
 from typing import TYPE_CHECKING, TextIO
@@ -290,6 +291,37 @@ class Vt100_Output(PtkVt100_Output):
             _rows, _cols, px, py = _tiocgwinsz()
             self._pixel_size = (px, py)
         return self._pixel_size
+
+    def get_rows_below_cursor_position(self) -> int:
+        """Return the number of rows below the cursor.
+
+        tmux does not answer a cursor position report on behalf of a pane which
+        is not the active one, so an application running in an inactive pane
+        never learns its height, and mouse events are discarded until it does.
+        tmux does publish the cursor row of every pane, so ask it directly.
+        """
+        if not in_tmux() or not (pane := os.environ.get("TMUX_PANE")):
+            raise NotImplementedError
+        try:
+            reply = subprocess.run(  # S603 - the command is not user supplied
+                [
+                    "tmux",
+                    "display-message",
+                    "-p",
+                    "-t",
+                    pane,
+                    "#{pane_height} #{cursor_y}",
+                ],
+                capture_output=True,
+                text=True,
+                timeout=1,
+                check=True,
+            ).stdout
+            height, cursor_y = (int(part) for part in reply.split())
+        except (OSError, subprocess.SubprocessError, ValueError) as error:
+            raise NotImplementedError from error
+        # The cursor occupies a row of the pane, so one row is always below it
+        return max(1, height - cursor_y)
 
     def set_pixel_size(self, px: int, py: int) -> None:
         """Set terminal pixel dimensions."""
