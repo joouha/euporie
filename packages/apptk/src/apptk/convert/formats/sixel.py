@@ -55,7 +55,13 @@ async def png_to_sixel_img2sixel(
     if cols is not None:
         px, _ = get_app().output.cell_pixel_size
         cmd += [f"--width={int(cols * px)}"]
-    return (await call_subproc(datum.data, cmd)).decode()
+    output = (await call_subproc(datum.data, cmd)).decode()
+    if not output.startswith("\x1bP"):
+        # Some libsixel builds exit successfully having written nothing at all,
+        # which would reserve the image's cells and draw nothing in them
+        msg = "`img2sixel` produced no sixel data"
+        raise ValueError(msg)
+    return output
 
 
 register(
