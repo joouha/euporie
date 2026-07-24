@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 from functools import partial
+from io import BytesIO
 from typing import TYPE_CHECKING
 
 from apptk.convert.datum import Datum
@@ -248,7 +249,12 @@ class MPLCanvasModel(IpyWidgetComm):
                 bg = display.datum.convert("pil")
                 fg = datum.convert("pil")
                 bg.paste(fg, (0, 0), fg)
-                datum = Datum(bg, format="pil")
+                # Keep the result as a PNG: the only converter registered from
+                # PIL images to sixel is the pure-python `timg` encoder, which
+                # is too slow to render a canvas being dragged
+                buffer = BytesIO()
+                bg.save(buffer, format="PNG")
+                datum = Datum(buffer.getvalue(), format="png")
             display.datum = datum
             self.data["state"]["_data_url"] = (
                 f"data:image/png;base64,{datum.convert('base64-png')}"
