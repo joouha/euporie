@@ -1122,7 +1122,7 @@ class BaseApp(ConfigurableApp, Application, ABC):
         for tab in self.panes:
             if (
                 tab is not placeholder
-                and ppath == getattr(tab, "path", "")
+                and ppath == tab.path
                 and (tab_class is None or isinstance(tab, tab_class))
             ):
                 log.info("File %s already open, activating", path)
