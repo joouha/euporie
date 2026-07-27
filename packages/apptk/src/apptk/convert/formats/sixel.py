@@ -74,6 +74,7 @@ register(
     from_="pil",
     to="sixel",
     filter_=have_modules("timg"),
+    weight=2,
 )
 async def pil_to_sixel_py_timg(
     datum: Datum,
