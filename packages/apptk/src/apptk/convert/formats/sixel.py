@@ -49,7 +49,7 @@ async def png_to_sixel_img2sixel(
     **kwargs: Any,
 ) -> str:
     """Convert PNG data to sixels :command:`img2sixel`."""
-    cmd: list[Any] = ["img2sixel", "-I"]
+    cmd: list[Any] = ["img2sixel"]
     if bg:
         cmd += [f"--bgcolor={bg}"]
     if cols is not None:
