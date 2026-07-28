@@ -10,7 +10,7 @@ mouse_support = Setting(
     flags=["--mouse-support"],
     type_=bool,
     help_="Enable or disable mouse support",
-    default=None,
+    default=True,
     description="""
         When set to True, mouse support is enabled. When set to False, mouse
         support is disabled.
