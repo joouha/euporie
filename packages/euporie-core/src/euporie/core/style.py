@@ -395,7 +395,7 @@ def notification_styles(cp: ColorPalette) -> dict[str, str]:
         "danger": cp.ansired,
     }
     styles = {
-        "notification": f"fg:{cp.fg} bg:{cp.bg.darker(0.1)}",
+        "notification": f"fg:{cp.fg} bg:{cp.bg.less(0.2)}",
         "notification border": f"fg:{cp.hl}",
     }
     for name, color in variants.items():

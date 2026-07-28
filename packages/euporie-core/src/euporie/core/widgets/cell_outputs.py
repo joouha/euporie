@@ -172,6 +172,9 @@ class CellOutputDataElement(CellOutputElement):
             convert_kwargs=convert_kwargs,
             selectable=True,
             auto_copy_selection=True,
+            on_copy=lambda: get_app().notify(
+                "Copied to clipboard", class_="success", offset=1
+            ),
             processors=[
                 StripTrailingWhiteSpaceProcessor(only_unstyled=True),
             ],

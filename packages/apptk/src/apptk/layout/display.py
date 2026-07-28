@@ -104,6 +104,7 @@ class DisplayControl(UIControl):
         convert_kwargs: dict[str, Any] | None = None,
         selectable: FilterOrBool = False,
         auto_copy_selection: FilterOrBool = False,
+        on_copy: Callable[[], None] | None = None,
         processors: list[Processor] | None = None,
     ) -> None:
         """Create a new web-view control instance.
@@ -123,6 +124,8 @@ class DisplayControl(UIControl):
             convert_kwargs: Additional arguments for datum conversion.
             selectable: Whether text can be selected with the mouse.
             auto_copy_selection: Whether to automatically copy selections to clipboard.
+            on_copy: Optional callback invoked after a selection is copied to
+                the clipboard.
             processors: List of processors to apply to rendered lines.
         """
         self._datum = datum
@@ -141,6 +144,7 @@ class DisplayControl(UIControl):
 
         self.selectable = to_filter(selectable)
         self.auto_copy_selection = to_filter(auto_copy_selection)
+        self.on_copy = on_copy
 
         self._cursor_position = Point(0, 0)
         self.selection_start: Point | None = None
@@ -679,6 +683,8 @@ class DisplayControl(UIControl):
                     else SelectionType.CHARACTERS,
                 )
             )
+            if callable(self.on_copy):
+                self.on_copy()
 
     def get_invalidate_events(self) -> Iterable[Event[object]]:
         """Return the Window invalidate events."""
@@ -725,6 +731,7 @@ class Display(Container):
         convert_kwargs: dict[str, Any] | None = None,
         selectable: FilterOrBool = False,
         auto_copy_selection: FilterOrBool = False,
+        on_copy: Callable[[], None] | None = None,
         processors: list[Processor] | None = None,
     ) -> None:
         """Instantiate an Output container object.
@@ -748,6 +755,8 @@ class Display(Container):
             convert_kwargs: Key-word arguments to pass to :py:method:`Datum.convert`
             selectable: Whether text can be selected with the mouse
             auto_copy_selection: Whether to automatically copy selections to clipboard
+            on_copy: Optional callback invoked after a selection is copied to
+                the clipboard
             processors: List of processors to apply to rendered lines
 
         """
@@ -773,6 +782,7 @@ class Display(Container):
             convert_kwargs=convert_kwargs,
             selectable=selectable,
             auto_copy_selection=auto_copy_selection,
+            on_copy=on_copy,
             processors=processors,
         )
 
