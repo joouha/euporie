@@ -49,10 +49,15 @@ class KernelCompleter(Completer):
         self, document: Document, complete_event: CompleteEvent
     ) -> AsyncGenerator[Completion]:
         """Retrieve completions from a :class:`Kernel`."""
-        for kwargs in await self.kernel.complete_async(
-            source=document.text,
-            cursor_pos=document.cursor_position,
-        ):
+        try:
+            completions = await self.kernel.complete_async(
+                source=document.text,
+                cursor_pos=document.cursor_position,
+            )
+        except Exception:
+            log.debug("Completion request failed", exc_info=True)
+            return
+        for kwargs in completions:
             if completion_type := kwargs.get("display_meta"):
                 completion_type = completion_type.replace(" ", "-")
                 kwargs["style"] = f"class:completion-{completion_type}"
