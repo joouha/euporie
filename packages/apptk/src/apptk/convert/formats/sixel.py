@@ -87,7 +87,32 @@ async def pil_to_sixel_py_timg(
     """Convert a pillow image to sixels :py:mod:`timg`."""
     import timg
 
-    return timg.SixelMethod(datum.data).to_string()
+    image = datum.data
+
+    # Composite background color
+    if bg and (
+        image.mode in ("RGBA", "LA")
+        or (image.mode == "P" and "transparency" in image.info)
+    ):
+        from PIL import Image
+
+        image = image.convert("RGBA")
+        background = Image.new(
+            "RGBA",
+            image.size,
+            (
+                int(bg[1:3], base=16),
+                int(bg[3:5], base=16),
+                int(bg[5:7], base=16),
+                255,
+            ),
+        )
+        background.alpha_composite(image)
+        image = background.convert("RGB")
+    else:
+        image = image.convert("RGB")
+
+    return timg.SixelMethod(image).to_string()
 
 
 @register(
