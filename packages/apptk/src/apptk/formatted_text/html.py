@@ -1270,9 +1270,10 @@ class Theme(Mapping):
         element_id = element_attrs.get("id")
         element_classes = element_attrs.get("class", "").split()
 
-        # Track which (selector_parts, rule) pairs we've already processed
-        # to avoid checking the same rule multiple times
-        seen_rules: set[int] = set()
+        # Track which (selector_parts, rule) pairs we've already processed to avoid
+        # checking the same rule multiple times. Key the set on the chain (plus rule
+        # identity, in case two groups share an identical chain)
+        seen_rules: set[tuple[int, tuple[CssSelector, ...]]] = set()
 
         for condition, ruleset in rulesets.items():
             if not condition():
@@ -1285,10 +1286,10 @@ class Theme(Mapping):
 
             for selector_parts, rule in potential_rules:
                 # Use id() to track unique rule instances
-                rule_id = id(rule)
-                if rule_id in seen_rules:
+                key = id(rule), selector_parts
+                if key in seen_rules:
                     continue
-                seen_rules.add(rule_id)
+                seen_rules.add(key)
 
                 # Last selector item should match the current element
                 selector = selector_parts[-1]
@@ -2652,6 +2653,7 @@ _BROWSER_CSS: dict[Filter, CssRuleSet] = {
                 "white_space": "pre",
             },
             # Lists
+            ((CssSelector(item="li"),),): {"display": "list-item"},
             ((CssSelector(item="::marker"),),): {
                 "display": "inline-block",
                 "padding_right": "1em",
@@ -2676,23 +2678,6 @@ _BROWSER_CSS: dict[Filter, CssRuleSet] = {
                 "margin_bottom": "1em",
             },
             (
-                (CssSelector(item="dir"), CssSelector(item="dir")),
-                (CssSelector(item="dir"), CssSelector(item="menu")),
-                (CssSelector(item="dir"), CssSelector(item="ul")),
-                (CssSelector(item="ol"), CssSelector(item="dir")),
-                (CssSelector(item="ol"), CssSelector(item="menu")),
-                (CssSelector(item="ol"), CssSelector(item="ul")),
-                (CssSelector(item="menu"), CssSelector(item="dir")),
-                (CssSelector(item="menu"), CssSelector(item="menu")),
-                (CssSelector(item="ul"), CssSelector(item="dir")),
-                (CssSelector(item="ul"), CssSelector(item="menu")),
-                (CssSelector(item="ul"), CssSelector(item="ul")),
-            ): {
-                "margin_top": "0em",
-                "margin_bottom": "0em",
-                "list_style_type": "circle",
-            },
-            (
                 (CssSelector(item="dir"), CssSelector(item="dl")),
                 (CssSelector(item="dir"), CssSelector(item="ol")),
                 (CssSelector(item="dl"), CssSelector(item="dir")),
@@ -2700,17 +2685,30 @@ _BROWSER_CSS: dict[Filter, CssRuleSet] = {
                 (CssSelector(item="dl"), CssSelector(item="ol")),
                 (CssSelector(item="dl"), CssSelector(item="menu")),
                 (CssSelector(item="dl"), CssSelector(item="ul")),
-                (CssSelector(item="ol"), CssSelector(item="dl")),
-                (CssSelector(item="ol"), CssSelector(item="ol")),
                 (CssSelector(item="menu"), CssSelector(item="dl")),
                 (CssSelector(item="menu"), CssSelector(item="ol")),
+                (CssSelector(item="ol"), CssSelector(item="dl")),
+                (CssSelector(item="ol"), CssSelector(item="ol")),
                 (CssSelector(item="ul"), CssSelector(item="dl")),
                 (CssSelector(item="ul"), CssSelector(item="ol")),
-            ): {"margin_top": "0em", "margin_bottom": "0em"},
-            ((CssSelector(item="menu"), CssSelector(item="ul")),): {
+            ): {"margin_top": "0", "margin_bottom": "0"},
+            (
+                (CssSelector(item="dir"), CssSelector(item="dir")),
+                (CssSelector(item="dir"), CssSelector(item="menu")),
+                (CssSelector(item="dir"), CssSelector(item="ul")),
+                (CssSelector(item="menu"), CssSelector(item="dir")),
+                (CssSelector(item="menu"), CssSelector(item="menu")),
+                (CssSelector(item="menu"), CssSelector(item="ul")),
+                (CssSelector(item="ol"), CssSelector(item="dir")),
+                (CssSelector(item="ol"), CssSelector(item="menu")),
+                (CssSelector(item="ol"), CssSelector(item="ul")),
+                (CssSelector(item="ul"), CssSelector(item="dir")),
+                (CssSelector(item="ul"), CssSelector(item="menu")),
+                (CssSelector(item="ul"), CssSelector(item="ul")),
+            ): {
+                "margin_top": "0",
+                "margin_bottom": "0",
                 "list_style_type": "circle",
-                "margin_top": "0em",
-                "margin_bottom": "0em",
             },
             (
                 (
@@ -2954,7 +2952,6 @@ _BROWSER_CSS: dict[Filter, CssRuleSet] = {
                     CssSelector(item="ul"),
                 ),
             ): {"list_style_type": "square"},
-            ((CssSelector(item="li"),),): {"display": "list-item"},
             # Details & summary
             ((CssSelector(item="details"), CssSelector(item="summary")),): {
                 "display": "list-item",
