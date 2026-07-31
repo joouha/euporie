@@ -95,6 +95,35 @@ class PreviewApp(BaseApp):
         """Return the tab to use for a file path."""
         return PreviewNotebook
 
+    def open_file(
+        self,
+        path: Path,
+        read_only: bool = False,
+        tab_class: type[Pane] | None = None,
+    ) -> None:
+        """Open a file synchronously, without showing a loading placeholder.
+
+        The preview app renders directly to the terminal, so showing a
+        transient "Loading…" placeholder pane would leave stray output. We
+        therefore resolve the path and create the real tab immediately.
+
+        Args:
+            path: The file path of the file to open.
+            read_only: If true, the file should be opened read-only.
+            tab_class: The tab type to use, or ``None`` to determine it.
+        """
+        from apptk.path import parse_path
+
+        ppath = parse_path(path, resolve=True)
+        resolved_class = tab_class or self.get_file_tab(ppath)
+        if resolved_class is None:
+            log.error("Unable to display file %s", path)
+            return
+        tab = resolved_class(self, ppath)
+        self.add_tab(tab)
+        self.focused_element = tab
+        self.tab_idx = len(self.panes) - 1
+
     def exit(
         self,
         result: _AppResult | None = None,
