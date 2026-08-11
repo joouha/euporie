@@ -4239,25 +4239,20 @@ class RichHTML:
         # TODO - process <colgroup> elements
 
         # Add cell contents
+
         if td_map:
-            col_widths = table.calculate_col_widths()
+            cell_widths = table.calculate_cell_widths()
             for row in table.rows:
-                for col_width, cell in zip(col_widths, row.cells):
+                for cell in row.cells:
                     if td := td_map.get(cell):
                         cell_padding = compute_padding(cell)
                         available_width = (
-                            table_x_dim.max
-                            if cell.colspan > 1
-                            else col_width - cell_padding.left - cell_padding.right
+                            cell_widths[cell] - cell_padding.left - cell_padding.right
                         )
                         td.theme.update_space(
                             available_width, table_theme.available_height
                         )
-                        cell.text = await self.render_node_content(
-                            td,
-                            # TODO - get actual colspan cell widths properly
-                            left=0,
-                        )
+                        cell.text = await self.render_node_content(td, left=0)
 
         # Render the table
         ft_table = table.render()

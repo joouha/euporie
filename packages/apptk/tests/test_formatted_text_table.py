@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from apptk.formatted_text.table import Cell, Col, Row, Table, compute_style
+from apptk.formatted_text.utils import fragment_list_width, split_lines
+from apptk.layout.dimension import Dimension
 
 
 def test_sync_rows_to_cols_sets_cell_indices() -> None:
@@ -66,6 +68,26 @@ def test_alternate_row_style_applied_to_odd_rows() -> None:
     # Consecutive rows should differ
     assert has_alt[0] != has_alt[1]
     assert has_alt[1] != has_alt[2]
+
+
+def test_single_cell_table_fits_available_width() -> None:
+    """Test that a single-cell table renders within the available width."""
+    available_width = 20
+    table = Table(
+        rows=[Row(cells=[Cell("hello")])],
+        width=Dimension(max=available_width),
+        border_visibility=True,
+    )
+
+    ft = table.render()
+
+    lines = list(split_lines(ft))
+    assert lines, "Expected the table to render at least one line"
+    for line in lines:
+        assert fragment_list_width(line) <= available_width, (
+            f"Rendered line width {fragment_list_width(line)} exceeds "
+            f"available width {available_width}"
+        )
 
 
 def test_update_table_rows_preserves_indices() -> None:

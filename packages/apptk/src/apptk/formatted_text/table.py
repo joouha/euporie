@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from functools import lru_cache, partial
+from functools import lru_cache
 from itertools import tee, zip_longest
 from typing import TYPE_CHECKING, cast
 
@@ -55,6 +55,28 @@ def pairwise(iterable: Iterable[PairT]) -> Iterator[tuple[PairT, PairT]]:
     a, b = tee(iterable)
     next(b, None)
     return zip(a, b)
+
+
+class _RowColDict(defaultdict):
+    """A ``defaultdict`` which creates rows/columns aware of their own index."""
+
+    def __init__(
+        self,
+        table: Table,
+        factory: type[RowCol],
+        items: Iterable[tuple[int, RowCol]] = (),
+    ) -> None:
+        """Store the table and factory used to create missing entries."""
+        super().__init__()
+        self._table = table
+        self._factory = factory
+        self.update(items)
+
+    def __missing__(self, key: int) -> RowCol:
+        """Create a new row/column with its index set."""
+        value = self._factory(self._table, index=key)
+        self[key] = value
+        return value
 
 
 class Cell:
@@ -287,6 +309,7 @@ class RowCol:
         self,
         table: Table | None = None,
         cells: Sequence[Cell] | None = None,
+        index: int | None = None,
         align: HorizontalAlign | None = None,
         style: str = "",
         padding: DiInt | int = 0,
@@ -299,6 +322,7 @@ class RowCol:
         Args:
             table: The :py:class:`table` that this row/column belongs to
             cells: A list of cells in this row/column
+            index: The index of this row/column within the table
             align: The default alignment for cells in this row/column
             style: The default style for cells in this row/column
             padding: The default padding for cells in this row/column
@@ -308,6 +332,7 @@ class RowCol:
 
         """
         self.table = table or DummyTable()
+        self.index = index
         if isinstance(self, Row):
             row = self
             col = None
@@ -442,7 +467,12 @@ class RowCol:
             cell.row = cast("Row", self)
             cell.col = self.table._cols[index]
 
-            row_index = next(i for i, row in self.table._rows.items() if row is self)
+            row_index = self.index
+            if row_index is None:
+                row_index = next(
+                    (i for i, row in self.table._rows.items() if row is self),
+                    len(self.table._rows),
+                )
             col_index = index
 
             cell.col._cells[row_index] = cell
@@ -456,7 +486,12 @@ class RowCol:
             cell.col = cast("Col", self)
 
             row_index = index
-            col_index = next(i for i, col in self.table._cols.items() if col is self)
+            col_index = self.index
+            if col_index is None:
+                col_index = next(
+                    (i for i, col in self.table._cols.items() if col is self),
+                    len(self.table._cols),
+                )
 
             cell.row._cells[col_index] = cell
 
@@ -618,14 +653,23 @@ def compute_border_visibility(cell: Cell, render_count: int = 0) -> DiBool:
 ###############
 
 
+def _is_content_cell(cell: Cell) -> bool:
+    """Return True if a cell holds content (i.e. is not a spacer or filler cell)."""
+    return cell.expands is cell and not isinstance(cell, _Dummy)
+
+
 @lru_cache
 def calculate_cell_width(cell: Cell, render_count: int = 0) -> int:
-    """Compute the final width of a cell, including padding."""
-    if cell.colspan > 1:
+    """Compute the intrinsic width of a cell's content, including its padding."""
+    if not _is_content_cell(cell):
         return 0
     padding = compute_padding(cell, render_count)
     return (
-        (cell.width or max_line_width(compute_text(cell, render_count)))
+        (
+            cell.width
+            if cell.width is not None
+            else max_line_width(compute_text(cell, render_count))
+        )
         + padding.left
         + padding.right
     )
@@ -707,13 +751,6 @@ def compute_border_width(cell: Cell, render_count: int = 0) -> DiInt:
     row_cells_bv = [compute_border_visibility(cell, render_count) for cell in row.cells]
     col_cells_bv = [compute_border_visibility(cell, render_count) for cell in col.cells]
 
-    for cell, cell_left in zip(row.cells, table.rows[row_index - 1].cells):
-        if (
-            compute_border_visibility(cell).left
-            or compute_border_visibility(cell_left).right
-        ):
-            break
-
     row_top_cells_bv = (
         compute_border_visibility(cell, render_count)
         for cell in (
@@ -768,6 +805,28 @@ def compute_border_width(cell: Cell, render_count: int = 0) -> DiInt:
 
 
 @lru_cache
+def calculate_span_border_width(
+    row_cells: tuple[Cell, ...], start: int, span: int, render_count: int = 0
+) -> int:
+    """Total width of the vertical borders internal to a span of columns.
+
+    Args:
+        row_cells: The cells of the row containing the spanning cell
+        start: The index of the first spanned column
+        span: The number of spanned columns
+        render_count: The number of times the application has been rendered
+
+    Returns:
+        The number of columns occupied by borders between the spanned columns
+    """
+    return sum(
+        compute_border_width(w, render_count).right
+        or compute_border_width(e, render_count).left
+        for w, e in pairwise(row_cells[start : start + span])
+    )
+
+
+@lru_cache
 def calculate_col_widths(
     cols: tuple[Col],
     width: Dimension,
@@ -777,8 +836,10 @@ def calculate_col_widths(
 ) -> list[int]:
     """Calculate column widths given the available space.
 
-    Reduce the widest column until we fit in available width, or expand cells to
-    to fill the available width.
+    Column widths are first determined from cells which occupy a single column.
+    Cells which span multiple columns then have any additional width they
+    require distributed across the columns they span. Finally, the columns are
+    expanded or contracted to fit the given width.
 
     Args:
         cols: A list of columns in the table
@@ -791,50 +852,121 @@ def calculate_col_widths(
         List of new column widths
 
     """
-    # TODO - this function is too slow
+    n_cols = len(cols)
+    if not n_cols:
+        return []
 
-    col_widths = [
-        max(
-            min_col_width,
-            *(calculate_cell_width(cell, render_count) for cell in col.cells),
-        )
+    # Columns which contain no content cells (e.g. those only occupied by the
+    # spacers of a spanning cell) have no minimum width of their own
+    col_minima = [
+        min_col_width if any(_is_content_cell(cell) for cell in col.cells) else 0
         for col in cols
     ]
 
+    # Base widths, calculated from cells which occupy a single column only
+    col_widths = [
+        max(
+            [
+                col_minima[i],
+                *(
+                    calculate_cell_width(cell, render_count)
+                    for cell in col.cells
+                    if _is_content_cell(cell) and cell.colspan == 1
+                ),
+            ]
+        )
+        for i, col in enumerate(cols)
+    ]
+
+    # Columns which have no explicitly set width can be freely resized
+    expandable = [
+        i
+        for i, col in enumerate(cols)
+        if all(cell.width is None for cell in col.cells if _is_content_cell(cell))
+    ]
+
+    # Distribute the width required by cells which span multiple columns
+    spans: list[tuple[int, int, Cell]] = []
+    seen: set[int] = set()
+    for i, col in enumerate(cols):
+        for cell in col.cells:
+            if _is_content_cell(cell) and cell.colspan > 1 and id(cell) not in seen:
+                seen.add(id(cell))
+                spans.append((cell.colspan, i, cell))
+
+    for _colspan, i, cell in sorted(spans, key=lambda x: x[0]):
+        span = min(cell.colspan, n_cols - i)
+        if span <= 0:
+            continue
+        required = calculate_cell_width(cell, render_count)
+        available = sum(col_widths[i : i + span]) + calculate_span_border_width(
+            tuple(cell.row.cells), i, span, render_count
+        )
+        deficit = required - available
+        if deficit <= 0:
+            continue
+        # Prefer to grow columns which do not have an explicit width
+        targets = [j for j in range(i, i + span) if j in expandable] or list(
+            range(i, i + span)
+        )
+        # Distribute the extra width in proportion to the current widths
+        weights = [max(col_widths[j], 1) for j in targets]
+        total_weight = sum(weights)
+        added = 0
+        for k, j in enumerate(targets):
+            share = (
+                deficit - added
+                if k == len(targets) - 1
+                else deficit * weights[k] // total_weight
+            )
+            col_widths[j] += share
+            added += share
+
+    # Pre-calculate the total width of the table's vertical borders.
+    # Each internal boundary between two columns is a single physical column,
+    # counted once (consistent with `calculate_span_border_width`).
+    def _col_first_cell(index: int) -> Cell | None:
+        cells = cols[index].cells
+        return cells[0] if cells else None
+
+    def _outer_border(index: int, direction: str) -> int:
+        cell = _col_first_cell(index)
+        if cell is None:
+            return 0
+        return getattr(compute_border_width(cell, render_count), direction)
+
+    # Left outer edge + right outer edge
+    border_total = _outer_border(0, "left") + _outer_border(n_cols - 1, "right")
+    # Internal boundaries between adjacent columns, counted once each
+    for i in range(n_cols - 1):
+        w = _col_first_cell(i)
+        e = _col_first_cell(i + 1)
+        if w is None or e is None:
+            continue
+        border_total += (
+            compute_border_width(w, render_count).right
+            or compute_border_width(e, render_count).left
+        )
+
     def total_width(col_widths: list[int]) -> int:
         """Calculate the total width of the columns including borders."""
-        width = sum(col_widths)
-        if cols:
-            width += compute_border_width(cols[0].cells[0], render_count).left
-        for _i, col in enumerate(cols):
-            width += compute_border_width(col.cells[0], render_count).right
-        return width
+        return sum(col_widths) + border_total
 
     def expand(target: int) -> None:
-        """Expand the columns."""
-        max_width = max(target, len(col_widths) * min_col_width)
-        while total_width(col_widths) < max_width:
-            # Expand only columns which do not have a width set if possible
+        """Expand the columns to fill the given width."""
+        candidates = expandable or list(range(n_cols))
+        while total_width(col_widths) < target:
             # TODO - expand proportionately to given widths
-            col_index_widths = [
-                (i, col_widths[i])
-                for i, col in enumerate(cols)
-                if all(cell.width is None for cell in col.cells)
-            ]
-            if not col_index_widths:
-                col_index_widths = list(enumerate(col_widths))
-            if col_index_widths:
-                idxmin = min(col_index_widths, key=lambda x: x[1])[0]
-                col_widths[idxmin] += 1
-            else:
-                break
+            j = min(candidates, key=lambda j: col_widths[j])
+            col_widths[j] += 1
 
     def contract(target: int) -> None:
-        """Contract the columns."""
-        max_width = max(target, len(col_widths) * min_col_width)
-        while total_width(col_widths) > max_width:
-            idxmax = max(enumerate(col_widths), key=lambda x: x[1])[0]
-            col_widths[idxmax] -= 1
+        """Contract the columns to fit the given width."""
+        while total_width(col_widths) > target:
+            candidates = [(i, w) for i, w in enumerate(col_widths) if w > col_minima[i]]
+            if not candidates:
+                break
+            col_widths[max(candidates, key=lambda x: x[1])[0]] -= 1
 
     # Determine whether to expand or contract the table
     current_width = total_width(col_widths)
@@ -1025,14 +1157,16 @@ class Table:
 
         self.render_count = 0
 
-        self._rows = defaultdict(partial(Row, self), enumerate(rows or []))
+        self._rows = _RowColDict(self, Row, enumerate(rows or []))
         if rows:
-            for row in rows:
+            for i, row in enumerate(rows):
                 row.table = self
-        self._cols = defaultdict(partial(Col, self), enumerate(cols or []))
+                row.index = i
+        self._cols = _RowColDict(self, Col, enumerate(cols or []))
         if cols:
-            for col in cols:
+            for i, col in enumerate(cols):
                 col.table = self
+                col.index = i
         if rows:
             self.sync_rows_to_cols()
         elif cols:
@@ -1206,6 +1340,7 @@ class Table:
         # Update the new row's cell list
         row._cells = cells
         # Add the new row to the table
+        row.index = index
         self._rows[index] = row
 
     def new_col(self, *args: Any, **kwargs: Any) -> Col:
@@ -1254,6 +1389,7 @@ class Table:
         # Update the new columns's cell list
         col._cells = cells
         # Add the new column to the table
+        col.index = index
         self._cols[index] = col
 
     def calculate_col_widths(
@@ -1275,17 +1411,17 @@ class Table:
         """Calculate widths for each table cell, taking colspans into account."""
         render_count = self.render_count
         col_widths = self.calculate_col_widths(width)
-        widths = {}
-        for _y, row in enumerate(self.rows):
-            for x, cell in enumerate(row.cells):
+        n_cols = len(col_widths)
+        widths: dict[Cell, int] = {}
+        for row in self.rows:
+            row_cells = tuple(row.cells)
+            for x, cell in enumerate(row_cells):
                 widths[cell] = 0
-                if cell.expands == cell:
-                    colspan = cell.colspan
-                    widths[cell] += sum(col_widths[x : x + colspan]) + sum(
-                        compute_border_width(w, render_count).right
-                        or compute_border_width(e, render_count).left
-                        for w, e in pairwise(row.cells[x : x + colspan])
-                    )
+                if cell.expands is cell:
+                    span = max(0, min(cell.colspan, n_cols - x))
+                    widths[cell] = sum(
+                        col_widths[x : x + span]
+                    ) + calculate_span_border_width(row_cells, x, span, render_count)
         return widths
 
     def draw_table_row(
