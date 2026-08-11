@@ -4464,9 +4464,7 @@ class RichHTML:
         for row in table._rows.values():
             for x, cell in row._cells.items():
                 colspan = cell.colspan
-                cell.width = sum(col_widths[x + i] for i in range(colspan)) + gap_x * (
-                    colspan - 1
-                )
+                cell.width = sum(col_widths[x + i] for i in range(colspan))
 
         # Allow the table to adjust given cell widths to the available space
         cell_widths = table.calculate_cell_widths(available_width)
@@ -4486,7 +4484,8 @@ class RichHTML:
         for row in table._rows.values():
             for cell in row._cells.values():
                 if td := td_map.get(cell):
-                    width = cell_widths[cell]
+                    padding = compute_padding(cell)
+                    width = cell_widths[cell] - padding.left - padding.right
                     td.theme.update_space(width, theme.available_height)
                     coros.append(
                         _render_cell(
