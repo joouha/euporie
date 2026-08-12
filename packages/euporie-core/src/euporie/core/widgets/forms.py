@@ -1629,7 +1629,10 @@ class Dropdown(SelectableWidget):
         self.toggle_button.button.body = VSplit(
             [
                 self.text_window,
-                Label(lambda: f" {self.arrow} " if self.arrow else ""),
+                Label(
+                    lambda: f" {self.arrow} " if self.arrow else "",
+                    style=lambda: f"class:face {self.toggle_button.button.get_style()}",
+                ),
             ]
         )
 
