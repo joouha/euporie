@@ -74,6 +74,9 @@ class EditorPane(KernelPane):
             text = path.read_text()
         except FileNotFoundError:
             text = ""
+        except NotImplementedError:
+            # Untitled files have no on-disk content; preserve any typed text
+            return
 
         # Set text
         self.input_box.text = text

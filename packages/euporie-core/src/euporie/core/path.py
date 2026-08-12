@@ -120,3 +120,11 @@ class UntitledPath(PurePosixPath):
     def exists(self, *args: Any, **kwargs: Any) -> bool:
         """Untitled files are unsaved and never exist on disk."""
         return False
+
+    def read_text(self, *args: Any, **kwargs: Any) -> str:
+        """Untitled files have no on-disk content, so cannot be read."""
+        raise NotImplementedError("Cannot read an untitled file")
+
+    def read_bytes(self, *args: Any, **kwargs: Any) -> bytes:
+        """Untitled files have no on-disk content, so cannot be read."""
+        raise NotImplementedError("Cannot read an untitled file")

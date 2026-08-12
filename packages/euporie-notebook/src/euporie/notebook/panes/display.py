@@ -92,7 +92,11 @@ class DisplayPane(Pane):
             path: A path from which to read the file
 
         """
-        self.datum = Datum(data=path.read_bytes(), format=get_format(path), path=path)
+        try:
+            data = path.read_bytes()
+        except (FileNotFoundError, NotImplementedError):
+            return
+        self.datum = Datum(data=data, format=get_format(path), path=path)
         self.display.datum = self.datum
 
     def write_file(self, path: Path) -> None:

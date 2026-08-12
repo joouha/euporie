@@ -77,7 +77,11 @@ class JsonPane(Pane):
 
         """
         self.data.clear()
-        self.data.update(json.load(path.open()))
+        try:
+            with path.open() as f:
+                self.data.update(json.load(f))
+        except (FileNotFoundError, NotImplementedError):
+            pass
         self.app.invalidate()
 
     def __pt_status__(self) -> StatusBarFields | None:
