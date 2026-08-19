@@ -53,7 +53,7 @@ autosectionlabel_prefix_document = True
 # Options for HTML output
 html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
-html_favicon = "_static/favicon.ico"
+html_favicon = "_static/favicon.svg"
 html_logo = "_static/logo.svg"
 html_css_files = ["custom.css"]
 html_theme_options = {
