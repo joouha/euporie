@@ -29,7 +29,19 @@ Notebook Editors
    A fork of nbterm
 
 `netbook <https://github.com/lyovushka/netbook>`_
-   A jupyter client for your terminal
+    A jupyter client for your terminal
+
+`jet <https://github.com/wurli/jet>`_
+    A Jupyter client for the terminal
+
+`callisto <https://github.com/Ganryuu/callisto>`_
+    A Jupyter notebook in your terminal with coding agents support
+
+`sakharov <https://github.com/christian-johnson/sakharov>`_
+    A simple TUI text editor for writing code, interacting with Jupyter notebooks, or anything else
+
+`jupyter-tui <https://github.com/breissic/jupyter-tui>`_
+    Fast, simple TUI for python jupyter notebooks written in Rust. Currently a work in progress
 
 *******************
 Editor Integrations
