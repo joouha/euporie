@@ -2,6 +2,9 @@
 Euporie Console
 ###############
 
+.. video:: ../_static/videos/console.hero.webm
+   :width: 100%
+
 .. include:: ../../packages/euporie-console/README.rst
    :start-after: .. content_start
    :end-before: .. getting_started_end

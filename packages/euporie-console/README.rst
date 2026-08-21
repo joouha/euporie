@@ -4,11 +4,11 @@ euporie-console
 
 **An interactive Jupyter console for the terminal, with rich output.**
 
-.. content_start
-
-.. image:: https://placehold.co/1200x400/1e1e1e/cccccc.png?text=euporie-console+%E2%80%94+screenshot+placeholder
-   :alt: euporie-console screenshot placeholder
+.. image:: https://raw.githubusercontent.com/joouha/euporie/main/docs/_static/images/console.hero.screenshot.webp
+   :alt: euporie-console screenshot
    :align: center
+
+.. content_start
 
 ``euporie-console`` is a terminal-based Jupyter REPL that renders rich kernel output - including images, tables, Markdown, LaTeX and ``ipywidgets`` - directly in the terminal. It is part of the `euporie <https://github.com/joouha/euporie>`_ suite and is built on `euporie-core <../euporie-core>`_.
 
