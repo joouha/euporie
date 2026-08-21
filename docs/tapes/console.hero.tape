@@ -1,0 +1,189 @@
+Set FontSize 16
+Set Cols 80
+Set Rows 25
+
+Hide
+Source common.setup.tape
+Type@0 printf '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="-128 -128 950 256"><circle r="100" fill="#d00"/><g fill="#c00" clip-path="url(#c)"><path d="m -100,-64 v 4 H 102 v -4 z m 0,14 v 5 H 102 v -5 z m 0,9 v 10 H 102 v -10 z m 0,30 v 10 10 H 102 V 0 -10 h -202 z m 0,35 v 25 H 102 v -25 z m 0,40 v 5 H 102 v -5 z m 0,10 V 80 H 102 v -5 z m 0,10 v 3 H 102 v -3 h -202 z"/></g><ellipse cx="-40" cy="48" rx="25" ry="15" fill="#c10" stroke="#d00" stroke-width="5"/><circle cx="50" r="17"/><circle cx="-88" cy="-86" r="8" fill="#eef"/><circle cx="-93" cy="86" r="5" fill="#f80"/><polygon points="92,-109 102,-78 76,-97 109,-97 82,-78" fill="#fe0"/><use xlink:href="#e"/><path fill="#fff" d="m 256.7,48.9 c -12,0 -21.5,-3.3 -28.4,-9.98 -6.9,-6.8 -10.3,-15.9 -10.3,-27.5 v -58.8 h 21.5 v 58.7 c 0,6.1 1.5,10.8 4.5,14.1 3,3.2 7.2,4.8 12.7,4.8 5.4,0 9.6,-1.6 12.6,-4.8 3.1,-3.3 4.6,-8 4.6,-14.1 v -58.7 h 21.5 v 58.8 c 0,11.6 -3.5,20.8 -10.5,27.5 -7,6.7 -16.4,9.98 -28.2,9.98 z m 56.8,29.2 V -47.4 h 21 v 17 h 0.3 c 1.7,-5.98 4.8,-10.6 9.1,-13.8 4.5,-3.3 10,-4.98 16.5,-4.98 9.3,0 16.7,3.3 22.4,9.8 5.7,6.5 8.6,15.3 8.6,26.3 v 25.6 c 0,11.1 -2.9,19.98 -8.6,26.5 -5.6,6.5 -13.1,9.8 -22.4,9.8 -6.4,0 -11.9,-1.6 -16.3,-4.8 -4.5,-3.3 -7.6,-7.97 -9.3,-13.9 h -0.3 l 0.5,21.5 v 26.5 z m 39,-47.8 c 5.5,0 9.7,-1.6 12.7,-4.8 3.1,-3.2 4.6,-7.8 4.6,-13.8 v -23.7 c 0,-5.98 -1.5,-10.6 -4.6,-13.8 -3,-3.2 -7.2,-4.8 -12.7,-4.8 -5.5,0 -9.8,1.7 -12.9,4.98 -3.1,3.3 -4.6,8 -4.6,14.1 v 22.7 c 0,6.1 1.5,10.8 4.6,14.1 3.1,3.3 7.4,4.98 12.9,4.98 z M 447,48.8 c -12.2,0 -21.8,-3.3 -28.9,-9.98 -7.1,-6.8 -10.7,-15.8 -10.7,-27.2 v -23.4 c 0,-11.4 3.6,-20.4 10.7,-27 7.1,-6.8 16.7,-10.1 28.9,-10.1 12.2,0 21.8,3.4 28.9,10.1 7.1,6.7 10.7,15.6 10.7,26.8 v 23.6 c 0,11.4 -3.6,20.4 -10.7,27.2 -7.1,6.7 -16.7,9.98 -28.9,9.98 z m 0,-18.7 c 5.7,0 10.1,-1.5 13.2,-4.6 3.2,-3.2 4.8,-7.8 4.8,-13.8 v -23.4 c 0,-5.98 -1.6,-10.5 -4.8,-13.6 -3.1,-3.2 -7.5,-4.8 -13.2,-4.8 -5.7,0 -10.2,1.6 -13.4,4.8 -3.1,3.1 -4.6,7.6 -4.6,13.6 v 23.4 c 0,5.98 1.5,10.6 4.6,13.8 3.2,3.1 7.7,4.6 13.4,4.6 z m 59.5,17.2 v -94.6 h 21 v 18.1 h 0.5 c 0.9,-6.2 3.7,-11 8.3,-14.4 4.6,-3.6 10.4,-5.3 17.5,-5.3 9.7,0 17.5,3.2 23.4,9.6 5.8,6.3 8.8,14.98 8.8,25.98 v 7.7 h -22.5 v -6.2 c 0,-5.8 -1.5,-10.4 -4.6,-13.6 -3,-3.3 -7.3,-4.98 -13.1,-4.98 -11.8,0 -17.7,6.6 -17.7,19.8 v 57.98 z m 92.2,0 V 27.8 h 32.3 V -27.98 H 602.2 v -19.4 h 50.4 V 27.8 h 29.1 v 19.4 z m 41.6,-110.4 c -4.4,0 -7.8,-1.1 -10.3,-3.3 -2.5,-2.3 -3.8,-5.3 -3.8,-9.1 0,-3.8 1.3,-6.8 3.8,-8.9 2.5,-2.3 6,-3.4 10.3,-3.4 4.4,0 7.8,1.1 10.3,3.4 2.5,2.2 3.8,5.2 3.8,8.9 0,3.8 -1.3,6.8 -3.8,9.1 -2.5,2.2 -6,3.3 -10.3,3.3 z"/><use xlink:href="#e" x="571"/><defs><clipPath id="c"><circle r="100"/></clipPath><path id="e" fill="#fff" d="m 161.7,48.9 q -12,0 -21,-4.6 -8.9,-4.6 -13.9,-12.9 -4.8,-8.4 -4.8,-19.6 V -12 q 0,-11.2 4.8,-19.4 4,-8.4 13.9,-13.1 8.9,-4.6 21,-4.6 11.9,0 20.6,4.6 8.9,4.6 13.8,13.1 4,8.3 4,19.4 V 5.1 h -58.3 v 6.7 q 0,20.1 19.1,20.1 14.8,0 17.4,-9.8 h 21.2 q -2.4,12.2 -13.1,19.6 -10.5,7.2 -25.6,7.2 z M 142.8,-12 v 3.6 l 37.5,-0.2 v -3.6 q 0,-9.8 -4.6,-15 -4.6,-5.3 -13.9,-5.3 -9.5,0 -14.3,5.3 -4.6,5.3 -4.6,15.1 z"/></defs></svg>' > logo.svg
+Hide
+Enter
+Ctrl+L
+Hide
+Sleep 1s
+
+Show
+Sleep 1
+Type "euporie console"
+Enter
+Wait /ipykernel/
+
+# Enter code into a cell
+Type 'from IPython.display import *'
+Shift+Enter
+Type 'SVG("logo.svg", metadata={"width":425})'
+Ctrl+E
+Wait /○/
+Sleep 2
+
+Type 'from matplotlib import pyplot as plt'
+Shift+Enter
+Type 'plt.plot([1,2,3,4,5],[23,34,65,67,87])'
+Ctrl+E
+Wait /○/
+Sleep 2
+
+Type 'from ipywidgets import widgets as w'
+Shift+Enter
+Type 'b = w.Button(description="Click Me!")'
+Shift+Enter
+Type 'b.on_click(lambda x: print("I was clicked"))'
+Shift+Enter
+Type 'b'
+Ctrl+E
+Wait /○/
+Sleep 1
+
+# Click button
+Type@0 "[<0;115;444M"
+Sleep 0.5
+Type@0 "[<0;115;444m"
+Sleep 1
+Hide
+Alt+:
+Escape
+Show
+Sleep 2
+
+Ctrl+L
+Sleep 1
+
+Type 'import p'
+Tab
+Sleep 0.5
+Tab
+Sleep 0.5
+Tab
+Sleep 0.5
+Type ' as pd'
+Shift+Enter
+Type 'import nu'
+Tab
+Tab
+Tab
+Type " as np"
+Shift+Enter
+Type 'df = pd.DataFrame(np.random.random((10,5)))'
+Shift+Enter
+Type 'df'
+Ctrl+E
+Wait /○/
+Sleep 2
+
+Ctrl+L
+Sleep 1
+
+Type 'df.style.background_gradient(' #cmap="Greens")'
+Shift+Tab
+Sleep 1
+Shift+Tab
+Sleep 0.5
+Down 10
+Sleep 0.1
+Down
+Sleep 0.1
+Down
+Sleep 0.1
+Down
+Sleep 0.1
+Down
+Sleep 0.1
+Down
+Sleep 0.1
+Down
+Sleep 0.1
+Down
+Sleep 1
+Escape
+Sleep 0.5
+Type 'cmap="Greens")'
+Sleep 0.5
+Ctrl+E
+Wait /○/
+Sleep 2
+
+Type 'import asyncio'
+Shift+Enter
+Type 'from tqdm.auto import tqdm'
+Shift+Enter
+Type 'for i in tqdm(range(20)):'
+Enter
+Type 'await asyncio.sleep(0.2)'
+Ctrl+E
+
+Type 'from rich.progress import track'
+Shift+Enter
+Type 'for _ in track(range(20)):'
+Shift+Enter
+Type '    await asyncio.sleep(0.2)'
+Ctrl+E
+Wait /○/
+Sleep 1
+
+Type 'Latex(r"$$x =\frac{-b \pm \sqrt{\frac{1}{2} a b^2}}{2a}$$")'
+Enter
+Wait /○/
+Sleep 2
+
+Type 'HTML("<b>Bold</b> <i>Italic</i> <u>Underline</u>")'
+Enter
+Wait /○/
+Sleep 2
+
+Type 'Markdown("## Titles\n\n**Bold**, *Italic*, ~~strikethrough~~, `code`\n\n---")'
+Ctrl+E
+Wait /○/
+Sleep 2
+
+Type SVG('<svg width="200" height="200"><polygon points="105,5 45,185 195,65 5,65 165,185" fill="yellow" /></svg>')
+Ctrl+E
+Wait /○/
+Sleep 2
+
+Alt+:
+Type 'convert-to-notebook'
+Sleep 0.5
+Enter
+Sleep 1
+Hide
+Sleep 2
+Tab
+Tab
+Show
+Sleep 1
+Hide
+Hide
+End
+Hide
+Type m
+Enter
+Type@0 "---"
+Enter
+Enter
+Type@0 "If you like `euporie`, please [star it on GitHub](https://github.com/joouha/euporie/)"
+Hide
+Enter
+Enter
+Hide
+Type@0 "⭐ https://github.com/joouha/euporie/"
+Hide
+Sleep 0.1
+Ctrl+E
+Hide
+Home
+Up
+Show
+Sleep 2
+Type ']]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]'
+End
+
+Sleep 4
