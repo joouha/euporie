@@ -4,7 +4,7 @@ euporie-console
 
 **An interactive Jupyter console for the terminal, with rich output.**
 
-.. image:: https://raw.githubusercontent.com/joouha/euporie/main/docs/_static/images/console.hero.screenshot.webp
+.. image:: https://github.com/joouha/euporie/blob/main/docs/_static/images/console.hero.screenshot.webp?raw=true
    :alt: euporie-console screenshot
    :align: center
 
