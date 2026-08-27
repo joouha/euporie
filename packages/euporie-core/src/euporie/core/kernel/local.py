@@ -1064,6 +1064,77 @@ class MatplotlibHook(BaseHook):
                     plt.close(fig)
 
 
+class TerminalModeGuard(BaseHook):
+    """Preserve the controlling terminal's mode across code execution.
+
+    User code runs in the same process as the running prompt_toolkit/apptk
+    application, which puts the controlling terminal into *raw* mode. On some
+    platforms (notably macOS, where ``readline`` is backed by ``libedit``)
+    merely *importing* certain modules calls ``termios.tcsetattr`` and resets
+    the terminal out of raw mode. When that happens the application stops
+    receiving key presses correctly.
+
+    This hook snapshots the terminal attributes on entry and restores them on
+    exit, undoing any change made by an import (or the executed code itself).
+    """
+
+    def __init__(self, kernel: LocalPythonKernel) -> None:
+        """Initialize the terminal mode guard.
+
+        Args:
+            kernel: The kernel instance to hook
+        """
+        super().__init__(kernel)
+        self._fileno: int | None = None
+        self._attrs_before: list[Any] | None = None
+
+    def __enter__(self) -> TerminalModeGuard:
+        """Snapshot the current terminal attributes."""
+        self._fileno = None
+        self._attrs_before = None
+        try:
+            import termios
+        except ImportError:
+            # Not a POSIX terminal (e.g. Windows) - nothing to preserve.
+            return self
+
+        # Find a real terminal file descriptor to protect.
+        for stream in (sys.__stdin__, sys.__stdout__, sys.__stderr__):
+            try:
+                if stream is not None and stream.isatty():
+                    self._fileno = stream.fileno()
+                    break
+            except (OSError, ValueError):
+                continue
+
+        if self._fileno is not None:
+            try:
+                self._attrs_before = termios.tcgetattr(self._fileno)
+            except termios.error:
+                self._attrs_before = None
+        return self
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        """Restore the terminal attributes if they were changed."""
+        if self._fileno is None or self._attrs_before is None:
+            return
+        try:
+            import termios
+        except ImportError:
+            return
+        try:
+            attrs_after = termios.tcgetattr(self._fileno)
+        except termios.error:
+            attrs_after = None
+        # Only restore if the mode actually changed, to avoid unnecessary
+        # terminal writes.
+        if attrs_after != self._attrs_before:
+            try:
+                termios.tcsetattr(self._fileno, termios.TCSANOW, self._attrs_before)
+            except termios.error:
+                pass
+
+
 class HookManager:
     """Context manager for hooking stdout/stderr/displayhook.
 
@@ -1089,6 +1160,7 @@ class HookManager:
             InputBuiltin(kernel, is_password=False),
             InputBuiltin(kernel, is_password=True),
             MatplotlibHook(kernel),
+            TerminalModeGuard(kernel),
         ]
 
     def __enter__(self) -> HookManager:
