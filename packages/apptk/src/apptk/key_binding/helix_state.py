@@ -142,6 +142,16 @@ class HelixState(ViState):
         """Set explicit select mode."""
         self._select_mode = value
 
+    @property
+    def append_mode(self) -> bool:
+        """Check if in append mode"""
+        return self._append_mode
+
+    @append_mode.setter
+    def append_mode(self, value: bool) -> None:
+        """Set append mode."""
+        self._append_mode = value
+
     def reset(self) -> None:
         """Reset state, go back to INSERT mode."""
         super().reset()
@@ -150,6 +160,7 @@ class HelixState(ViState):
         self._mode = HelixMode.NORMAL
         self._waiting_for_char = None
         self._select_mode = False
+        self._append_mode = False
 
     def exit_submode(self) -> None:
         """Exit current sub-mode and return to normal."""
