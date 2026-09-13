@@ -45,6 +45,7 @@ class HelixState(ViState):
         self._mode: HelixMode = HelixMode.NORMAL
         self._waiting_for_char: str | None = None
         self._select_mode: bool = False
+        self._append_mode: bool = False
 
     @property
     def mode(self) -> HelixMode:

@@ -29,13 +29,14 @@ from apptk.filters import (
     has_arg,
     has_selection,
     is_read_only,
+    cursor_in_leading_ws,
 )
 from apptk.filters.app import (
     in_paste_mode,
     is_multiline,
     is_searching,
 )
-from apptk.filters.buffer import is_returnable
+from apptk.filters.buffer import is_returnable, cursor_in_leading_ws
 from apptk.key_binding import ConditionalKeyBindings, KeyBindings
 from apptk.key_binding.helix_state import CharacterFind, InputMode
 from apptk.selection import SelectionState, SelectionType
@@ -149,12 +150,11 @@ def _enter_helix_normal_mode() -> None:
     app = get_app()
     buffer = app.current_buffer
     helix_state = app.helix_state
-
-    if helix_state.input_mode in (InputMode.INSERT, InputMode.REPLACE):
+    if helix_state.append_mode:
         buffer.cursor_position += buffer.document.get_cursor_left_position()
-
     helix_state.input_mode = InputMode.NAVIGATION
     helix_state.select_mode = False
+    helix_state.append_mode = False
     _exit_helix_submodes()
 
     if buffer.selection_state:
@@ -198,6 +198,7 @@ def helix_insert_mode_cmd(event: KeyPressEvent) -> None:
 )
 def helix_append_mode(event: KeyPressEvent) -> None:
     """Enter insert mode after selection."""
+    event.app.helix_state.append_mode = True
     buff = event.current_buffer
     if buff.selection_state:
         buff.exit_selection()
@@ -1972,6 +1973,23 @@ def helix_kill_to_line_end(event: KeyPressEvent) -> None:
         buff.delete(count=pos)
 
 
+@add_cmd(
+    keys=["tab"],
+    filter=(
+        helix_insert_mode
+        & buffer_has_focus
+        & ~is_read_only
+        & ~has_selection
+        & cursor_in_leading_ws
+    ),
+    hidden=True,
+    name="helix-insert-indent",
+)
+def helix_insert_indent(event: KeyPressEvent) -> None:
+    """Indent the current line in insert mode."""
+    helix_indent(event)
+
+
 # Arrow keys in insert mode
 
 
@@ -2221,6 +2239,7 @@ def load_helix_bindings() -> KeyBindingsBase:
         "helix-delete-word-forward",
         "helix-kill-to-line-start",
         "helix-kill-to-line-end",
+        "helix-insert-indent",
         "helix-insert-left",
         "helix-insert-right",
         "helix-insert-up",
