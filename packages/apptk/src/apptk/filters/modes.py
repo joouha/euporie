@@ -49,10 +49,19 @@ def helix_insert_mode() -> bool:
 
 @Condition
 def helix_navigation_mode() -> bool:
-    """Determine if the editor is in helix navigation mode."""
+    """Determine if the editor is in helix navigation mode.
+
+    Mirrors the behavior of ``vi_navigation_mode``: returns False when the
+    buffer has an active selection (select/extend mode), so that escape
+    triggers the normal-mode handler rather than exiting the cell.
+    """
     from apptk.application.current import get_app
 
     app = get_app()
+
+    if app.current_buffer.selection_state:
+        return False
+
     return app.helix_state.input_mode == HelixInputMode.NAVIGATION
 
 
