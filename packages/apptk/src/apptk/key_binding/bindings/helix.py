@@ -35,7 +35,7 @@ from apptk.filters.app import (
     is_multiline,
     is_searching,
 )
-from apptk.filters.buffer import is_returnable
+from apptk.filters.buffer import cursor_in_leading_ws, is_returnable
 from apptk.key_binding import ConditionalKeyBindings, KeyBindings
 from apptk.key_binding.helix_state import CharacterFind, InputMode
 from apptk.selection import SelectionState, SelectionType
@@ -1972,6 +1972,31 @@ def helix_kill_to_line_end(event: KeyPressEvent) -> None:
         buff.delete(count=pos)
 
 
+@add_cmd(
+    keys=["c-i"],
+    filter=helix_insert_mode & cursor_in_leading_ws,
+    hidden=True,
+    name="helix-insert-indent",
+)
+def helix_insert_indent(event: KeyPressEvent) -> None:
+    """Indent lines."""
+    buffer = event.current_buffer
+    current_row = buffer.document.cursor_position_row
+    indent(buffer, current_row, current_row + event.arg)
+
+
+@add_cmd(
+    keys=["s-tab"],
+    filter=helix_insert_mode & cursor_in_leading_ws,
+    hidden=True,
+    name="helix-insert-unindent",
+)
+def helix_insert_unindent(event: KeyPressEvent) -> None:
+    """Unindent lines."""
+    current_row = event.current_buffer.document.cursor_position_row
+    unindent(event.current_buffer, current_row, current_row + event.arg)
+
+
 # Arrow keys in insert mode
 
 
@@ -2221,6 +2246,8 @@ def load_helix_bindings() -> KeyBindingsBase:
         "helix-delete-word-forward",
         "helix-kill-to-line-start",
         "helix-kill-to-line-end",
+        "helix-insert-indent",
+        "helix-insert-unindent",
         "helix-insert-left",
         "helix-insert-right",
         "helix-insert-up",
