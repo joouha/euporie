@@ -128,3 +128,14 @@ def test_inline_block_wrapping() -> None:
     ft = to_formatted_text(RichHTML(data, width=4))
     result = [x.strip() for x in to_plain_text(ft).splitlines()]
     assert result == ["A B", "X", "Y C", "D"]
+
+
+def test_huge_min_width_no_overflow() -> None:
+    """An absurd CSS ``min-width`` does not overflow when rendering."""
+    data = '<div style="min-width:99999999999999999999999999px;">hi</div>'
+    ft = to_formatted_text(RichHTML(data, width=10))
+    result = to_plain_text(ft)
+    # Rendering must not error or produce lines wider than the available space
+    assert all(len(line) <= 10 for line in result.splitlines())
+    assert result.count("h") == 1
+    assert result.count("i") == 1

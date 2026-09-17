@@ -835,6 +835,24 @@ def css_dimension(
             return number
 
 
+def clamp(value: float | int | None, available: int | None) -> int | None:
+    """Round a CSS dimension, clamped to the space available for rendering.
+
+    Args:
+        value: The dimension to clamp
+        available: The available space, or :py:const:`None` if unbounded
+
+    Returns:
+        The rounded and clamped dimension
+    """
+    if value is None:
+        return None
+    result = round(value)
+    if available is not None:
+        result = min(result, available)
+    return result
+
+
 def parse_css_content(content: str) -> dict[str, str]:
     """Convert CSS declarations into the internal style representation."""
     theme: dict[str, str] = {}
@@ -1488,11 +1506,10 @@ class Theme(Mapping):
     def min_width(self) -> int | None:
         """The minimum permitted width."""
         if value := self.get("min_width"):
-            theme_width = css_dimension(
-                value, vertical=False, available=self.available_width
+            return clamp(
+                css_dimension(value, vertical=False, available=self.available_width),
+                self.available_width,
             )
-            if theme_width is not None:
-                return round(theme_width)
         return None
 
     @property
@@ -1511,7 +1528,7 @@ class Theme(Mapping):
                     value, vertical=False, available=self.available_width
                 )
             if theme_width is not None:
-                return min(round(theme_width), self.available_width)
+                return clamp(theme_width, self.available_width)
 
         elif (element := self.element).name == "input":
             attrs = element.attrs
@@ -1553,11 +1570,10 @@ class Theme(Mapping):
     def max_width(self) -> int | None:
         """The maximum permitted width."""
         if value := self.get("max_width"):
-            theme_width = css_dimension(
-                value, vertical=False, available=self.available_width
+            return clamp(
+                css_dimension(value, vertical=False, available=self.available_width),
+                self.available_width,
             )
-            if theme_width is not None:
-                return round(theme_width)
         return None
 
     @cached_property
@@ -1627,11 +1643,10 @@ class Theme(Mapping):
     def min_height(self) -> int | None:
         """The minimum permitted height."""
         if value := self.get("min_height"):
-            theme_height = css_dimension(
-                value, vertical=True, available=self.available_height
+            return clamp(
+                css_dimension(value, vertical=True, available=self.available_height),
+                self.available_height,
             )
-            if theme_height is not None:
-                return round(theme_height)
         return None
 
     @property
@@ -1645,7 +1660,7 @@ class Theme(Mapping):
                 value, vertical=True, available=self.available_height
             )
             if theme_height is not None:
-                return round(theme_height)
+                return clamp(theme_height, self.available_height)
 
         # Only absolute positioning calculates height from top/bottom
         if self.theme["position"] == "absolute":
@@ -1671,11 +1686,10 @@ class Theme(Mapping):
     def max_height(self) -> int | None:
         """The maximum permitted height."""
         if value := self.get("max_height"):
-            theme_height = css_dimension(
-                value, vertical=True, available=self.available_height
+            return clamp(
+                css_dimension(value, vertical=True, available=self.available_height),
+                self.available_height,
             )
-            if theme_height is not None:
-                return round(theme_height)
         return None
 
     @property
