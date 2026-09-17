@@ -74,6 +74,14 @@ async def test_pixel_size_async() -> None:
     assert size == (10, 20)
 
 
+async def test_cell_size_async_bytes_ansi() -> None:
+    """Bytes ANSI data is decoded before measuring its cell size."""
+    datum = Datum(b"\x1b[31mHello", format="ansi")
+    cols, aspect = await datum.cell_size_async()
+    assert cols == len("Hello")
+    assert aspect == 1 / len("Hello")
+
+
 async def test_cell_size_async() -> None:
     """Tests the asynchronous retrieval of a Datum object's cell size."""
     datum = Datum(Image.new("RGB", (256, 128), color="red"), format="pil")

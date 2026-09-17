@@ -436,7 +436,7 @@ class Datum(Generic[T], metaclass=_MetaDatum):
                 from apptk.formatted_text.ansi import ANSI
 
                 format = "ft"
-                data = ANSI(data)
+                data = ANSI(data.decode() if isinstance(data, bytes) else data)
 
             if format == "ft":
                 from apptk.formatted_text.base import to_formatted_text
