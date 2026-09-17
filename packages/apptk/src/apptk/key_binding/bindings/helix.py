@@ -43,6 +43,7 @@ from apptk.selection import SelectionState, SelectionType
 if TYPE_CHECKING:
     from apptk.key_binding.key_bindings import KeyBindingsBase
     from apptk.key_binding.key_processor import KeyPressEvent
+    from prompt_toolkit.buffer import Buffer
 
 __all__ = [
     "load_helix_bindings",
@@ -144,6 +145,18 @@ def _exit_helix_submodes() -> None:
     get_app().helix_state.exit_submode()
 
 
+def _set_insert_state(buff: Buffer, insert_point: int, exit_pos: int) -> None:
+    """Remember the insertion point and the position to return to on ESC.
+
+    ``insert_point`` is where typed text is inserted; ``exit_pos`` is where the
+    cursor should land when leaving insert mode without having typed anything.
+    Without this, exiting insert mode always steps one character left, which
+    makes repeated enter/exit cycles drift across the buffer.
+    """
+    buff.helix_insert_point = insert_point
+    buff.helix_exit_pos = exit_pos
+
+
 def _enter_helix_normal_mode() -> None:
     """Enter Helix normal mode."""
     app = get_app()
@@ -151,14 +164,24 @@ def _enter_helix_normal_mode() -> None:
     helix_state = app.helix_state
 
     if helix_state.input_mode in (InputMode.INSERT, InputMode.REPLACE):
-        buffer.cursor_position += buffer.document.get_cursor_left_position()
+        insert_point = getattr(buffer, "helix_insert_point", None)
+        exit_pos = getattr(buffer, "helix_exit_pos", None)
+        if insert_point is not None and exit_pos is not None:
+            if buffer.cursor_position <= insert_point:
+                # Nothing was typed (or the cursor moved back): return to the
+                # remembered position so that repeated enter/exit cycles do not
+                # drift the cursor backwards.
+                buffer.cursor_position = exit_pos
+            # If text was typed, the cursor already sits one cell past the last
+            # typed character (matching Helix), so leave it where it is.
+        else:
+            buffer.cursor_position += buffer.document.get_cursor_left_position()
+        buffer.helix_insert_point = None
+        buffer.helix_exit_pos = None
 
     helix_state.input_mode = InputMode.NAVIGATION
     helix_state.select_mode = False
     _exit_helix_submodes()
-
-    if buffer.selection_state:
-        buffer.exit_selection()
 
 
 # Normal mode commands
@@ -166,12 +189,17 @@ def _enter_helix_normal_mode() -> None:
 
 @add_cmd(
     keys=["escape"],
-    filter=helix_mode & buffer_has_focus,
+    filter=helix_mode & buffer_has_focus & ~(helix_normal_mode | helix_select_mode),
     hidden=True,
     name="helix-normal-mode",
 )
 def helix_escape(event: KeyPressEvent) -> None:
-    """Return to normal mode and collapse selection."""
+    """Return from insert/replace mode to normal mode.
+
+    Not active in navigation mode (with or without a selection), so that an
+    application-level escape binding (such as exiting cell edit mode) takes
+    precedence there.
+    """
     _enter_helix_normal_mode()
 
 
@@ -184,6 +212,7 @@ def helix_escape(event: KeyPressEvent) -> None:
 def helix_insert_mode_cmd(event: KeyPressEvent) -> None:
     """Enter insert mode before selection."""
     buff = event.current_buffer
+    _set_insert_state(buff, buff.cursor_position, buff.cursor_position)
     if buff.selection_state:
         buff.exit_selection()
     event.app.helix_state.input_mode = InputMode.INSERT
@@ -197,11 +226,27 @@ def helix_insert_mode_cmd(event: KeyPressEvent) -> None:
     name="helix-append-mode",
 )
 def helix_append_mode(event: KeyPressEvent) -> None:
-    """Enter insert mode after selection."""
+    """Enter insert mode after selection.
+
+    The selection is kept (mirroring Helix ``append_mode``) and the cursor is
+    placed at the exclusive end of the selection, so typed text is inserted
+    immediately after the selected text.  Without a selection the cursor moves
+    one grapheme forward (append after the current character).
+    """
     buff = event.current_buffer
     if buff.selection_state:
-        buff.exit_selection()
-    buff.cursor_position += buff.document.get_cursor_right_position()
+        from_, to = buff.document.selection_range()
+        _set_insert_state(buff, insert_point=to, exit_pos=buff.cursor_position)
+        buff.selection_state.original_cursor_position = from_
+        buff.cursor_position = to
+    else:
+        _set_insert_state(
+            buff,
+            insert_point=buff.cursor_position
+            + buff.document.get_cursor_right_position(),
+            exit_pos=buff.cursor_position,
+        )
+        buff.cursor_position += buff.document.get_cursor_right_position()
     event.app.helix_state.input_mode = InputMode.INSERT
     _exit_helix_submodes()
 
@@ -215,9 +260,13 @@ def helix_append_mode(event: KeyPressEvent) -> None:
 def helix_insert_line_start(event: KeyPressEvent) -> None:
     """Insert at start of line."""
     buff = event.current_buffer
+    exit_pos = buff.cursor_position
+    if buff.selection_state:
+        buff.exit_selection()
     buff.cursor_position += buff.document.get_start_of_line_position(
         after_whitespace=True
     )
+    _set_insert_state(buff, buff.cursor_position, exit_pos)
     event.app.helix_state.input_mode = InputMode.INSERT
 
 
@@ -230,7 +279,10 @@ def helix_insert_line_start(event: KeyPressEvent) -> None:
 def helix_insert_line_end(event: KeyPressEvent) -> None:
     """Insert at end of line."""
     buff = event.current_buffer
+    if buff.selection_state:
+        buff.exit_selection()
     buff.cursor_position += buff.document.get_end_of_line_position()
+    _set_insert_state(buff, buff.cursor_position, _helix_line_end_position(buff))
     event.app.helix_state.input_mode = InputMode.INSERT
 
 
@@ -242,7 +294,9 @@ def helix_insert_line_end(event: KeyPressEvent) -> None:
 )
 def helix_open_below(event: KeyPressEvent) -> None:
     """Open new line below and enter insert mode."""
-    event.current_buffer.insert_line_below(copy_margin=not in_paste_mode())
+    buff = event.current_buffer
+    buff.insert_line_below(copy_margin=not in_paste_mode())
+    _set_insert_state(buff, buff.cursor_position, buff.cursor_position)
     event.app.helix_state.input_mode = InputMode.INSERT
 
 
@@ -254,26 +308,185 @@ def helix_open_below(event: KeyPressEvent) -> None:
 )
 def helix_open_above(event: KeyPressEvent) -> None:
     """Open new line above and enter insert mode."""
-    event.current_buffer.insert_line_above(copy_margin=not in_paste_mode())
+    buff = event.current_buffer
+    buff.insert_line_above(copy_margin=not in_paste_mode())
+    _set_insert_state(buff, buff.cursor_position, buff.cursor_position)
     event.app.helix_state.input_mode = InputMode.INSERT
 
 
 # Helper to ensure selection state is correct for the current mode
 
 
-def _prepare_movement(event: KeyPressEvent) -> None:
-    """Prepare buffer for a movement command.
+def _helix_put_cursor(buff: Buffer, target: int, *, extend: bool = True) -> None:
+    """Apply Helix ``put_cursor`` 1-width semantics.
 
-    In explicit select mode (via ``v``), ensure a selection exists to extend.
-    In normal mode, discard any existing selection from a previous motion.
+    When *extend* is ``True``, the head is moved to *target* and the anchor
+    is adjusted following Helix's 1-width rule so the character originally
+    under the cursor stays inside the selection.  If no selection exists yet,
+    one is started at the current cursor position first.
+
+    When *extend* is ``False``, any selection is collapsed and the cursor is
+    moved to *target*.
+
+    Parameters
+    ----------
+    buff:
+        The buffer whose cursor and selection state will be mutated.
+    target:
+        The character index the user intends to reach.
+    extend:
+        Whether this movement should extend an existing selection.
     """
-    buff = event.current_buffer
-    if event.app.helix_state.select_mode:
-        if buff.selection_state is None:
-            buff.start_selection(selection_type=SelectionType.CHARACTERS)
-    else:
+    if not extend:
+        # Pure move: collapse to a point cursor (Helix ``Range::point``).
         if buff.selection_state is not None:
             buff.exit_selection()
+        buff.cursor_position = target
+        return
+
+    if buff.selection_state is None:
+        # Starting a fresh selection: anchor at the current cursor position.
+        buff.start_selection(selection_type=SelectionType.CHARACTERS)
+
+    # Apply put_cursor 1-width logic.
+    anchor = buff.selection_state.original_cursor_position
+    head = buff.cursor_position
+
+    # Adjust anchor so the original cursor char stays selected when the head
+    # crosses to the other side of the anchor.
+    if head >= anchor and target < anchor:
+        new_anchor = anchor + 1  # next_grapheme_boundary(anchor)
+    elif head < anchor and target >= anchor:
+        new_anchor = anchor - 1  # prev_grapheme_boundary(anchor)
+    else:
+        new_anchor = anchor
+
+    # Forward ranges place the head just past the target char.
+    if new_anchor <= target:
+        new_head = min(len(buff.text), target + 1)  # next_grapheme_boundary(target)
+    else:
+        new_head = target
+
+    buff.selection_state.original_cursor_position = new_anchor
+    buff.cursor_position = new_head
+
+
+def _helix_block_cursor_position(buff: Buffer) -> int:
+    """Return the position of the block cursor (Helix ``Range::cursor``).
+
+    For a forward selection the block cursor sits on the character before
+    the head (the rightmost selected character); for no selection or a
+    backward selection it sits at ``cursor_position`` itself.
+    """
+    sel = buff.selection_state
+    if sel is None:
+        return buff.cursor_position
+    if buff.cursor_position > sel.original_cursor_position:
+        return buff.cursor_position - 1
+    return buff.cursor_position
+
+
+def _helix_line_end_position(buff: Buffer) -> int:
+    """Return the absolute index of the last character of the current line.
+
+    Helix places the block cursor on the last character of a line (matching
+    ``goto_line_end``), rather than one-past-the-end which is only used for
+    insertion.  Empty lines keep the cursor on the line's newline character.
+    """
+    line_start = buff.cursor_position + buff.document.get_start_of_line_position()
+    line_end = buff.cursor_position + buff.document.get_end_of_line_position()
+    if line_end > line_start:
+        return line_end - 1
+    return line_start
+
+
+def _helix_line_selection_end(buff: Buffer, row: int) -> int:
+    """Index one past the last visible character of ``row``.
+
+    For a non-empty line this is the position of the trailing newline (one
+    before the start of the next line).  For an empty line that contains
+    only a newline, or for the last line of the document, it is the start
+    of the following line or the end of the document respectively, so that
+    ``[start, this)`` includes the line's newline character when present.
+    """
+    doc = buff.document
+    if row + 1 < doc.line_count:
+        # For non-empty lines head sits on the newline itself; for an empty
+        # line (just ``\\n``) the head must be past it so the range covers it.
+        if doc.lines[row]:
+            return doc.translate_row_col_to_index(row + 1, 0) - 1
+        return doc.translate_row_col_to_index(row + 1, 0)
+    return len(buff.text)
+
+
+def _helix_delete_selection(buff: Buffer) -> ClipboardData:
+    """Delete the current selection and return the deleted text.
+
+    Unlike :meth:`Buffer.cut_selection`, a line selection deletes the raw
+    ``[anchor, head)`` range, so the trailing newline of the last selected
+    line is removed too (Helix ``d`` on a ``x`` line selection deletes the
+    whole line).  The clipboard text still has the trailing newline stripped
+    for line selections, matching the paste handlers.
+    """
+    sel = buff.selection_state
+    if sel is None:
+        return ClipboardData("")
+    if sel.type == SelectionType.LINES:
+        from_ = min(sel.original_cursor_position, buff.cursor_position)
+        to = max(sel.original_cursor_position, buff.cursor_position)
+        if from_ == to:
+            return ClipboardData("")
+        # Include the trailing newline when present (Helix line selections
+        # delete the full line including its ending).
+        if to < len(buff.text) and buff.text[to] == "\n":
+            to += 1
+        text = buff.text[from_:to]
+        buff.transform_region(from_, to, lambda _ignored: "")
+        buff.cursor_position = from_
+        cut = text[:-1] if text.endswith("\n") else text
+        return ClipboardData(cut, SelectionType.LINES)
+    return buff.cut_selection()
+
+
+def _char_category(ch: str) -> str:
+    """Categorize a character following Helix's ``categorize_char``."""
+    if ch.isspace():
+        return "Whitespace"
+    if ch.isalnum() or ch == "_":
+        return "Word"
+    return "Punctuation"
+
+
+def _is_word_boundary(a: str, b: str, *, long: bool = False) -> bool:
+    """Return whether ``a`` and ``b`` form a word boundary."""
+    cat_a = _char_category(a)
+    cat_b = _char_category(b)
+    if long and {cat_a, cat_b} == {"Word", "Punctuation"}:
+        return False
+    return cat_a != cat_b
+
+
+def _helix_prev_word_anchor(buff: Buffer, *, long: bool = False) -> None:
+    """Set the selection anchor for a Helix ``b``/``B`` motion.
+
+    The anchor is placed on the character under the cursor so it stays in the
+    selection, unless the cursor already sits at a word start (in which case
+    the first character of the word is not included).
+    """
+    sel = buff.selection_state
+    if sel is None:
+        return
+    cur = buff.cursor_position
+    if cur == 0 or cur >= len(buff.text):
+        return
+    anchor = cur + 1
+    ch = buff.text[cur]
+    prev_ch = buff.text[cur - 1]
+    # Raise the anchor above the character under the cursor when it is not a
+    # word start (Helix only keeps the anchor at the cursor for boundaries).
+    if not ch.isspace() and _is_word_boundary(prev_ch, ch, long=long):
+        anchor = cur
+    sel.original_cursor_position = min(anchor, len(buff.text))
 
 
 # Movement commands
@@ -286,10 +499,10 @@ def _prepare_movement(event: KeyPressEvent) -> None:
     name="helix-move-left",
 )
 def helix_move_left(event: KeyPressEvent) -> None:
-    """Move left."""
-    _prepare_movement(event)
+    """Move left, or move the block cursor left when extending."""
     buff = event.current_buffer
-    buff.cursor_position = max(0, buff.cursor_position - event.arg)
+    target = max(0, _helix_block_cursor_position(buff) - event.arg)
+    _helix_put_cursor(buff, target, extend=event.app.helix_state.select_mode)
 
 
 @add_cmd(
@@ -299,10 +512,10 @@ def helix_move_left(event: KeyPressEvent) -> None:
     name="helix-move-right",
 )
 def helix_move_right(event: KeyPressEvent) -> None:
-    """Move right."""
-    _prepare_movement(event)
+    """Move right, or move the block cursor right when extending."""
     buff = event.current_buffer
-    buff.cursor_position = min(len(buff.text), buff.cursor_position + event.arg)
+    target = min(len(buff.text), _helix_block_cursor_position(buff) + event.arg)
+    _helix_put_cursor(buff, target, extend=event.app.helix_state.select_mode)
 
 
 @add_cmd(
@@ -313,8 +526,10 @@ def helix_move_right(event: KeyPressEvent) -> None:
 )
 def helix_move_down(event: KeyPressEvent) -> None:
     """Move down."""
-    _prepare_movement(event)
-    event.current_buffer.cursor_down(count=event.arg)
+    buff = event.current_buffer
+    for _ in range(event.arg):
+        target = buff.cursor_position + buff.document.get_cursor_down_position()
+        _helix_put_cursor(buff, target, extend=event.app.helix_state.select_mode)
 
 
 @add_cmd(
@@ -325,8 +540,10 @@ def helix_move_down(event: KeyPressEvent) -> None:
 )
 def helix_move_up(event: KeyPressEvent) -> None:
     """Move up."""
-    _prepare_movement(event)
-    event.current_buffer.cursor_up(count=event.arg)
+    buff = event.current_buffer
+    for _ in range(event.arg):
+        target = buff.cursor_position + buff.document.get_cursor_up_position()
+        _helix_put_cursor(buff, target, extend=event.app.helix_state.select_mode)
 
 
 @add_cmd(
@@ -338,18 +555,15 @@ def helix_move_up(event: KeyPressEvent) -> None:
 def helix_select_next_word_start(event: KeyPressEvent) -> None:
     """Select to next word start."""
     buff = event.current_buffer
-    if event.app.helix_state.select_mode:
-        # Extend existing selection
-        if buff.selection_state is None:
-            buff.start_selection(selection_type=SelectionType.CHARACTERS)
-    else:
-        # Start a fresh selection from current position
-        if buff.selection_state is not None:
-            buff.exit_selection()
+    if not event.app.helix_state.select_mode and buff.selection_state is not None:
+        buff.exit_selection()
+    if buff.selection_state is None:
         buff.start_selection(selection_type=SelectionType.CHARACTERS)
     pos = buff.document.find_next_word_beginning(count=event.arg)
     if pos:
         buff.cursor_position += pos
+    elif buff.cursor_position < len(buff.text):
+        buff.cursor_position = len(buff.text)
 
 
 @add_cmd(
@@ -361,16 +575,15 @@ def helix_select_next_word_start(event: KeyPressEvent) -> None:
 def helix_select_next_long_word_start(event: KeyPressEvent) -> None:
     """Select to next WORD start."""
     buff = event.current_buffer
-    if event.app.helix_state.select_mode:
-        if buff.selection_state is None:
-            buff.start_selection(selection_type=SelectionType.CHARACTERS)
-    else:
-        if buff.selection_state is not None:
-            buff.exit_selection()
+    if not event.app.helix_state.select_mode and buff.selection_state is not None:
+        buff.exit_selection()
+    if buff.selection_state is None:
         buff.start_selection(selection_type=SelectionType.CHARACTERS)
     pos = buff.document.find_next_word_beginning(count=event.arg, WORD=True)
     if pos:
         buff.cursor_position += pos
+    elif buff.cursor_position < len(buff.text):
+        buff.cursor_position = len(buff.text)
 
 
 @add_cmd(
@@ -382,16 +595,17 @@ def helix_select_next_long_word_start(event: KeyPressEvent) -> None:
 def helix_select_prev_word_start(event: KeyPressEvent) -> None:
     """Select to previous word start."""
     buff = event.current_buffer
-    if event.app.helix_state.select_mode:
-        if buff.selection_state is None:
-            buff.start_selection(selection_type=SelectionType.CHARACTERS)
-    else:
-        if buff.selection_state is not None:
-            buff.exit_selection()
+    if not event.app.helix_state.select_mode and buff.selection_state is not None:
+        buff.exit_selection()
+    if buff.selection_state is None:
         buff.start_selection(selection_type=SelectionType.CHARACTERS)
     pos = buff.document.find_start_of_previous_word(count=event.arg)
     if pos:
+        _helix_prev_word_anchor(buff)
         buff.cursor_position += pos
+    elif buff.cursor_position > 0:
+        _helix_prev_word_anchor(buff)
+        buff.cursor_position += buff.document.get_start_of_line_position()
 
 
 @add_cmd(
@@ -403,15 +617,13 @@ def helix_select_prev_word_start(event: KeyPressEvent) -> None:
 def helix_select_prev_long_word_start(event: KeyPressEvent) -> None:
     """Select to previous WORD start."""
     buff = event.current_buffer
-    if event.app.helix_state.select_mode:
-        if buff.selection_state is None:
-            buff.start_selection(selection_type=SelectionType.CHARACTERS)
-    else:
-        if buff.selection_state is not None:
-            buff.exit_selection()
+    if not event.app.helix_state.select_mode and buff.selection_state is not None:
+        buff.exit_selection()
+    if buff.selection_state is None:
         buff.start_selection(selection_type=SelectionType.CHARACTERS)
     pos = buff.document.find_start_of_previous_word(count=event.arg, WORD=True)
     if pos:
+        _helix_prev_word_anchor(buff, long=True)
         buff.cursor_position += pos
 
 
@@ -424,16 +636,11 @@ def helix_select_prev_long_word_start(event: KeyPressEvent) -> None:
 def helix_select_next_word_end(event: KeyPressEvent) -> None:
     """Select to next word end."""
     buff = event.current_buffer
-    if event.app.helix_state.select_mode:
-        if buff.selection_state is None:
-            buff.start_selection(selection_type=SelectionType.CHARACTERS)
-    else:
-        if buff.selection_state is not None:
-            buff.exit_selection()
-        buff.start_selection(selection_type=SelectionType.CHARACTERS)
+    if not event.app.helix_state.select_mode and buff.selection_state is not None:
+        buff.exit_selection()
     pos = buff.document.find_next_word_ending(count=event.arg)
     if pos:
-        buff.cursor_position += pos - 1
+        _helix_put_cursor(buff, buff.cursor_position + pos - 1, extend=True)
 
 
 @add_cmd(
@@ -445,16 +652,11 @@ def helix_select_next_word_end(event: KeyPressEvent) -> None:
 def helix_select_next_long_word_end(event: KeyPressEvent) -> None:
     """Select to next WORD end."""
     buff = event.current_buffer
-    if event.app.helix_state.select_mode:
-        if buff.selection_state is None:
-            buff.start_selection(selection_type=SelectionType.CHARACTERS)
-    else:
-        if buff.selection_state is not None:
-            buff.exit_selection()
-        buff.start_selection(selection_type=SelectionType.CHARACTERS)
+    if not event.app.helix_state.select_mode and buff.selection_state is not None:
+        buff.exit_selection()
     pos = buff.document.find_next_word_ending(count=event.arg, WORD=True)
     if pos:
-        buff.cursor_position += pos - 1
+        _helix_put_cursor(buff, buff.cursor_position + pos - 1, extend=True)
 
 
 # Line selection (Helix's x command)
@@ -474,16 +676,23 @@ def helix_extend_line_below(event: KeyPressEvent) -> None:
     if buff.selection_state is None or (
         buff.selection_state.type != SelectionType.LINES
     ):
-        # Start a fresh line selection at beginning of current line
+        # Start a fresh line selection at beginning of current line.
+        # The head is placed one past the trailing newline so that the block
+        # cursor renders beyond the last character (matching Helix ``x``).
+        row = doc.cursor_position_row
         start = buff.cursor_position + doc.get_start_of_line_position()
         buff.selection_state = SelectionState(start, SelectionType.LINES)
-        # Move to end of current line
-        buff.cursor_position += buff.document.get_end_of_line_position()
+        buff.cursor_position = _helix_line_selection_end(buff, row)
     else:
-        # Already have a line selection, extend to next line
-        for _ in range(event.arg):
-            buff.cursor_down()
-        buff.cursor_position += buff.document.get_end_of_line_position()
+        # Already have a line selection: extend down by the requested number
+        # of lines.  The cursor sits at the start of the line following the
+        # selected region.
+        head_row = doc.translate_index_to_position(buff.cursor_position)[0]
+        head_row += event.arg
+        if head_row >= doc.line_count:
+            buff.cursor_position = len(buff.text)
+        else:
+            buff.cursor_position = _helix_line_selection_end(buff, head_row)
 
 
 @add_cmd(
@@ -496,8 +705,17 @@ def helix_extend_to_line_bounds(event: KeyPressEvent) -> None:
     """Extend selection to line bounds."""
     buff = event.current_buffer
     if buff.selection_state:
+        sel = buff.selection_state
+        doc = buff.document
+        lo, hi = sorted((sel.original_cursor_position, buff.cursor_position))
+        lo_row = doc.translate_index_to_position(lo)[0]
+        hi_row, hi_col = doc.translate_index_to_position(hi)
+        if hi_col == 0 and hi > 0 and hi == doc.translate_row_col_to_index(hi_row, 0):
+            hi_row -= 1  # end sits at a line start → preceding line is last selected
+        sel.original_cursor_position = doc.translate_row_col_to_index(lo_row, 0)
+        buff.cursor_position = _helix_line_selection_end(buff, hi_row)
+        sel.type = SelectionType.LINES
         event.app.helix_state.select_mode = True
-        buff.selection_state.type = SelectionType.LINES
 
 
 # Find character commands
@@ -571,34 +789,29 @@ def helix_handle_find_char(event: KeyPressEvent) -> None:
     mode = app.helix_state.waiting_for_char
     app.helix_state.waiting_for_char = None
 
-    if app.helix_state.select_mode:
-        if buff.selection_state is None:
-            buff.start_selection(selection_type=SelectionType.CHARACTERS)
-    else:
-        if buff.selection_state is not None:
-            buff.exit_selection()
-        buff.start_selection(selection_type=SelectionType.CHARACTERS)
+    if not app.helix_state.select_mode and buff.selection_state is not None:
+        buff.exit_selection()
 
     if mode == "f":
         app.helix_state.last_character_find = CharacterFind(char, False)
         match = buff.document.find(char, in_current_line=False, count=event.arg)
         if match:
-            buff.cursor_position += match
+            _helix_put_cursor(buff, buff.cursor_position + match, extend=True)
     elif mode == "F":
         app.helix_state.last_character_find = CharacterFind(char, True)
         pos = buff.document.find_backwards(char, in_current_line=False, count=event.arg)
         if pos:
-            buff.cursor_position += pos
+            _helix_put_cursor(buff, buff.cursor_position + pos, extend=True)
     elif mode == "t":
         app.helix_state.last_character_find = CharacterFind(char, False)
         match = buff.document.find(char, in_current_line=False, count=event.arg)
         if match:
-            buff.cursor_position += match - 1
+            _helix_put_cursor(buff, buff.cursor_position + match - 1, extend=True)
     elif mode == "T":
         app.helix_state.last_character_find = CharacterFind(char, True)
         pos = buff.document.find_backwards(char, in_current_line=False, count=event.arg)
         if pos:
-            buff.cursor_position += pos + 1
+            _helix_put_cursor(buff, buff.cursor_position + pos + 1, extend=True)
 
 
 # Selection mode (v)
@@ -614,7 +827,12 @@ def helix_select_mode_cmd(event: KeyPressEvent) -> None:
     """Enter select/extend mode."""
     buff = event.current_buffer
     event.app.helix_state.select_mode = True
-    buff.start_selection(selection_type=SelectionType.CHARACTERS)
+    if buff.selection_state is None:
+        buff.start_selection(selection_type=SelectionType.CHARACTERS)
+        # Match Helix `select_mode`: ensure end-of-document selections are
+        # also 1-width, covering the final character.
+        if buff.cursor_position == len(buff.text) and buff.cursor_position > 0:
+            buff.selection_state.original_cursor_position = buff.cursor_position - 1
 
 
 @add_cmd(
@@ -639,8 +857,7 @@ def helix_exit_select_mode(event: KeyPressEvent) -> None:
 )
 def helix_delete_selection(event: KeyPressEvent) -> None:
     """Delete selection."""
-    buff = event.current_buffer
-    data = buff.cut_selection()
+    data = _helix_delete_selection(event.current_buffer)
     event.app.clipboard.set_data(data)
 
 
@@ -666,8 +883,9 @@ def helix_delete_char(event: KeyPressEvent) -> None:
 def helix_change_selection(event: KeyPressEvent) -> None:
     """Change selection (delete and enter insert mode)."""
     buff = event.current_buffer
-    data = buff.cut_selection()
+    data = _helix_delete_selection(buff)
     event.app.clipboard.set_data(data)
+    _set_insert_state(buff, buff.cursor_position, max(0, buff.cursor_position - 1))
     event.app.helix_state.input_mode = InputMode.INSERT
 
 
@@ -682,6 +900,7 @@ def helix_change_char(event: KeyPressEvent) -> None:
     buff = event.current_buffer
     text = buff.delete(count=event.arg)
     event.app.clipboard.set_text(text)
+    _set_insert_state(buff, buff.cursor_position, max(0, buff.cursor_position - 1))
     event.app.helix_state.input_mode = InputMode.INSERT
 
 
@@ -693,7 +912,7 @@ def helix_change_char(event: KeyPressEvent) -> None:
 )
 def helix_delete_selection_noyank(event: KeyPressEvent) -> None:
     """Delete selection without yanking."""
-    event.current_buffer.cut_selection()
+    _helix_delete_selection(event.current_buffer)
 
 
 @add_cmd(
@@ -715,7 +934,9 @@ def helix_delete_char_noyank(event: KeyPressEvent) -> None:
 )
 def helix_change_selection_noyank(event: KeyPressEvent) -> None:
     """Change selection without yanking."""
-    event.current_buffer.cut_selection()
+    buff = event.current_buffer
+    _helix_delete_selection(buff)
+    _set_insert_state(buff, buff.cursor_position, max(0, buff.cursor_position - 1))
     event.app.helix_state.input_mode = InputMode.INSERT
 
 
@@ -727,18 +948,20 @@ def helix_change_selection_noyank(event: KeyPressEvent) -> None:
 )
 def helix_change_char_noyank(event: KeyPressEvent) -> None:
     """Change character under cursor without yanking."""
-    event.current_buffer.delete(count=event.arg)
+    buff = event.current_buffer
+    buff.delete(count=event.arg)
+    _set_insert_state(buff, buff.cursor_position, max(0, buff.cursor_position - 1))
     event.app.helix_state.input_mode = InputMode.INSERT
 
 
 @add_cmd(
     keys=["r"],
-    filter=helix_normal_mode,
+    filter=helix_normal_mode | helix_select_mode,
     hidden=True,
     name="helix-replace-char",
 )
 def helix_replace_char(event: KeyPressEvent) -> None:
-    """Replace character."""
+    """Replace selection(s) with a single character."""
     event.app.helix_state.input_mode = InputMode.REPLACE_SINGLE
 
 
@@ -749,10 +972,29 @@ def helix_replace_char(event: KeyPressEvent) -> None:
     name="helix-replace-with-yanked",
 )
 def helix_replace_with_yanked(event: KeyPressEvent) -> None:
-    """Replace selection with yanked text."""
+    """Replace selection with yanked text.
+
+    Matching Helix ``replace_with_yanked``, the selection is kept covering
+    the replaced text and the buffer returns to normal mode.
+    """
     buff = event.current_buffer
-    buff.cut_selection()
-    buff.paste_clipboard_data(event.app.clipboard.get_data())
+    data = event.app.clipboard.get_data()
+    replacement = data.text
+    if replacement.endswith("\n"):
+        replacement = replacement[:-1]
+    sel = buff.selection_state
+    if sel is None:
+        return
+    ranges = list(buff.document.selection_ranges())
+    for start, end in reversed(ranges):
+        buff.transform_region(start, end, lambda _ignored, r=replacement: r)
+    # Restore a selection covering the replaced text.  (`transform_region`
+    # clears the selection state via the text-change notification.)
+    start = ranges[0][0]
+    new_end = start + len(replacement)
+    buff.cursor_position = new_end
+    buff.selection_state = SelectionState(start, sel.type)
+    event.app.helix_state.select_mode = False
 
 
 @add_cmd(
@@ -810,32 +1052,29 @@ def helix_to_uppercase(event: KeyPressEvent) -> None:
 
 @add_cmd(
     keys=["y"],
-    filter=(helix_normal_mode | helix_select_mode) & has_selection,
+    filter=helix_normal_mode | helix_select_mode,
     hidden=True,
     name="helix-yank",
 )
 def helix_yank(event: KeyPressEvent) -> None:
-    """Yank selection."""
-    buff = event.current_buffer
-    # Save selection state since copy_selection clears it
-    selection_state = buff.selection_state
-    data = buff.copy_selection()
-    event.app.clipboard.set_data(data)
-    # Restore selection state to maintain the selection
-    buff.selection_state = selection_state
+    """Yank the selection (Helix ``yank``).
 
-
-@add_cmd(
-    keys=["y"],
-    filter=helix_normal_mode & ~has_selection,
-    hidden=True,
-    name="helix-yank-line",
-)
-def helix_yank_line(event: KeyPressEvent) -> None:
-    """Yank current line."""
+    In select mode the current selection is yanked.  In normal mode the
+    cursor sits on a 1-width selection, so the character under the cursor
+    is yanked, following Helix's select-then-act model.
+    """
     buff = event.current_buffer
-    text = "\n".join(buff.document.lines_from_current[: event.arg])
-    event.app.clipboard.set_data(ClipboardData(text, SelectionType.LINES))
+    if buff.selection_state is not None:
+        # Save selection state since copy_selection clears it
+        selection_state = buff.selection_state
+        data = buff.copy_selection()
+        event.app.clipboard.set_data(data)
+        # Restore selection state to maintain the selection
+        buff.selection_state = selection_state
+    elif buff.cursor_position < len(buff.text):
+        # Normal mode: yank the character under the cursor.
+        text = buff.text[buff.cursor_position]
+        event.app.clipboard.set_data(ClipboardData(text))
 
 
 @add_cmd(
@@ -1055,16 +1294,14 @@ def helix_enter_goto_mode(event: KeyPressEvent) -> None:
 )
 def helix_goto_file_start(event: KeyPressEvent) -> None:
     """Go to start of file or line number."""
-    _prepare_movement(event)
     _exit_helix_submodes()
     buff = event.current_buffer
     if event.arg != 1 or has_arg():
         # Go to specific line
-        buff.cursor_position = buff.document.translate_row_col_to_index(
-            event.arg - 1, 0
-        )
+        target = buff.document.translate_row_col_to_index(event.arg - 1, 0)
     else:
-        buff.cursor_position = 0
+        target = 0
+    _helix_put_cursor(buff, target, extend=event.app.helix_state.select_mode)
 
 
 @add_cmd(
@@ -1075,10 +1312,12 @@ def helix_goto_file_start(event: KeyPressEvent) -> None:
 )
 def helix_goto_file_end(event: KeyPressEvent) -> None:
     """Go to end of file."""
-    _prepare_movement(event)
     _exit_helix_submodes()
-    buff = event.current_buffer
-    buff.cursor_position = len(buff.text)
+    _helix_put_cursor(
+        event.current_buffer,
+        len(event.current_buffer.text),
+        extend=event.app.helix_state.select_mode,
+    )
 
 
 @add_cmd(
@@ -1089,10 +1328,10 @@ def helix_goto_file_end(event: KeyPressEvent) -> None:
 )
 def helix_goto_line_start(event: KeyPressEvent) -> None:
     """Go to start of line."""
-    _prepare_movement(event)
     _exit_helix_submodes()
     buff = event.current_buffer
-    buff.cursor_position += buff.document.get_start_of_line_position()
+    target = buff.cursor_position + buff.document.get_start_of_line_position()
+    _helix_put_cursor(buff, target, extend=event.app.helix_state.select_mode)
 
 
 @add_cmd(
@@ -1103,10 +1342,10 @@ def helix_goto_line_start(event: KeyPressEvent) -> None:
 )
 def helix_goto_line_end(event: KeyPressEvent) -> None:
     """Go to end of line."""
-    _prepare_movement(event)
     _exit_helix_submodes()
     buff = event.current_buffer
-    buff.cursor_position += buff.document.get_end_of_line_position()
+    target = _helix_line_end_position(buff)
+    _helix_put_cursor(buff, target, extend=event.app.helix_state.select_mode)
 
 
 @add_cmd(
@@ -1117,12 +1356,12 @@ def helix_goto_line_end(event: KeyPressEvent) -> None:
 )
 def helix_goto_first_nonwhitespace(event: KeyPressEvent) -> None:
     """Go to first non-whitespace character."""
-    _prepare_movement(event)
     _exit_helix_submodes()
     buff = event.current_buffer
-    buff.cursor_position += buff.document.get_start_of_line_position(
+    target = buff.cursor_position + buff.document.get_start_of_line_position(
         after_whitespace=True
     )
+    _helix_put_cursor(buff, target, extend=event.app.helix_state.select_mode)
 
 
 @add_cmd(
@@ -1133,13 +1372,16 @@ def helix_goto_first_nonwhitespace(event: KeyPressEvent) -> None:
 )
 def helix_goto_window_top(event: KeyPressEvent) -> None:
     """Go to top of window."""
-    _prepare_movement(event)
     _exit_helix_submodes()
     w = event.app.layout.current_window
     buff = event.current_buffer
     if w and w.render_info:
-        buff.cursor_position = buff.document.translate_row_col_to_index(
-            w.render_info.first_visible_line(after_scroll_offset=True), 0
+        _helix_put_cursor(
+            buff,
+            buff.document.translate_row_col_to_index(
+                w.render_info.first_visible_line(after_scroll_offset=True), 0
+            ),
+            extend=event.app.helix_state.select_mode,
         )
 
 
@@ -1151,13 +1393,16 @@ def helix_goto_window_top(event: KeyPressEvent) -> None:
 )
 def helix_goto_window_center(event: KeyPressEvent) -> None:
     """Go to center of window."""
-    _prepare_movement(event)
     _exit_helix_submodes()
     w = event.app.layout.current_window
     buff = event.current_buffer
     if w and w.render_info:
-        buff.cursor_position = buff.document.translate_row_col_to_index(
-            w.render_info.center_visible_line(), 0
+        _helix_put_cursor(
+            buff,
+            buff.document.translate_row_col_to_index(
+                w.render_info.center_visible_line(), 0
+            ),
+            extend=event.app.helix_state.select_mode,
         )
 
 
@@ -1169,13 +1414,16 @@ def helix_goto_window_center(event: KeyPressEvent) -> None:
 )
 def helix_goto_window_bottom(event: KeyPressEvent) -> None:
     """Go to bottom of window."""
-    _prepare_movement(event)
     _exit_helix_submodes()
     w = event.app.layout.current_window
     buff = event.current_buffer
     if w and w.render_info:
-        buff.cursor_position = buff.document.translate_row_col_to_index(
-            w.render_info.last_visible_line(before_scroll_offset=True), 0
+        _helix_put_cursor(
+            buff,
+            buff.document.translate_row_col_to_index(
+                w.render_info.last_visible_line(before_scroll_offset=True), 0
+            ),
+            extend=event.app.helix_state.select_mode,
         )
 
 
@@ -1212,12 +1460,15 @@ def helix_enter_match_mode(event: KeyPressEvent) -> None:
 )
 def helix_goto_matching_bracket(event: KeyPressEvent) -> None:
     """Go to matching bracket."""
-    _prepare_movement(event)
     _exit_helix_submodes()
     buff = event.current_buffer
     match = buff.document.find_matching_bracket_position()
     if match:
-        buff.cursor_position += match
+        _helix_put_cursor(
+            buff,
+            buff.cursor_position + match,
+            extend=event.app.helix_state.select_mode,
+        )
 
 
 @add_cmd(
@@ -1328,17 +1579,20 @@ def helix_scroll_up(event: KeyPressEvent) -> None:
 )
 def helix_page_down(event: KeyPressEvent) -> None:
     """Page down."""
-    _prepare_movement(event)
     _exit_helix_submodes()
     w = event.app.layout.current_window
     buff = event.current_buffer
     if w and w.render_info:
-        buff.cursor_position = buff.document.translate_row_col_to_index(
-            min(
-                buff.document.cursor_position_row + w.render_info.window_height,
-                buff.document.line_count - 1,
+        _helix_put_cursor(
+            buff,
+            buff.document.translate_row_col_to_index(
+                min(
+                    buff.document.cursor_position_row + w.render_info.window_height,
+                    buff.document.line_count - 1,
+                ),
+                buff.document.cursor_position_col,
             ),
-            buff.document.cursor_position_col,
+            extend=event.app.helix_state.select_mode,
         )
 
 
@@ -1350,14 +1604,17 @@ def helix_page_down(event: KeyPressEvent) -> None:
 )
 def helix_page_up(event: KeyPressEvent) -> None:
     """Page up."""
-    _prepare_movement(event)
     _exit_helix_submodes()
     w = event.app.layout.current_window
     buff = event.current_buffer
     if w and w.render_info:
-        buff.cursor_position = buff.document.translate_row_col_to_index(
-            max(buff.document.cursor_position_row - w.render_info.window_height, 0),
-            buff.document.cursor_position_col,
+        _helix_put_cursor(
+            buff,
+            buff.document.translate_row_col_to_index(
+                max(buff.document.cursor_position_row - w.render_info.window_height, 0),
+                buff.document.cursor_position_col,
+            ),
+            extend=event.app.helix_state.select_mode,
         )
 
 
@@ -1369,15 +1626,18 @@ def helix_page_up(event: KeyPressEvent) -> None:
 )
 def helix_half_page_up(event: KeyPressEvent) -> None:
     """Half page up."""
-    _prepare_movement(event)
     _exit_helix_submodes()
     w = event.app.layout.current_window
     buff = event.current_buffer
     if w and w.render_info:
         half = w.render_info.window_height // 2
-        buff.cursor_position = buff.document.translate_row_col_to_index(
-            max(buff.document.cursor_position_row - half, 0),
-            buff.document.cursor_position_col,
+        _helix_put_cursor(
+            buff,
+            buff.document.translate_row_col_to_index(
+                max(buff.document.cursor_position_row - half, 0),
+                buff.document.cursor_position_col,
+            ),
+            extend=event.app.helix_state.select_mode,
         )
 
 
@@ -1389,18 +1649,21 @@ def helix_half_page_up(event: KeyPressEvent) -> None:
 )
 def helix_half_page_down(event: KeyPressEvent) -> None:
     """Half page down."""
-    _prepare_movement(event)
     _exit_helix_submodes()
     w = event.app.layout.current_window
     buff = event.current_buffer
     if w and w.render_info:
         half = w.render_info.window_height // 2
-        buff.cursor_position = buff.document.translate_row_col_to_index(
-            min(
-                buff.document.cursor_position_row + half,
-                buff.document.line_count - 1,
+        _helix_put_cursor(
+            buff,
+            buff.document.translate_row_col_to_index(
+                min(
+                    buff.document.cursor_position_row + half,
+                    buff.document.line_count - 1,
+                ),
+                buff.document.cursor_position_col,
             ),
-            buff.document.cursor_position_col,
+            extend=event.app.helix_state.select_mode,
         )
 
 
@@ -1549,9 +1812,9 @@ def helix_arg_0(event: KeyPressEvent) -> None:
 )
 def helix_home(event: KeyPressEvent) -> None:
     """Move to start of line."""
-    _prepare_movement(event)
     buff = event.current_buffer
-    buff.cursor_position += buff.document.get_start_of_line_position()
+    target = buff.cursor_position + buff.document.get_start_of_line_position()
+    _helix_put_cursor(buff, target, extend=event.app.helix_state.select_mode)
 
 
 @add_cmd(
@@ -1562,22 +1825,22 @@ def helix_home(event: KeyPressEvent) -> None:
 )
 def helix_end(event: KeyPressEvent) -> None:
     """Move to end of line."""
-    _prepare_movement(event)
     buff = event.current_buffer
-    buff.cursor_position += buff.document.get_end_of_line_position()
+    target = _helix_line_end_position(buff)
+    _helix_put_cursor(buff, target, extend=event.app.helix_state.select_mode)
 
 
 @add_cmd(
     keys=["G"],
-    filter=(helix_normal_mode | helix_select_mode) & has_arg,
+    filter=helix_normal_mode | helix_select_mode,
     hidden=True,
     name="helix-goto-line",
 )
 def helix_goto_line(event: KeyPressEvent) -> None:
-    """Go to line number."""
-    _prepare_movement(event)
+    """Go to line number (defaults to the first line, matching Helix ``G``)."""
     buff = event.current_buffer
-    buff.cursor_position = buff.document.translate_row_col_to_index(event.arg - 1, 0)
+    target = buff.document.translate_row_col_to_index(event.arg - 1, 0)
+    _helix_put_cursor(buff, target, extend=event.app.helix_state.select_mode)
 
 
 @add_cmd(
@@ -1588,10 +1851,10 @@ def helix_goto_line(event: KeyPressEvent) -> None:
 )
 def helix_goto_column(event: KeyPressEvent) -> None:
     """Go to column number."""
-    _prepare_movement(event)
     buff = event.current_buffer
     col = (event.arg or 1) - 1
-    buff.cursor_position += buff.document.get_column_cursor_position(col)
+    target = buff.cursor_position + buff.document.get_column_cursor_position(col)
+    _helix_put_cursor(buff, target, extend=event.app.helix_state.select_mode)
 
 
 # Unimpaired-style bindings
@@ -1647,24 +1910,19 @@ def helix_repeat_last_motion(event: KeyPressEvent) -> None:
     if find is None:
         return
 
-    if event.app.helix_state.select_mode:
-        if buff.selection_state is None:
-            buff.start_selection(selection_type=SelectionType.CHARACTERS)
-    else:
-        if buff.selection_state is not None:
-            buff.exit_selection()
-        buff.start_selection(selection_type=SelectionType.CHARACTERS)
+    if not event.app.helix_state.select_mode and buff.selection_state is not None:
+        buff.exit_selection()
 
     if find.backwards:
         pos = buff.document.find_backwards(
             find.character, in_current_line=False, count=event.arg
         )
         if pos:
-            buff.cursor_position += pos
+            _helix_put_cursor(buff, buff.cursor_position + pos, extend=True)
     else:
         pos = buff.document.find(find.character, in_current_line=False, count=event.arg)
         if pos:
-            buff.cursor_position += pos
+            _helix_put_cursor(buff, buff.cursor_position + pos, extend=True)
 
 
 @add_cmd(
@@ -1865,11 +2123,31 @@ def helix_replace_insert(event: KeyPressEvent) -> None:
     name="helix-replace-single-char",
 )
 def helix_replace_single_char(event: KeyPressEvent) -> None:
-    """Replace single character and return to normal mode."""
+    """Replace selected ranges (or single char) with the typed character.
+
+    Matching Helix ``replace``, an existing selection is kept covering the
+    replaced text and the buffer returns to normal mode.
+    """
     data = event.data
-    if data and len(data) == 1 and data.isprintable():
-        event.current_buffer.insert_text(data, overwrite=True)
+    if not data or len(data) != 1 or not data.isprintable():
         event.app.helix_state.input_mode = InputMode.NAVIGATION
+        return
+    buff = event.current_buffer
+    sel = buff.selection_state
+    if sel is not None:
+        # Replace each grapheme in the range with the typed character
+        # (Helix ``change_by_and_with_selection``).
+        for start, end in buff.document.selection_ranges():
+            region_text = buff.text[start:end]
+            new_text = data * len(region_text)
+            buff.transform_region(start, end, lambda _ignored, new=new_text: new)
+        # `transform_region` clears the selection state; restore it.
+        buff.selection_state = sel
+    else:
+        # No selection: overwrite character under cursor.
+        buff.insert_text(data, overwrite=True, move_cursor=False)
+    event.app.helix_state.input_mode = InputMode.NAVIGATION
+    event.app.helix_state.select_mode = False
 
 
 @add_cmd(
@@ -2192,7 +2470,6 @@ def load_helix_bindings() -> KeyBindingsBase:
         "helix-to-lowercase",
         "helix-to-uppercase",
         "helix-yank",
-        "helix-yank-line",
         "helix-paste-after",
         "helix-paste-before",
         "helix-undo",
