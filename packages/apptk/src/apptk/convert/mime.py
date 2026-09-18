@@ -49,11 +49,16 @@ def get_mime(path: Path | str) -> str | None:
     mime = None
 
     # Read from path of data URI
-    if path.exists() and isinstance(stat := path.stat(), UPathStatResult):
-        mime = stat.as_info().get("mimetype")
+    try:
+        if path.exists() and isinstance(stat := path.stat(), UPathStatResult):
+            mime = stat.as_info().get("mimetype")
+    except Exception:
+        log.debug("Unable to read metadata for '%s'", path)
 
-    # If we have a web-address, ensure we have a url
-    # Check http-headers and ensure we have a url
+    # If we have a web-address, ensure we have a url.
+    # Check http-headers and ensure we have a url. Network failures (for
+    # example being offline) should not crash mime-type detection, so any
+    # connection errors are caught and ignored here.
     if not mime and isinstance(path, HTTPPath) and path._url is not None:
         from fsspec.asyn import sync
 
@@ -62,20 +67,29 @@ def get_mime(path: Path | str) -> str | None:
         # Get the fsspec fs
         fs = path.fs
         # Ensure we have a session
-        session = sync(fs.loop, fs.set_session)
+        session = None
+        try:
+            session = sync(fs.loop, fs.set_session)
+        except Exception:
+            log.debug("Unable to open a session for '%s'", url)
         # Use HEAD requests if the server allows it, falling back to GETs
-        for method in (session.head, session.get):
-            r = sync(fs.loop, method, url, allow_redirects=True)
-            try:
-                r.raise_for_status()
-            except Exception:
-                log.debug("Request failed: %s", r)
-                continue
-            else:
-                content_type = r.headers.get("Content-Type")
-                if content_type is not None:
-                    mime = content_type.partition(";")[0]
-                    break
+        if session is not None:
+            for method in (session.head, session.get):
+                try:
+                    r = sync(fs.loop, method, url, allow_redirects=True)
+                except Exception:
+                    log.debug("Request to '%s' failed", url)
+                    continue
+                try:
+                    r.raise_for_status()
+                except Exception:
+                    log.debug("Request to '%s' was unsuccessful", url)
+                    continue
+                else:
+                    content_type = r.headers.get("Content-Type")
+                    if content_type is not None:
+                        mime = content_type.partition(";")[0]
+                        break
     # Try using magic
     if not mime:
         try:
@@ -86,8 +100,8 @@ def get_mime(path: Path | str) -> str | None:
             try:
                 with path.open(mode="rb") as f:
                     mime = magic.from_buffer(f.read(2048), mime=True)
-            except FileNotFoundError:
-                pass
+            except Exception:
+                log.debug("Unable to read '%s' to detect its mime-type", path)
 
     # Guess from file-extension
     if not mime and path.suffix:

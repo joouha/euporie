@@ -15,6 +15,7 @@ from apptk.layout.decor import FocusedStyle
 from apptk.layout.dimension import Dimension
 from apptk.layout.margins import ScrollbarMargin
 from upath import UPath
+from upath.implementations.http import HTTPPath
 
 from euporie.core.panes.base import Pane
 from euporie.core.widgets.forms import Button, Text
@@ -77,7 +78,13 @@ class WebPane(Pane):
             return False
         if isinstance(url, str):
             url = UPath(url, protocol="https" if ":" not in url else None)
-        if not new_tab and get_mime(url) in self.mime_types:
+        mime = get_mime(url)
+        if mime is None and isinstance(url, HTTPPath):
+            # If the mime-type of a web-address cannot be determined (for
+            # example when offline), assume it is a web-page and load it
+            # in this web-view pane
+            mime = "text/html"
+        if not new_tab and mime in self.mime_types:
             self.webview.load_url(url, **kwargs)
         else:
             self.webview.loading = False

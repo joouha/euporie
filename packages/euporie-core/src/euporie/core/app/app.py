@@ -792,8 +792,17 @@ class BaseApp(ConfigurableApp, Application, ABC):
     def get_file_tabs(self, path: Path) -> list[PaneRegistryEntry]:
         """Return the tab to use for a file path."""
         from apptk.convert.mime import get_mime
+        from upath.implementations.http import HTTPPath
 
-        path_mime = get_mime(path) or "text/plain"
+        path_mime = get_mime(path)
+        if not path_mime:
+            if isinstance(path, HTTPPath):
+                # If we cannot determine the mime-type of a web-address
+                # (for example when offline), assume it is a web-page so
+                # it opens in a web-view pane
+                path_mime = "text/html"
+            else:
+                path_mime = "text/plain"
         log.debug("File %s has mime type: %s", path, path_mime)
 
         # Use a set to automatically handle duplicates

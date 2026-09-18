@@ -81,6 +81,28 @@ def test_get_mime() -> None:
         assert get_mime(path) == "image/png"
 
 
+def test_get_mime_offline() -> None:
+    """Mime-type detection does not crash when the network is unavailable."""
+    url = "http://127.0.0.1/offline"
+
+    async def mock_fail(*args: Any, **kwargs: Any) -> None:
+        raise OSError("Name or service not known")
+
+    session = MagicMock(head=mock_fail, get=mock_fail)
+
+    with (
+        patch.object(
+            HTTPPath, "exists", side_effect=OSError("Name or service not known")
+        ),
+        patch.object(
+            HTTPPath, "open", side_effect=OSError("Name or service not known")
+        ),
+        patch.object(HTTPFileSystem, "set_session", return_value=session),
+    ):
+        path = UPath(url)
+        assert get_mime(path) is None
+
+
 def test_get_format() -> None:
     """Format are correctly detected."""
     assert get_format("tests/data/images/test.png") == "png"
