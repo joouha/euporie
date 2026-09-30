@@ -211,7 +211,7 @@ DIAGNOSTIC_STYLE = [
 def base_styles(cp: ColorPalette) -> dict[str, str]:
     """Generate base application styles."""
     return {
-        "default": f"fg:{cp.bg} bg:{cp.bg}",
+        "default": f"fg:{cp.fg} bg:{cp.bg}",
         "nbsp": "nounderline fg:default",
         "logo": "fg:#dd0000",
         "pattern": f"fg:{cp.bg.more(0.05)}",
