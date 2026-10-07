@@ -177,6 +177,7 @@ class WebViewControl(UIControl):
         self.resizing = False
         self.rendering = False
         self.stale = False
+        self._render_id = 0
         self.lines: list[StyleAndTextTuples] = []
         self.width = 0
         self.height = 0
@@ -327,14 +328,36 @@ class WebViewControl(UIControl):
             assert self.url is not None
             # Potentially redirect url
             self.url = parse_path(self.url)
-            self.lines = list(split_lines(await dom._render(self.width, self.height)))
-            # Reset all possible reasons for rendering
-            self.loading = self.resizing = self.rendering = self.stale = False
-            # Let the app know we're re-rerenderd and the output needs redrawing
-            self.rendered.fire()
+            try:
+                self.lines = list(
+                    split_lines(await dom._render(self.width, self.height))
+                )
+            except Exception:
+                # Ensure a render failure (for example a binary asset which
+                # cannot be decoded) doesn't leave the web-view stuck on the
+                # "Loading…" view
+                log.warning("Unable to render web page '%s'", self.url, exc_info=True)
+                self.lines = [
+                    [
+                        ("", " "),
+                        (
+                            "class:error",
+                            f"Unable to render this page: {self.url}",
+                        ),
+                    ]
+                ]
+            finally:
+                # Ignore this cleanup if a newer render has been started
+                if render_id == self._render_id:
+                    # Reset all possible reasons for rendering
+                    self.loading = self.resizing = self.rendering = self.stale = False
+                    # Let the app know we're re-rendered and the output needs redrawing
+                    self.rendered.fire()
 
         if not self.rendering or force:
             self.rendering = True
+            self._render_id += 1
+            render_id = self._render_id
 
             if self.render_task:
                 self.render_task.cancel()
@@ -416,12 +439,13 @@ class WebViewControl(UIControl):
             A :class:`.UIContent` instance.
         """
         # Trigger a re-render in the future if things have changed
-        if self.stale or self.loading:
-            self.render()
         if width != self.width:  # or height != self.height:
-            # self.resizing = True
+            # Update the dimensions first so the scheduled render uses the
+            # correct size, and re-render even if one is already in progress
             self.width = width
             self.height = height
+            self.render(force=True)
+        elif self.stale or self.loading:
             self.render()
 
         content = self._content_cache[
