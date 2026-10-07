@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from html import escape
 from typing import TYPE_CHECKING, cast
 
 from apptk.application.current import get_app
@@ -39,6 +40,103 @@ if TYPE_CHECKING:
 
 
 log = logging.getLogger(__name__)
+
+ERROR_TITLE_UNREACHABLE = "Site unreachable"
+ERROR_HEADING_UNREACHABLE = "This site cannot be reached"
+ERROR_TITLE_NOT_FOUND = "Page Not Found"
+ERROR_HEADING_NOT_FOUND = "This page could not be found"
+ERROR_TITLE_GENERIC = "Unable to Load Page"
+ERROR_HEADING_GENERIC = "Unable to load this page"
+
+
+def _load_error_details(exc: Exception) -> tuple[str, str, str]:
+    """Return a friendly ``(title, heading, message)`` for a load exception."""
+    # Walk the exception chain, so that errors wrapped by the filesystem layer
+    # (for example an aiohttp ``ClientConnectorError`` underlying fsspec's
+    # ``FileNotFoundError``) are still recognized
+    causes: list[BaseException] = []
+    cause: BaseException | None = exc
+    while cause:
+        causes.append(cause)
+        cause = cause.__cause__ or cause.__context__
+
+    messages = "\n".join(f"{type(c).__name__} {c}" for c in causes)
+    lower_message = messages.lower()
+
+    if (
+        "ClientConnectorDNSError" in messages
+        or "name or service" in lower_message
+        or "nodename nor servname" in lower_message
+    ):
+        return (
+            ERROR_TITLE_UNREACHABLE,
+            ERROR_HEADING_UNREACHABLE,
+            "You may be offline, or the web address may be incorrect. "
+            "Check your connection, then try again.",
+        )
+    if (
+        "ClientConnectorError" in messages
+        or "ClientOSError" in messages
+        or "ClientTimeoutError" in messages
+        or "connect call failed" in lower_message
+        or "cannot connect to host" in lower_message
+        or "refused" in lower_message
+        or "timed out" in lower_message
+    ):
+        return (
+            ERROR_TITLE_UNREACHABLE,
+            ERROR_HEADING_UNREACHABLE,
+            "The site refused the connection or took too long to respond.",
+        )
+    if (
+        "ClientResponseError" in messages
+        or isinstance(exc, FileNotFoundError)
+        or " 404 " in f" {messages} "
+    ):
+        return (
+            ERROR_TITLE_NOT_FOUND,
+            ERROR_HEADING_NOT_FOUND,
+            "The web address may be incorrect.",
+        )
+    return (
+        ERROR_TITLE_GENERIC,
+        ERROR_HEADING_GENERIC,
+        "An error occurred while loading the page.",
+    )
+
+
+def _error_page(url: Path, exc: Exception) -> str:
+    """Generate a user-friendly offline-style error page."""
+    title, heading, message = _load_error_details(exc)
+    # Prefer the innermost cause's message, which is usually the most useful one
+    detail = str(exc)
+    cause: BaseException | None = exc
+    while cause:
+        if (text := str(cause)) and text != detail:
+            detail = text
+        cause = cause.__cause__ or cause.__context__
+    detail = escape(detail)
+    if not (url_text := escape(str(url))):
+        url_text = detail
+    return "\n".join(
+        [
+            "<html>",
+            "  <head>",
+            f"    <title>{escape(title)}</title>",
+            "    <style>",
+            "      body {_pt_class:default; background-color: unset; color:unset}"
+            "      article{ margin: 5em auto 5em auto; max-width: 50em }",
+            "    </style>",
+            "  </head>",
+            "  <body><article>",
+            f"    <b>{escape(heading)}</b><hr>",
+            f"    <p>{escape(message)}</p>",
+            f'    <p class="url"><a href"{url_text}">{url_text}</a></p>',
+            f'    <p class="detail">{detail}</p>',
+            "  </article></body>",
+            "</html>",
+        ]
+    )
 
 
 @Condition
@@ -135,13 +233,23 @@ class WebViewControl(UIControl):
 
     def get_dom(self, url: Path) -> RichHTML:
         """Load a HTML page as renderable formatted text."""
-        markup = str(
-            Datum(
-                data=url.read_text(),
-                format=(format_ := get_format(url, default="html")),
-                path=url,
-            ).convert(to="html")
-        )
+        try:
+            markup = str(
+                Datum(
+                    data=url.read_text(),
+                    format=(format_ := get_format(url, default="html")),
+                    path=url,
+                ).convert(to="html")
+            )
+        except Exception as exc:
+            # Show a user-friendly error page (for example when offline)
+            # instead of crashing the web-view
+            log.warning("Unable to load web page '%s': %s", url, exc)
+            markup = _error_page(url, exc)
+            format_ = "html"
+            # Ensure a redraw is triggered so the error page is displayed,
+            # even if the scheduled render task is subsequently missed
+            self.invalidate()
 
         css = {}
         if format_ == "markdown":
@@ -189,6 +297,10 @@ class WebViewControl(UIControl):
             self.next_stack.clear()
         # Update url
         self.url = UPath(url)
+        # Drop any cached DOM for the URL, so a refresh re-fetches the page
+        # rather than showing a previously cached error page
+        if (self.url,) in self._dom_cache:
+            del self._dom_cache[self.url,]
         # Scroll to the top
         # self.window.vertical_scroll = 0  # TODO - save scroll in history
         self.cursor_position = Point(0, 0)
