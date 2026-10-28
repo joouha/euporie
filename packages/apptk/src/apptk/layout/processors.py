@@ -5,11 +5,14 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from apptk.formatted_text.utils import strip
+from apptk.formatted_text.utils import fragment_list_to_text, strip
 from apptk.layout.processors import (
     AppendAutoSuggestion,
     Processor,
     Transformation,
+)
+from apptk.layout.processors import (
+    TabsProcessor as PtkTabsProcessor,
 )
 from apptk.layout.utils import explode_text_fragments
 from apptk.utils import get_cwidth
@@ -22,6 +25,27 @@ if TYPE_CHECKING:
 
 
 log = logging.getLogger(__name__)
+
+
+class TabsProcessor(PtkTabsProcessor):
+    r""":py:class:`TabsProcessor` with a fast path for lines without tabs.
+
+    The upstream implementation always calls :py:func:`explode_text_fragments`
+    and builds position mappings even when the line has no tab character.
+    Height calculation for a large cell runs every per-line processor over
+    every line, several times per render, so this check is on the hot path.
+
+    The fast path uses :py:func:`fragment_list_to_text` on the raw fragments
+    (cheap: it just joins the text parts) and returns the fragments unchanged
+    when there is no ``\t`` in the line.  Behaviour is identical to the
+    upstream processor whenever a tab is present.
+    """
+
+    def apply_transformation(self, ti: TransformationInput) -> Transformation:
+        """Expand tabs, or return the fragments unchanged when none are present."""
+        if "\t" not in fragment_list_to_text(ti.fragments):
+            return Transformation(ti.fragments)
+        return super().apply_transformation(ti)
 
 
 class AppendLineAutoSuggestion(AppendAutoSuggestion):

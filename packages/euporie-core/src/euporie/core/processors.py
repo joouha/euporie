@@ -47,7 +47,14 @@ class DiagnosticProcessor(Processor):
         line = ti.lineno
         fragments = ti.fragments
         self_style = self.style
-        for item in self.report:
+        # Fast path: resolve the report once (``self.report`` re-invokes the
+        # callable on every access) and bail out when there are no items.  This
+        # processor runs for every line of every render pass, so avoiding the
+        # loop on empty reports materially reduces per-keystroke work.
+        report = self.report
+        if not report:
+            return Transformation(fragments)
+        for item in report:
             if item.lines.start < line < item.lines.stop - 1:
                 fragments = cast(
                     "StyleAndTextTuples",
