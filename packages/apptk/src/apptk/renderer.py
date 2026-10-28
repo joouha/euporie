@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from hashlib import md5
 from typing import TYPE_CHECKING
 
 from apptk.data_structures import Point, Size
@@ -130,18 +129,6 @@ def _output_screen_diff(
             write(char.char)
             last_style = char.style
 
-    def hash_screen_row(row: dict[int, Char], zwe_row: dict[int, str]) -> str:
-        """Generate a hash for a screen row to quickly detect changes."""
-        hasher = md5(usedforsecurity=False)
-        # Hash the character data
-        for idx in sorted(row.keys()):
-            cell = row[idx]
-            hasher.update(f"{idx}:{cell.char}:{cell.style}".encode())
-        # Hash the zero-width escapes
-        for idx in sorted(zwe_row.keys()):
-            hasher.update(f"{idx}:{zwe_row[idx]}".encode())
-        return hasher.hexdigest()
-
     def get_max_column_index(row: dict[int, Char], zwe_row: dict[int, str]) -> int:
         """Return max used column index, ignoring trailing unstyled whitespace."""
         max_idx = 0
@@ -190,12 +177,8 @@ def _output_screen_diff(
         zwe_row = screen.zero_width_escapes[y]
         previous_zwe_row = previous_screen.zero_width_escapes[y]
 
-        # Quick comparison using row hashes
-        new_hash = hash_screen_row(new_row, zwe_row)
-        prev_hash = hash_screen_row(previous_row, previous_zwe_row)
-
-        if new_hash == prev_hash:
-            # Rows are identical, skip to next row
+        # Skip to next row if there has been no change
+        if new_row == previous_row and zwe_row == previous_zwe_row:
             continue
 
         new_max_line_len = min(width - 1, get_max_column_index(new_row, zwe_row))
