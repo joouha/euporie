@@ -300,22 +300,53 @@ class HSplit(PtkHSplit):
             key_bindings=key_bindings,
             style=style,
         )
+        self._dimension_cache: SimpleCache[tuple[object, ...], Any] = SimpleCache(
+            maxsize=64
+        )
+        self._divide_cache: SimpleCache[tuple[object, ...], list[int] | None] = (
+            SimpleCache(maxsize=32)
+        )
+
+    def preferred_width(self, max_available_width: int) -> Dimension:
+        """Return the preferred width, cached for the current render."""
+        key = ("preferred_width", get_app().render_counter, max_available_width)
+        return self._dimension_cache.get(
+            key,
+            lambda: PtkHSplit.preferred_width(self, max_available_width),
+        )
+
+    def preferred_height(self, width: int, max_available_height: int) -> Dimension:
+        """Return the preferred height, cached for the current render."""
+        key = (
+            "preferred_height",
+            get_app().render_counter,
+            width,
+            max_available_height,
+        )
+        return self._dimension_cache.get(
+            key,
+            lambda: PtkHSplit.preferred_height(self, width, max_available_height),
+        )
 
     def _divide_heights(self, write_position: WritePosition) -> list[int] | None:
         """Calculate and cache heights for all rows."""
         width = write_position.width
         height = write_position.height
-        dimensions = [c.preferred_height(width, height) for c in self._all_children]
-        result = distribute_dimensions(
-            height,
-            tuple(
-                DimensionTuple(
-                    min=d.min, max=d.max, preferred=d.preferred, weight=d.weight
-                )
-                for d in dimensions
-            ),
-        )
-        return result
+
+        def get_heights() -> list[int] | None:
+            dimensions = [c.preferred_height(width, height) for c in self._all_children]
+            return distribute_dimensions(
+                height,
+                tuple(
+                    DimensionTuple(
+                        min=d.min, max=d.max, preferred=d.preferred, weight=d.weight
+                    )
+                    for d in dimensions
+                ),
+            )
+
+        key = ("divide_heights", get_app().render_counter, width, height)
+        return self._divide_cache.get(key, get_heights)
 
     def write_to_screen(
         self,
@@ -478,21 +509,52 @@ class VSplit(PtkVSplit):
             key_bindings=key_bindings,
             style=style,
         )
+        self._dimension_cache: SimpleCache[tuple[object, ...], Any] = SimpleCache(
+            maxsize=64
+        )
+        self._divide_cache: SimpleCache[tuple[object, ...], list[int] | None] = (
+            SimpleCache(maxsize=32)
+        )
+
+    def preferred_width(self, max_available_width: int) -> Dimension:
+        """Return the preferred width, cached for the current render."""
+        key = ("preferred_width", get_app().render_counter, max_available_width)
+        return self._dimension_cache.get(
+            key,
+            lambda: PtkVSplit.preferred_width(self, max_available_width),
+        )
+
+    def preferred_height(self, width: int, max_available_height: int) -> Dimension:
+        """Return the preferred height, cached for the current render."""
+        key = (
+            "preferred_height",
+            get_app().render_counter,
+            width,
+            max_available_height,
+        )
+        return self._dimension_cache.get(
+            key,
+            lambda: PtkVSplit.preferred_height(self, width, max_available_height),
+        )
 
     def _divide_widths(self, width: int) -> list[int] | None:
         """Calculate and cache widths for all columns."""
-        dimensions = [c.preferred_width(width) for c in self._all_children]
-        result = distribute_dimensions(
-            width,
-            tuple(
-                DimensionTuple(
-                    min=d.min, max=d.max, preferred=d.preferred, weight=d.weight
-                )
-                for d in dimensions
-            ),
-            expand=True,  # VSplit always expands to fill width
-        )
-        return result
+
+        def get_widths() -> list[int] | None:
+            dimensions = [c.preferred_width(width) for c in self._all_children]
+            return distribute_dimensions(
+                width,
+                tuple(
+                    DimensionTuple(
+                        min=d.min, max=d.max, preferred=d.preferred, weight=d.weight
+                    )
+                    for d in dimensions
+                ),
+                expand=True,  # VSplit always expands to fill width
+            )
+
+        key = ("divide_widths", get_app().render_counter, width)
+        return self._divide_cache.get(key, get_widths)
 
     def write_to_screen(
         self,
@@ -678,6 +740,30 @@ class Window(PtkWindow):
         self._graphic_control_cache: SimpleCache[
             tuple[str, str, str, type[GraphicControl]], GraphicControl
         ] = SimpleCache()
+        self._dimension_cache: SimpleCache[tuple[object, ...], Dimension] = SimpleCache(
+            maxsize=64
+        )
+
+    def preferred_width(self, max_available_width: int) -> Dimension:
+        """Return the preferred width, cached for the current render."""
+        key = ("preferred_width", get_app().render_counter, max_available_width)
+        return self._dimension_cache.get(
+            key,
+            lambda: PtkWindow.preferred_width(self, max_available_width),
+        )
+
+    def preferred_height(self, width: int, max_available_height: int) -> Dimension:
+        """Return the preferred height, cached for the current render."""
+        key = (
+            "preferred_height",
+            get_app().render_counter,
+            width,
+            max_available_height,
+        )
+        return self._dimension_cache.get(
+            key,
+            lambda: PtkWindow.preferred_height(self, width, max_available_height),
+        )
 
     def write_to_screen(
         self,
