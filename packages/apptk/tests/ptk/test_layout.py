@@ -94,6 +94,145 @@ def test_create_invalid_layout() -> None:
         Layout(HSplit([]))
 
 
+def test_layout_traversal_cached_per_render() -> None:
+    """Control/window discovery is cached for the duration of a render."""
+    c1 = BufferControl()
+    c2 = BufferControl()
+    win1 = Window(content=c1)
+    win2 = Window(content=c2)
+    split = HSplit([win1])
+    layout = Layout(container=split)
+
+    with create_pipe_input() as pipe_input:
+        app = Application(
+            layout=layout,
+            output=DummyOutput(),
+            input=pipe_input,
+        )
+        with set_app(app):
+            assert list(layout.find_all_windows()) == [win1]
+            assert list(layout.find_all_controls()) == [c1]
+
+            # Adding a container does not change the cached traversal until the
+            # next render.
+            split.children.append(win2)
+            assert list(layout.find_all_windows()) == [win1]
+            assert list(layout.find_all_controls()) == [c1]
+
+            app.render_counter += 1
+            assert list(layout.find_all_windows()) == [win1, win2]
+            assert list(layout.find_all_controls()) == [c1, c2]
+
+
+def test_layout_update_parents_relations() -> None:
+    """The parent map is rebuilt from a single layout traversal."""
+    c1 = BufferControl()
+    c2 = BufferControl()
+    win1 = Window(content=c1)
+    win2 = Window(content=c2)
+    inner = VSplit([win2])
+    split = HSplit([win1, inner])
+    layout = Layout(container=split)
+
+    with create_pipe_input() as pipe_input:
+        app = Application(
+            layout=layout,
+            output=DummyOutput(),
+            input=pipe_input,
+        )
+        with set_app(app):
+            layout.update_parents_relations()
+            assert layout._child_to_parent[win1] is split
+            assert layout._child_to_parent[inner] is split
+            assert layout._child_to_parent[win2] is inner
+            assert split not in layout._child_to_parent
+
+
+def test_layout_controls_generation() -> None:
+    """The controls generation only changes when the controls change."""
+    c1 = BufferControl()
+    win1 = Window(content=c1)
+    win2 = Window(content=BufferControl())
+    split = HSplit([win1])
+    layout = Layout(container=split)
+
+    with create_pipe_input() as pipe_input:
+        app = Application(
+            layout=layout,
+            output=DummyOutput(),
+            input=pipe_input,
+        )
+        with set_app(app):
+            layout.update_parents_relations()
+            generation = layout.controls_generation
+            assert generation > 0
+
+            # Rebuilding the same layout does not invalidate consumers.
+            layout.update_parents_relations()
+            assert layout.controls_generation == generation
+
+            # Adding a control does.
+            split.children.append(win2)
+            app.render_counter += 1
+            layout.update_parents_relations()
+            assert layout.controls_generation == generation + 1
+
+
+def test_invalidate_events_skipped_when_layout_unchanged() -> None:
+    """Invalidation events are only re-collected when the layout changes."""
+    c1 = BufferControl()
+    win1 = Window(content=c1)
+    split = HSplit([win1])
+    layout = Layout(container=split)
+
+    with create_pipe_input() as pipe_input:
+        app = Application(
+            layout=layout,
+            output=DummyOutput(),
+            input=pipe_input,
+        )
+        with set_app(app):
+            layout.update_parents_relations()
+            app._update_invalidate_events()
+            events = app._invalidate_events
+            assert events
+
+            # The layout did not change: the event list is kept as-is.
+            app._update_invalidate_events()
+            assert app._invalidate_events is events
+
+            # A new control invalidates the collected events.
+            split.children.append(Window(content=BufferControl()))
+            app.render_counter += 1
+            layout.update_parents_relations()
+            app._update_invalidate_events()
+            assert app._invalidate_events is not events
+
+
+def test_layout_focus_after_structure_change() -> None:
+    """Focusing a newly added window still works within the same render."""
+    c1 = BufferControl()
+    c2 = BufferControl()
+    win1 = Window(content=c1)
+    win2 = Window(content=c2)
+    split = HSplit([win1])
+    layout = Layout(container=split)
+
+    with create_pipe_input() as pipe_input:
+        app = Application(
+            layout=layout,
+            output=DummyOutput(),
+            input=pipe_input,
+        )
+        with set_app(app):
+            assert list(layout.find_all_windows()) == [win1]
+
+            split.children.append(win2)
+            layout.focus(win2)
+            assert layout.current_window is win2
+            assert layout.has_focus(c2)
+
+
 def test_preferred_dimensions_cached_per_render() -> None:
     """Preferred dimensions are reused within a render and refreshed after it."""
     control = CountingControl()

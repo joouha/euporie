@@ -499,8 +499,13 @@ class StatusBar:
                 # Add parent entries to end of right side
                 entries[1].extend(result[1])
 
-            # If current window has no parent, update child to parent map
-            if current not in layout._child_to_parent:
+            # If current container is not the layout root but has no parent,
+            # the child-to-parent map is out of date: rebuild it. (The root
+            # container never has a parent, so it must not trigger a rebuild.)
+            if (
+                current not in layout._child_to_parent
+                and current is not layout.container
+            ):
                 layout.update_parents_relations()
             current = layout._child_to_parent.get(current)
 

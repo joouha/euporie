@@ -57,6 +57,11 @@ log = logging.getLogger(__name__)
 class Application(PtkApplication, Generic[_AppResult]):
     """Overrides for application."""
 
+    #: The layout the invalidation events were last collected for.
+    _invalidate_events_layout: object | None = None
+    #: The layout's ``controls_generation`` when events were last collected.
+    _invalidate_events_generation: int | None = None
+
     def __init__(  # noqa: D417
         self,
         layout: Layout | None = None,
@@ -159,6 +164,27 @@ class Application(PtkApplication, Generic[_AppResult]):
         self._title = value
         if self.set_title():
             self.output.set_title(value)
+
+    def _update_invalidate_events(self) -> None:
+        """Attach ``invalidate`` handlers to all controls' events.
+
+        Collecting the events walks every control in the layout and
+        re-subscribes each of them.  The set of controls (and their events)
+        only changes when the layout tree changes, so this work is skipped when
+        the layout reports that its controls are unchanged since the last time
+        the events were collected.
+        """
+        layout = self.layout
+        generation = getattr(layout, "controls_generation", None)
+        if (
+            generation is not None
+            and layout is self._invalidate_events_layout
+            and generation == self._invalidate_events_generation
+        ):
+            return
+        super()._update_invalidate_events()
+        self._invalidate_events_layout = layout
+        self._invalidate_events_generation = generation
 
     def get_comment_prefix(self, language: str | None) -> str:
         """Return the comment token for a language."""

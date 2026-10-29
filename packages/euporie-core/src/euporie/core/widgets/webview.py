@@ -188,6 +188,10 @@ class WebViewControl(UIControl):
         self.render_task: asyncio.Future | None = None
         self.rendered = Event(self)
         self.on_cursor_position_changed = Event(self)
+        # Fired when the current DOM updates. A stable event is used so that
+        # the set returned by ``get_invalidate_events`` does not depend on
+        # whether a DOM has been loaded yet.
+        self.on_dom_update = Event(self)
 
         self.prev_stack: list[Path] = []
         self.next_stack: list[Path] = []
@@ -266,6 +270,7 @@ class WebViewControl(UIControl):
             css=css,
             defer_assets=False,
             on_change=lambda dom: self.invalidate(),
+            on_update=lambda dom: self.on_dom_update.fire(),
         )
 
     def invalidate(self) -> None:
@@ -595,8 +600,7 @@ class WebViewControl(UIControl):
         """
         yield self.rendered
         yield self.on_cursor_position_changed
-        if dom := self.dom:
-            yield dom.on_update
+        yield self.on_dom_update
 
     # ################################### Commands ####################################
 
