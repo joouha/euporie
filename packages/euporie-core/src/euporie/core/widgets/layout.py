@@ -25,6 +25,7 @@ from apptk.layout.containers import (
 from apptk.layout.controls import (
     FormattedTextControl,
 )
+from apptk.layout.decor import Fill
 from apptk.layout.dimension import Dimension as D
 from apptk.layout.dimension import to_dimension
 from apptk.mouse_events import MouseEventType
@@ -106,15 +107,15 @@ class Box:
 
         self.container = HSplit(
             [
-                Window(height=self.padding_top, char=char),
+                Fill(height=self.padding_top, char=char),
                 VSplit(
                     [
-                        Window(width=self.padding_left, char=char),
+                        Fill(width=self.padding_left, char=char),
                         body,
-                        Window(width=self.padding_right, char=char),
+                        Fill(width=self.padding_right, char=char),
                     ]
                 ),
-                Window(height=self.padding_bottom, char=char),
+                Fill(height=self.padding_bottom, char=char),
             ],
             width=width,
             height=height,

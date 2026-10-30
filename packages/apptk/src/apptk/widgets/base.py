@@ -16,17 +16,19 @@ from typing import TYPE_CHECKING
 from apptk.border import ThinGrid, ThinLine
 from apptk.data_structures import DiStr
 from apptk.filters import to_filter
+from apptk.formatted_text.base import to_formatted_text
 from apptk.layout.containers import (
-    ConditionalContainer,
+    Container,
     DummyContainer,
     DynamicContainer,
     HSplit,
     VSplit,
-    Window,
+    to_container,
 )
 from apptk.layout.decor import DropShadow
 from apptk.layout.dimension import Dimension
-from apptk.widgets.base import Label
+from apptk.layout.screen import _CHAR_CACHE, Screen, WritePosition
+from apptk.utils import get_cwidth
 from prompt_toolkit.widgets.base import Frame as PtkFrame
 from prompt_toolkit.widgets.base import Shadow as PtkShadow
 
@@ -36,6 +38,7 @@ if TYPE_CHECKING:
     from apptk.border import GridStyle
     from apptk.filters.core import FilterOrBool
     from apptk.layout.containers import AnyContainer
+    from apptk.layout.mouse_handlers import MouseHandlers
     from apptk.mouse_events import MouseEvent
     from prompt_toolkit.formatted_text import AnyFormattedText
     from prompt_toolkit.key_binding.key_bindings import KeyBindings
@@ -48,6 +51,222 @@ log = logging.getLogger(__name__)
 # Override prompt_toolkit's `Border` class with a backwards compatible grid instance
 # from the new :py:mod:`apptk.border` system
 Border = ThinGrid
+
+
+class _FrameContainer(Container):
+    """Draw a frame border and an optional title around a body in one pass.
+
+    This replaces the 3x3 grid of border :class:`~apptk.layout.containers.Window`
+    objects used by :class:`~prompt_toolkit.widgets.base.Frame` (eight
+    decorative edge and corner windows) with a single container which paints
+    the border and title directly to the screen.
+    """
+
+    def __init__(self, frame: Frame, grid: GridStyle) -> None:
+        """Wrap the body of ``frame`` and draw its border using ``grid``."""
+        self.frame = frame
+        self.grid = grid
+
+    def reset(self) -> None:
+        """Reset the wrapped container."""
+        to_container(self.frame.body).reset()
+
+    def _visible_edges(self) -> tuple[bool, bool, bool, bool]:
+        """Return whether the (top, right, bottom, left) edges are visible."""
+        frame = self.frame
+        return (
+            frame.sb_top(),
+            frame.sb_right(),
+            frame.sb_bottom(),
+            frame.sb_left(),
+        )
+
+    def _title_fragments(self) -> list[tuple[str, str]]:
+        """Return the frame title as a list of style, text tuples."""
+        title = self.frame.title
+        if not title:
+            return []
+        if callable(title):
+            title = title()
+        return [(fragment[0], fragment[1]) for fragment in to_formatted_text(title)]
+
+    @staticmethod
+    def _fragments_width(fragments: list[tuple[str, str]]) -> int:
+        """Return the display width of a list of formatted text fragments."""
+        return sum(get_cwidth(text) for _style, text in fragments)
+
+    def preferred_width(self, max_available_width: int) -> Dimension:
+        """Return the body's preferred width, expanded for the border."""
+        top, right, _bottom, left = self._visible_edges()
+        extra = int(right) + int(left)
+        dim = to_container(self.frame.body).preferred_width(
+            max(max_available_width - extra, 0)
+        )
+        preferred = dim.preferred + extra
+        maximum = dim.max + extra
+        # The title, when shown in the top edge, can be wider than the body.
+        if top:
+            title_width = self._fragments_width(self._title_fragments())
+            preferred = max(preferred, title_width)
+            maximum = max(maximum, title_width)
+        return Dimension(min=dim.min + extra, max=maximum, preferred=preferred)
+
+    def preferred_height(self, width: int, max_available_height: int) -> Dimension:
+        """Return the body's preferred height, expanded for the border."""
+        top, right, bottom, left = self._visible_edges()
+        extra = int(top) + int(bottom)
+        dim = to_container(self.frame.body).preferred_height(
+            max(width - int(left) - int(right), 0),
+            max(max_available_height - extra, 0),
+        )
+        return Dimension(
+            min=dim.min + extra,
+            max=dim.max + extra,
+            preferred=dim.preferred + extra,
+        )
+
+    def _draw_title(
+        self,
+        row: list,
+        xpos: int,
+        width: int,
+        style: str,
+        fragments: list[tuple[str, str]],
+    ) -> None:
+        """Draw the title (centered) in a border row."""
+        title_width = self._fragments_width(fragments)
+        padding = 1 if title_width + 2 <= width else 0
+        remaining = max(width - title_width - 2 * padding, 0)
+        left_fill = (remaining + 1) // 2
+        x = xpos + left_fill + padding
+        end = xpos + width
+
+        # Leave a single blank cell either side of the title, like the
+        # original frame layout did with its collapsible padding windows.
+        if padding:
+            blank = _CHAR_CACHE[" ", style]
+            row[xpos + left_fill] = blank
+            if x + title_width < end:
+                row[x + title_width] = blank
+
+        for fragment_style, text in fragments:
+            full_style = f"{style} {fragment_style}".strip()
+            for char in text:
+                char_width = get_cwidth(char)
+                if char_width == 0:
+                    continue
+                if x + char_width > end:
+                    return
+                row[x] = _CHAR_CACHE[char, full_style]
+                if char_width > 1:
+                    row[x + 1] = _CHAR_CACHE["", full_style]
+                x += char_width
+
+    def write_to_screen(
+        self,
+        screen: Screen,
+        mouse_handlers: MouseHandlers,
+        write_position: WritePosition,
+        parent_style: str,
+        erase_bg: bool,
+        z_index: int | None,
+    ) -> None:
+        """Draw the border, title and wrapped body in a single pass."""
+        wp = write_position
+        if wp.width <= 0 or wp.height <= 0:
+            return
+
+        top, right, bottom, left = self._visible_edges()
+
+        # Draw the body in the inset region.
+        body_width = max(wp.width - int(left) - int(right), 0)
+        body_height = max(wp.height - int(top) - int(bottom), 0)
+        if body_width > 0 and body_height > 0:
+            to_container(self.frame.body).write_to_screen(
+                screen,
+                mouse_handlers,
+                WritePosition(
+                    xpos=wp.xpos + int(left),
+                    ypos=wp.ypos + int(top),
+                    width=body_width,
+                    height=body_height,
+                ),
+                parent_style,
+                erase_bg,
+                z_index,
+            )
+
+        if not (top or right or bottom or left):
+            return
+
+        frame = self.frame
+        grid = self.grid
+        data_buffer = screen.data_buffer
+        x0 = wp.xpos
+        y0 = wp.ypos
+        x1 = wp.xpos + wp.width - 1
+        y1 = wp.ypos + wp.height - 1
+
+        style_top = f"{parent_style} {frame.add_styles(frame.bs_top)()}"
+        style_right = f"{parent_style} {frame.add_styles(frame.bs_right)()}"
+        style_bottom = f"{parent_style} {frame.add_styles(frame.bs_bottom)()}"
+        style_left = f"{parent_style} {frame.add_styles(frame.bs_left)()}"
+
+        if top:
+            row = data_buffer[y0]
+            if left:
+                row[x0] = _CHAR_CACHE[
+                    grid.TOP_LEFT,
+                    f"{parent_style} {frame.add_styles(frame.bs_top, frame.bs_left)()}",
+                ]
+            if right:
+                row[x1] = _CHAR_CACHE[
+                    grid.TOP_RIGHT,
+                    f"{parent_style} {frame.add_styles(frame.bs_top, frame.bs_right)()}",
+                ]
+            mid = _CHAR_CACHE[grid.TOP_MID, style_top]
+            for x in range(x0 + int(left), x1 - int(right) + 1):
+                row[x] = mid
+            title = self._title_fragments()
+            if title:
+                self._draw_title(
+                    row,
+                    x0 + int(left),
+                    wp.width - int(left) - int(right),
+                    parent_style,
+                    title,
+                )
+
+        if bottom and y1 != y0:
+            row = data_buffer[y1]
+            if left:
+                row[x0] = _CHAR_CACHE[
+                    grid.BOTTOM_LEFT,
+                    f"{parent_style} {frame.add_styles(frame.bs_bottom, frame.bs_left)()}",
+                ]
+            if right:
+                row[x1] = _CHAR_CACHE[
+                    grid.BOTTOM_RIGHT,
+                    f"{parent_style} {frame.add_styles(frame.bs_bottom, frame.bs_right)()}",
+                ]
+            mid = _CHAR_CACHE[grid.BOTTOM_MID, style_bottom]
+            for x in range(x0 + int(left), x1 - int(right) + 1):
+                row[x] = mid
+
+        y_start = y0 + int(top)
+        y_end = y1 + (0 if bottom else 1)
+        if left:
+            mid_left = _CHAR_CACHE[grid.MID_LEFT, style_left]
+            for y in range(y_start, y_end):
+                data_buffer[y][x0] = mid_left
+        if right:
+            mid_right = _CHAR_CACHE[grid.MID_RIGHT, style_right]
+            for y in range(y_start, y_end):
+                data_buffer[y][x1] = mid_right
+
+    def get_children(self) -> list:
+        """Return the wrapped body container."""
+        return [to_container(self.frame.body)]
 
 
 class Frame(PtkFrame):
@@ -122,114 +341,21 @@ class Frame(PtkFrame):
         bs_bottom = border_style[2]
         bs_left = border_style[3]
 
+        self.sb_top = sb_top
+        self.sb_right = sb_right
+        self.sb_bottom = sb_bottom
+        self.sb_left = sb_left
+        self.bs_top = bs_top
+        self.bs_right = bs_right
+        self.bs_bottom = bs_bottom
+        self.bs_left = bs_left
+
         self.container: AnyContainer
         if border is not None and any(show_borders):
-            top_edge: AnyContainer = Window(
-                char=border.TOP_MID, style=self.add_styles(bs_top)
-            )
-            if title:
-                top_edge = VSplit(
-                    [
-                        top_edge,
-                        # Make title padding collapsible
-                        Window(width=Dimension(max=1), height=1),
-                        Label(lambda: title, dont_extend_width=True),
-                        Window(width=Dimension(max=1), height=1),
-                        top_edge,
-                    ]
-                )
-
             self.container = HSplit(
-                [
-                    ConditionalContainer(
-                        VSplit(
-                            [
-                                ConditionalContainer(
-                                    Window(
-                                        width=1,
-                                        height=1,
-                                        char=border.TOP_LEFT,
-                                        style=self.add_styles(bs_top, bs_left),
-                                    ),
-                                    filter=sb_top & sb_left,
-                                ),
-                                ConditionalContainer(top_edge, filter=sb_top),
-                                ConditionalContainer(
-                                    Window(
-                                        width=1,
-                                        height=1,
-                                        char=border.TOP_RIGHT,
-                                        style=self.add_styles(bs_top, bs_right),
-                                    ),
-                                    filter=sb_top & sb_right,
-                                ),
-                            ],
-                            height=1,
-                        ),
-                        filter=sb_top,
-                    ),
-                    VSplit(
-                        [
-                            ConditionalContainer(
-                                Window(
-                                    width=1,
-                                    char=border.MID_LEFT,
-                                    style=self.add_styles(bs_left),
-                                ),
-                                filter=sb_left,
-                            ),
-                            DynamicContainer(lambda: self.body),
-                            ConditionalContainer(
-                                Window(
-                                    width=1,
-                                    char=border.MID_RIGHT,
-                                    style=self.add_styles(bs_right),
-                                ),
-                                filter=sb_right,
-                            ),
-                            # Padding is required to make sure that if the content is
-                            # too small, the right frame border is still aligned.
-                        ],
-                        padding=0,
-                    ),
-                    ConditionalContainer(
-                        VSplit(
-                            [
-                                ConditionalContainer(
-                                    Window(
-                                        width=1,
-                                        height=1,
-                                        char=border.BOTTOM_LEFT,
-                                        style=self.add_styles(bs_left, bs_bottom),
-                                    ),
-                                    filter=sb_bottom & sb_left,
-                                ),
-                                ConditionalContainer(
-                                    Window(
-                                        char=border.BOTTOM_MID,
-                                        style=self.add_styles(bs_bottom),
-                                    ),
-                                    filter=sb_bottom,
-                                ),
-                                ConditionalContainer(
-                                    Window(
-                                        width=1,
-                                        height=1,
-                                        char=border.BOTTOM_RIGHT,
-                                        style=self.add_styles(bs_right, bs_bottom),
-                                    ),
-                                    filter=sb_bottom & sb_right,
-                                ),
-                            ],
-                            # specifying height here will increase the rendering speed.
-                            height=1,
-                        ),
-                        filter=sb_bottom,
-                    ),
-                ],
+                [_FrameContainer(self, border)],
                 width=width,
                 height=height,
-                # style=style,
                 key_bindings=key_bindings,
                 modal=modal,
             )

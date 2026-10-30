@@ -12,12 +12,14 @@ from apptk.color import Color
 from apptk.filters import has_focus
 from apptk.layout.containers import (
     Container,
+    Window,
     to_container,
 )
-from apptk.layout.dimension import Dimension
-from apptk.layout.screen import Char, Screen, WritePosition
+from apptk.layout.dimension import AnyDimension, Dimension, to_dimension
+from apptk.layout.screen import _CHAR_CACHE, Char, Screen, WritePosition
 from apptk.mouse_events import MouseEventType
 from apptk.output.vt100 import ANSI_COLORS_TO_RGB, TERMINAL_COLORS_TO_RGB
+from apptk.utils import to_str
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -119,6 +121,77 @@ class Line(Container):
         return []
 
 
+class Fill(Container):
+    """Fill an area with a character.
+
+    This is a lightweight replacement for a
+    :class:`~apptk.layout.containers.Window` backed by a
+    :class:`~apptk.layout.controls.DummyControl`, which is commonly used for
+    padding and background fills. It reports the same dimensions as such a
+    window but skips the control, render info and mouse handler machinery.
+    """
+
+    def __init__(
+        self,
+        char: str | Callable[[], str] | None = None,
+        width: AnyDimension = None,
+        height: AnyDimension = None,
+        style: str = "",
+    ) -> None:
+        """Initialize the fill.
+
+        Args:
+            char: The character to fill the area with.
+            width: The width dimension of the fill.
+            height: The height dimension of the fill.
+            style: Style to apply to the filled area.
+        """
+        self.char = char
+        self.width = width
+        self.height = height
+        self.style = style
+
+    def reset(self) -> None:
+        """Reset the fill. Does nothing."""
+
+    def preferred_width(self, max_available_width: int) -> Dimension:
+        """Return the preferred width of the fill."""
+        return Window._merge_dimensions(to_dimension(self.width), lambda: None)
+
+    def preferred_height(self, width: int, max_available_height: int) -> Dimension:
+        """Return the preferred height of the fill."""
+        return Window._merge_dimensions(to_dimension(self.height), lambda: None)
+
+    def write_to_screen(
+        self,
+        screen: Screen,
+        mouse_handlers: MouseHandlers,
+        write_position: WritePosition,
+        parent_style: str,
+        erase_bg: bool,
+        z_index: int | None,
+    ) -> None:
+        """Fill the ``write_position`` area with the fill character and style."""
+        wp = write_position
+        if wp.width <= 0 or wp.height <= 0:
+            return
+
+        char = self.char() if callable(self.char) else self.char
+        if erase_bg or char:
+            char_obj = _CHAR_CACHE[char or " ", ""]
+            for y in range(wp.ypos, wp.ypos + wp.height):
+                row = screen.data_buffer[y]
+                for x in range(wp.xpos, wp.xpos + wp.width):
+                    row[x] = char_obj
+
+        style = f"{parent_style} {to_str(self.style)}"
+        screen.fill_area(wp, style=style, after=False)
+
+    def get_children(self) -> list:
+        """Return an empty list of the container's children."""
+        return []
+
+
 class Pattern(Container):
     """Fill an area with a repeating background pattern.
 
@@ -198,6 +271,194 @@ class Pattern(Container):
     def get_children(self) -> list:
         """Return an empty list of the container's children."""
         return []
+
+
+class Border(Container):
+    """Draw a single-window border around a wrapped container.
+
+    This replaces the common pattern of building a 3x3 grid of fill
+    :class:`~apptk.layout.containers.Window` objects (eight decorative edge and
+    corner windows plus the body) with a single container that paints all four
+    edges and corners directly to the screen in one pass. This avoids the
+    per-window overhead (render info, mouse handler ranges, body copies) for the
+    purely decorative border cells.
+    """
+
+    def __init__(
+        self,
+        body: AnyContainer,
+        grid: Callable[[], object],
+        style: str | Callable[[], str] = "class:border",
+        top: bool = True,
+        right: bool = True,
+        bottom: bool = True,
+        left: bool = True,
+        corner: AnyContainer | None = None,
+    ) -> None:
+        """Create a new border decoration.
+
+        Args:
+            body: The container to wrap and draw the border around.
+            grid: A callable returning a grid style object exposing
+                ``TOP_LEFT``, ``TOP_MID``, ``TOP_RIGHT``, ``MID_LEFT``,
+                ``MID_RIGHT``, ``BOTTOM_LEFT``, ``BOTTOM_MID`` and
+                ``BOTTOM_RIGHT`` border character attributes.
+            style: The style (or a callable returning one) for the border cells.
+            top: Whether to draw the top edge.
+            right: Whether to draw the right edge.
+            bottom: Whether to draw the bottom edge.
+            left: Whether to draw the left edge.
+            corner: An optional container to draw in the top-left corner instead
+                of the ``TOP_LEFT`` border character. This can be used to make
+                the corner focusable.
+        """
+        self.body = body
+        self.grid = grid
+        self.style = style
+        self.top = top
+        self.right = right
+        self.bottom = bottom
+        self.left = left
+        self.corner = corner
+
+    def reset(self) -> None:
+        """Reset the wrapped container."""
+        to_container(self.body).reset()
+        if self.corner is not None:
+            to_container(self.corner).reset()
+
+    def _insets(self) -> tuple[int, int, int, int]:
+        """Return the (top, right, bottom, left) border widths."""
+        return (
+            int(self.top),
+            int(self.right),
+            int(self.bottom),
+            int(self.left),
+        )
+
+    def preferred_width(self, max_available_width: int) -> Dimension:
+        """Return the body's preferred width, expanded for the border."""
+        _t, right, _b, left = self._insets()
+        extra = left + right
+        dim = to_container(self.body).preferred_width(
+            max(max_available_width - extra, 0)
+        )
+        return Dimension(
+            min=dim.min + extra,
+            max=(dim.max + extra) if dim.max is not None else None,
+            preferred=dim.preferred + extra,
+        )
+
+    def preferred_height(self, width: int, max_available_height: int) -> Dimension:
+        """Return the body's preferred height, expanded for the border."""
+        top, right, bottom, left = self._insets()
+        extra = top + bottom
+        dim = to_container(self.body).preferred_height(
+            max(width - left - right, 0), max(max_available_height - extra, 0)
+        )
+        return Dimension(
+            min=dim.min + extra,
+            max=(dim.max + extra) if dim.max is not None else None,
+            preferred=dim.preferred + extra,
+        )
+
+    def write_to_screen(
+        self,
+        screen: Screen,
+        mouse_handlers: MouseHandlers,
+        write_position: WritePosition,
+        parent_style: str,
+        erase_bg: bool,
+        z_index: int | None,
+    ) -> None:
+        """Draw the border and the wrapped body in a single pass."""
+        top, right, bottom, left = self._insets()
+        wp = write_position
+
+        # Draw the body in the inset region.
+        body_width = max(wp.width - left - right, 0)
+        body_height = max(wp.height - top - bottom, 0)
+        if body_width > 0 and body_height > 0:
+            to_container(self.body).write_to_screen(
+                screen,
+                mouse_handlers,
+                WritePosition(
+                    xpos=wp.xpos + left,
+                    ypos=wp.ypos + top,
+                    width=body_width,
+                    height=body_height,
+                ),
+                parent_style,
+                erase_bg,
+                z_index,
+            )
+
+        # Nothing to draw if the border is entirely disabled.
+        if not (top or right or bottom or left):
+            return
+
+        grid = self.grid()
+        style = self.style() if callable(self.style) else self.style
+        style = f"{parent_style} {style}"
+
+        data_buffer = screen.data_buffer
+        x0 = wp.xpos
+        y0 = wp.ypos
+        x1 = wp.xpos + wp.width - 1
+        y1 = wp.ypos + wp.height - 1
+
+        def char(name: str) -> Char:
+            return _CHAR_CACHE[getattr(grid, name), style]
+
+        # Top and bottom edges (including corners).
+        if top:
+            row = data_buffer[y0]
+            if left and self.corner is None:
+                row[x0] = char("TOP_LEFT")
+            if right:
+                row[x1] = char("TOP_RIGHT")
+            mid = char("TOP_MID")
+            for x in range(x0 + left, x1 + (0 if right else 1)):
+                row[x] = mid
+        if bottom and y1 != y0:
+            row = data_buffer[y1]
+            if left:
+                row[x0] = char("BOTTOM_LEFT")
+            if right:
+                row[x1] = char("BOTTOM_RIGHT")
+            mid = char("BOTTOM_MID")
+            for x in range(x0 + left, x1 + (0 if right else 1)):
+                row[x] = mid
+
+        # Left and right edges (excluding corners already drawn).
+        y_start = y0 + top
+        y_end = y1 + (0 if bottom else 1)
+        if left:
+            mid_left = char("MID_LEFT")
+            for y in range(y_start, y_end):
+                data_buffer[y][x0] = mid_left
+        if right:
+            mid_right = char("MID_RIGHT")
+            for y in range(y_start, y_end):
+                data_buffer[y][x1] = mid_right
+
+        # Draw an optional focusable corner over the top-left border character.
+        if self.corner is not None and top and left:
+            to_container(self.corner).write_to_screen(
+                screen,
+                mouse_handlers,
+                WritePosition(xpos=x0, ypos=y0, width=1, height=1),
+                parent_style,
+                erase_bg,
+                z_index,
+            )
+
+    def get_children(self) -> list:
+        """Return the wrapped body (and optional corner) containers."""
+        children = [to_container(self.body)]
+        if self.corner is not None:
+            children.append(to_container(self.corner))
+        return children
 
 
 class FocusedStyle(Container):

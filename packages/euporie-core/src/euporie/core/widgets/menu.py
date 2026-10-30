@@ -21,10 +21,10 @@ from apptk.layout.containers import (
     ConditionalContainer,
     HSplit,
     ScrollOffsets,
-    VSplit,
     Window,
 )
 from apptk.layout.controls import UIContent
+from apptk.layout.decor import Border
 from apptk.layout.dimension import Dimension
 from apptk.layout.menus import (
     CompletionsMenuControl as PtkCompletionsMenuControl,
@@ -131,35 +131,24 @@ class CompletionsMenu(ConditionalContainer):
     ) -> None:
         """Create a completions menu with borders."""
         extra_filter = to_filter(extra_filter)
-        grid = OuterHalfGrid
         super().__init__(
             content=HSplit(
                 [
-                    VSplit(
-                        [
-                            Window(char=grid.TOP_LEFT, width=1, height=1),
-                            Window(char=grid.TOP_MID, height=1),
-                            Window(char=grid.TOP_RIGHT, width=1, height=1),
-                        ],
-                        style="class:menu-border",
-                    ),
-                    Window(
-                        content=CompletionsMenuControl(),
-                        width=Dimension(min=8),
-                        height=Dimension(min=1, max=max_height),
-                        scroll_offsets=ScrollOffsets(
-                            top=scroll_offset, bottom=scroll_offset
+                    Border(
+                        Window(
+                            content=CompletionsMenuControl(),
+                            width=Dimension(min=8),
+                            height=Dimension(min=1, max=max_height),
+                            scroll_offsets=ScrollOffsets(
+                                top=scroll_offset, bottom=scroll_offset
+                            ),
+                            dont_extend_width=True,
                         ),
-                        dont_extend_width=True,
-                    ),
-                    VSplit(
-                        [
-                            Window(char=grid.BOTTOM_LEFT, width=1, height=1),
-                            Window(char=grid.BOTTOM_MID, height=1),
-                            Window(char=grid.BOTTOM_RIGHT, width=1, height=1),
-                        ],
+                        grid=lambda: OuterHalfGrid,
                         style="class:menu-border",
-                    ),
+                        left=False,
+                        right=False,
+                    )
                 ],
                 style="class:menu",
             ),

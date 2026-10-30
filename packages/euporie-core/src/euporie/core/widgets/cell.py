@@ -30,6 +30,7 @@ from apptk.layout.containers import (
     Window,
 )
 from apptk.layout.controls import FormattedTextControl
+from apptk.layout.decor import Border
 from apptk.layout.dimension import Dimension
 from apptk.utils import Event
 
@@ -280,19 +281,23 @@ class Cell:
         )
         self.input_box.buffer.name = self.cell_type
 
+        def _grid() -> GridStyle:
+            """Return the cell's border grid style for the current state."""
+            if not weak_self:
+                return NoLine.grid
+            return _get_border_style(
+                selected(),
+                focused(),
+                weak_self.kernel_tab.app.config.show_cell_borders,
+                multiple_cells_selected(),
+            )
+
         def border_char(name: str) -> Callable[..., str]:
             """Return a function which returns the cell border character to display."""
+            attr = name.upper()
 
             def _inner() -> str:
-                if not weak_self:
-                    return " "
-                grid = _get_border_style(
-                    selected(),
-                    focused(),
-                    weak_self.kernel_tab.app.config.show_cell_borders,
-                    multiple_cells_selected(),
-                )
-                return getattr(grid, name.upper())
+                return getattr(_grid(), attr)
 
             return _inner
 
@@ -307,8 +312,6 @@ class Cell:
             style="class:border",
             always_hide_cursor=True,
         )
-
-        fill = partial(Window, style="class:border")
 
         # Create textbox for standard input
         self.stdin_box = StdInput(weak_self.kernel_tab)
@@ -448,34 +451,20 @@ class Cell:
                     style += ",cell.selection"
             return style
 
+        # All four edges are painted by a single `Border` container. The
+        # focusable top-left corner window (the cell's focus target) is drawn by
+        # the border itself, avoiding separate fill windows for every edge.
         self.container = HSplit(
             [
-                VSplit(
-                    [
-                        self.control,
-                        fill(char=border_char("TOP_MID"), height=1),
-                        fill(width=1, height=1, char=border_char("TOP_RIGHT")),
-                    ],
-                    height=1,
-                ),
-                VSplit(
-                    [
-                        fill(width=1, char=border_char("MID_LEFT")),
-                        HSplit(
-                            [input_row, output_row],
-                            padding=lambda: 1 if show_input() and show_output() else 0,
-                        ),
-                        fill(width=1, char=border_char("MID_RIGHT")),
-                    ]
-                ),
-                VSplit(
-                    [
-                        fill(width=1, height=1, char=border_char("BOTTOM_LEFT")),
-                        fill(char=border_char("BOTTOM_MID")),
-                        fill(width=1, height=1, char=border_char("BOTTOM_RIGHT")),
-                    ],
-                    height=1,
-                ),
+                Border(
+                    HSplit(
+                        [input_row, output_row],
+                        padding=lambda: 1 if show_input() and show_output() else 0,
+                    ),
+                    grid=_grid,
+                    style="class:border",
+                    corner=self.control,
+                )
             ],
             style=_style,
         )

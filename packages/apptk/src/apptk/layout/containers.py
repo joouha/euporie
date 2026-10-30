@@ -836,6 +836,22 @@ class Window(PtkWindow):
         if write_position.height <= 0 or write_position.width <= 0:
             return
 
+        # Fast path for dummy windows (e.g. cell borders and background fills).
+        # These have no interactive content, no cursor and no graphics, so we can
+        # skip rendering the body, building `WindowRenderInfo`, scanning for
+        # graphics and installing the full mouse handler.
+        if (
+            isinstance(self.content, DummyControl)
+            and not self.left_margins
+            and not self.right_margins
+            and not self.dont_extend_width()
+            and not self.dont_extend_height()
+        ):
+            self._write_dummy_to_screen(
+                screen, mouse_handlers, write_position, parent_style, erase_bg
+            )
+            return
+
         # Calculate margin sizes.
         left_margin_widths = [self._get_margin_width(m) for m in self.left_margins]
         right_margin_widths = [self._get_margin_width(m) for m in self.right_margins]
@@ -1032,6 +1048,64 @@ class Window(PtkWindow):
             self.horizontal_scroll,
             z_index,
         )
+
+    def _write_dummy_to_screen(
+        self,
+        screen: Screen,
+        mouse_handlers: MouseHandlers,
+        write_position: WritePosition,
+        parent_style: str,
+        erase_bg: bool,
+    ) -> None:
+        """Write a dummy window (border/fill) to the screen.
+
+        This is a stripped-down version of :meth:`_write_to_screen_at_index` for
+        windows backed by a :class:`DummyControl`. Such windows only paint a
+        background character with a style, so we skip creating content, render
+        info, graphics and the per-position mouse handler.
+        """
+        # Erase background and fill with `char`.
+        self._fill_bg(screen, write_position, erase_bg)
+
+        # Dummy windows have no content-level render info, so scroll handling
+        # (the only thing `_mouse_handler` does) is a no-op. Install a single
+        # lightweight handler for the whole range rather than the full handler.
+        bbox = write_position.bbox
+        mouse_handlers.set_mouse_handler_for_range(
+            x_min=write_position.xpos + bbox.left,
+            x_max=write_position.xpos + write_position.width - bbox.right,
+            y_min=write_position.ypos + bbox.top,
+            y_max=write_position.ypos + write_position.height - bbox.bottom,
+            handler=self._dummy_mouse_handler,
+        )
+
+        # Apply 'self.style'.
+        self._apply_style(screen, write_position, parent_style)
+
+        # Tell the screen that this window has been painted at this position.
+        screen.visible_windows_to_write_positions[self] = write_position
+
+    def _dummy_mouse_handler(self, mouse_event: MouseEvent) -> NotImplementedOrNone:
+        """Handle mouse events for a dummy window.
+
+        Only forwards to the control's own handler (for click callbacks on
+        :class:`FormattedTextControl`-style content is never the case here);
+        dummy content returns ``NotImplemented`` so the event bubbles up.
+        """
+        if self not in get_app().layout.walk_through_modal_area():
+            return NotImplemented
+        result = self.content.mouse_handler(
+            MouseEvent(
+                position=Point(x=0, y=0),
+                event_type=mouse_event.event_type,
+                button=mouse_event.button,
+                modifiers=mouse_event.modifiers,
+                cell_position=getattr(mouse_event, "cell_position", None),
+            )
+        )
+        if result == NotImplemented:
+            result = self._mouse_handler(mouse_event)
+        return result
 
     def _copy_body(
         self,
